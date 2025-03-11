@@ -1,3 +1,4 @@
 datasets/Spider_test
 models/text2sql/.env
 models/text2sql/2270-env
+models/text2sql/__pycache__
