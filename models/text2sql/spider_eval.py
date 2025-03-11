@@ -51,6 +51,6 @@ if __name__ == "__main__":
     
     # text2sql_func = create_text2sql_func_openai("gpt-3.5-turbo")
     text2sql_func = create_text2sql_func_openai("gpt-4o-mini")
-    test_data = load_test_data(TEST_JSON_PATH, limit=1000)
+    test_data = load_test_data(TEST_JSON_PATH, limit=5)
     
     evaluate_text2sql(test_data, DB_PATH, text2sql_func)
