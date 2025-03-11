@@ -1,13 +1,13 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM
 
-def create_text2sql_func_hf(model_name="apple/OpenELM-270M"):
+def create_text2sql_func_hf(model_name):
     """
     Creates a function that converts natural language questions into SQL queries
     using the Hugging Face model_name running locally.
 
     Parameters:
-        model_name (str): The Hugging Face model to use (default is OpenElm-270M).
+        model_name (str): The Hugging Face model to use.
 
     Returns:
         function: A function `text2sql(question, schema_info)` that generates
@@ -33,47 +33,6 @@ def create_text2sql_func_hf(model_name="apple/OpenELM-270M"):
         Returns:
             str: The generated SQL query.
         """
-        # Define the structured prompt for the model
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries.
-        # Question: "{question}"
-        # SQL Query:
-        # """
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries.
-        # Use the provided database schema to generate the correct SQL query.
-        # Make sure the SQL you generate is specifically for an **SQLite3** database.
-        # Database Schema:
-        # {schema_info}
-
-        # Question: "{question}"
-        # Expected Output: Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
-
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries 
-        # specifically for an **SQLite3** database. 
-
-        # ### **Important SQLite Constraints:**
-        # - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        # - **No native JSON functions** (assume basic text handling).
-        # - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        # - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-        # - Use **LOWER()** for case-insensitive string matching.
-        # - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        # - Always assume **foreign key constraints are disabled unless explicitly turned on**.
-
-        # ### **Database Schema:**
-        # {schema_info}
-
-        # ### **User Question:**
-        # "{question}"
-
-        # ### **Expected Output:**
-        # Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
         # prompt = f"translate English to SQL: {question} | Schema: {schema_info}"
         prompt = f"""
         translate English to SQL:
