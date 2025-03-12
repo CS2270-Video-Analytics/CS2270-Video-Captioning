@@ -55,6 +55,6 @@ if __name__ == "__main__":
     # text2sql_func = create_text2sql_func_openai("gpt-4o")
     # text2sql_func = create_text2sql_func_hf("gaussalgo/T5-LM-Large-text2sql-spider")
     text2sql_func = create_text2sql_func_deepseek()
-    test_data = load_test_data(TEST_JSON_PATH, limit=25)
+    test_data = load_test_data(TEST_JSON_PATH, limit=1000)
     
-    evaluate_text2sql(test_data, DB_PATH, text2sql_func, to_print=True)
+    evaluate_text2sql(test_data, DB_PATH, text2sql_func, to_print=False)
