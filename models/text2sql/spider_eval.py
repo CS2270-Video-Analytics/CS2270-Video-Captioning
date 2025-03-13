@@ -2,7 +2,7 @@ import json
 import os
 from tqdm import tqdm
 from text2sql_pipeline import get_schema, execute_sql, normalize_sql
-from text2sql_models import create_text2sql_func_openai, create_text2sql_func_deepseek
+from text2sql_models import create_text2sql_func_openai, create_text2sql_func_deepseek, create_text2sql_func_anthropic
 from text2sql_hf import create_text2sql_func_hf
  
 def load_test_data(file_path, limit=5):
@@ -54,7 +54,8 @@ if __name__ == "__main__":
     # text2sql_func = create_text2sql_func_openai("gpt-4o-mini")
     # text2sql_func = create_text2sql_func_openai("gpt-4o")
     # text2sql_func = create_text2sql_func_hf("gaussalgo/T5-LM-Large-text2sql-spider")
-    text2sql_func = create_text2sql_func_deepseek()
+    # text2sql_func = create_text2sql_func_deepseek()
+    text2sql_func = create_text2sql_func_anthropic()
     test_data = load_test_data(TEST_JSON_PATH, limit=1000)
     
     evaluate_text2sql(test_data, DB_PATH, text2sql_func, to_print=False)
