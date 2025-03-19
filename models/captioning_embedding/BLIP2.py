@@ -1,7 +1,6 @@
 import sys
 import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from config import Config
 from model import Model
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from PIL import Image
@@ -10,20 +9,17 @@ import torch
 from typing import Optional, Dict
 from torchvision import transforms
 from time import time
-import pdb
+if Config.debug:
+    import pdb
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class Blip2(Model):
+class BLIP2(Model):
     
-    def __init__(self, model_configs: Dict):
+    def __init__(self):
 
         #attributes from configs 
-        self.precision = model_configs['model_precision']
-        self.template_prompt = model_configs['template_prompt']
-        self.object_extraction_prompt = model_configs['obj_extraction_prompt']
-        self.obj_prompt = model_configs['obj_prompt']
-
+        self.precision = Config.model_precision
 
         # Load BLIP-2 model and processor
         self.processor = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b", torch_dtype=self.precision)
@@ -33,9 +29,8 @@ class Blip2(Model):
 
         self.model.to(self.device)
 
-        self.system_eval = model_configs['system_eval']
-       
-
+        self.system_eval = Config.system_eval
+    
         #auxilliary attributes for Tensor to image conversion
         self.to_pil_image = transforms.ToPILImage()
 
@@ -43,26 +38,10 @@ class Blip2(Model):
         # Convert NumPy array to PIL Image
         return [self.to_pil_image(tensor) for tensor in torch_tensor]
 
-    def preprocess_data(self, data_stream: torch.Tensor, text_input:Optional[str], **kwargs):
+    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):
         
         images = self.convert_to_pil_image(data_stream)
 
-        prompt = self.template_prompt
-
-        pdb.set_trace()
-        #add the previous frame description to the prompt
-        if kwargs['prev_frames']:
-            prompt = prompt.format(prev_frames_context = kwargs['prev_frame_context'])
-        #add the object list to the prompt
-        if kwargs['obj_focus']:
-            prompt = '\n'.join([prompt, self.obj_prompt.format(','.join(kwargs['objs']))])
-            
-        
-        #add the query task to the prompt
-        prompt = '.'.join([prompt, text_input])
-
-        
-        
         return self.processor(images=images, text = prompt, return_tensors="pt").to(self.device, self.precision)
     
     
@@ -75,20 +54,24 @@ class Blip2(Model):
             start_time = time.now()
 
         self.model.eval()
-        processed_inputs = self.preprocess_data(data_stream, kwargs['text_input'], prev_frame_context=kwargs['prev_frame_context'], objs=kwargs['objs'], obj_focus=kwargs['obj_focus'], prev_frames=kwargs['prev_frames'])
+        processed_inputs = self.preprocess_data(data_stream, kwargs['prompt'])
 
         # Generate caption
         with torch.no_grad():
-            caption_ids = self.model.generate(**processed_inputs)
-            captions = self.processor.batch_decode(caption_ids, skip_special_tokens=True)
+
+            try:
+                output_ids = self.model.generate(**processed_inputs)
+                outputs = self.processor.batch_decode(output_ids, skip_special_tokens=True)
+                outputs = outputs.split(':')[2].strip()
+            except Exception as e:
+                info['error'] = e
         
-        pdb.set_trace()
         if self.system_eval:
             end_time = time.now()
             elapsed = end_time - start_time
             info['time'] = elapsed
 
-        return captions, info
+        return outputs, info
 
 
 if __name__ == '__main__':
@@ -110,7 +93,7 @@ if __name__ == '__main__':
 
     
 
-    model = Blip2(model_configs={'model_precision':torch.float16, 
+    model = BLIP2(model_configs={'model_precision':torch.float16, 
                                 'system_eval':False, 
                                 'fuckoff': 'Using the descriptions of the previous images of a video, generate a detailed description of the current image. Describe all entities and their relationship with each other in detail\nDescription of previous image sequence:\n{prev_frames_context}', 
                                 'template_prompt': 'Generate a detailed description of the current image. Describe all objects in the image and their relationship with each other in detail', 

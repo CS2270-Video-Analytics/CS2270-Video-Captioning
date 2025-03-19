@@ -16,6 +16,7 @@ from torchvision import transforms
 if Config.debug:
     import pdb
 import requests
+import subprocess
 
 
 #TODO: find a way to batch process and parallelize processing of frames from many videos
@@ -34,17 +35,32 @@ class LLamaVision(Model):
         self.model_name = Config.llama_model_name
 
         #assert that LLaMa model is running on another terminal (sanity check)
-        assert self.is_ollama_running(), "ERROR: Ollama is not running. Run it on another terminal first"
+        assert self.is_ollama_model_running(), "ERROR: Ollama is not running. Run it on another terminal first"
 
         #auxilliary attributes for Tensor to image conversion
         self.to_pil_image = transforms.ToPILImage()
 
-    def is_ollama_running(self):
-        try:
-            response = requests.get("http://localhost:11434/api/tags", timeout=2)
-            return response.status_code == 200
-        except requests.ConnectionError:
-            return False
+
+
+    def get_gpu_processes(self):
+        # Run nvidia-smi to get the list of GPU processes
+        result = subprocess.run(['nvidia-smi', '--query-compute-apps=pid,process_name', '--format=csv,noheader'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        
+        processes = result.stdout.decode().splitlines()
+        return processes
+    
+    def is_ollama_model_running():
+        """
+        Check if an Ollama model is running by looking for processes related to Ollama in the system.
+        """
+        processes = get_running_processes()
+
+        for proc in processes:
+            # Check if 'ollama' is in the process name or command line arguments
+            if 'ollama' in proc['name'].lower() or 'ollama' in ' '.join(proc.get('cmdline', [])).lower():
+                print(f"Ollama process found: {proc}")
+                return True
+        return False
     
     # Function to convert a PIL image to Base64
     def pil_to_base64(self, image:Image):
