@@ -43,10 +43,8 @@ class CaptioningPipeline():
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
 
-        #create counts to track frame and video id
-        self.frame_id = 0
 
-    def run_pipeline(self, data_stream: torch.Tensor, video_id:int):
+    def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
 
         #add the previous frame description to the prompt
         if Config.previous_frames:
@@ -79,10 +77,10 @@ class CaptioningPipeline():
             image_embedding = self.clip_model.encode_image(image)
 
 
-        #increment frame id after storage into DB
-        self.frame_id += 1
+        
 
-        return video_id, self.frame_id, description, image_embedding
+        #TODO: None to be replaced with object list
+        return [video_id, frame_id, description, None, image_embedding]
         
 
 if __name__ == '__main__':
