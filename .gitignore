@@ -1,0 +1,4 @@
+outputs/
+datasets/bdd_videos/
+__pycache__/
+captions.db
