@@ -1,4 +1,6 @@
 import sys
+sys.path.append('..')
+
 import os
 from config import Config
 from model import Model
