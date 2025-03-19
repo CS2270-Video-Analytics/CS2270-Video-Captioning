@@ -1,8 +1,6 @@
 import torch
 
-
 class Config:
-
     llama_model_name = 'llama3.2-vision:11b'
     clip_model_name = "ViT-L/14"
     model_precision = torch.float16
@@ -21,6 +19,10 @@ class Config:
 
     #only for debugging
     debug = True
+
+    # batch size for inserting into the DB
+    batch_size = 40
+    frames_per_video = 40
 
     #schema definition for databases
     caption_schema = dict(video_id = "INTEGER UNIQUE NOT NULL", frame_id = "INTEGER UNIQUE NOT NULL", description="TEXT NOT NULL", objects="TEXT")
