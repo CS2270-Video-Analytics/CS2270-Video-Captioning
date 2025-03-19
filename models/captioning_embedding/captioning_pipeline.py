@@ -1,7 +1,6 @@
 import sys
-sys.path.append('..')
 import os
-from config import Config
+from config.config import Config
 from collections import deque
 import clip
 
@@ -10,14 +9,14 @@ if Config.debug:
     import pdb
     from torchvision import transforms
 
-from captioning_embedding.BLIP import BLIP
-from captioning_embedding.BLIP2 import BLIP2
-from captioning_embedding.LLamaVision import LLamaVision
+from .BLIP import BLIP
+from .BLIP2 import BLIP2
+from .LLamaVision import LLamaVision
 import torch
 
 class CaptioningPipeline():
 
-    def __init__(self, video_id:int):
+    def __init__(self, video_id: int):
         
         if Config.previous_frames:
             self.description_prompt = Config.sliding_window_caption_prompt_format
@@ -69,15 +68,12 @@ class CaptioningPipeline():
 
             self.object_list.append(new_objs)
 
-        #geenrate clip embedding
+        # generate clip embedding
         pil_image = self.caption_model.to_pil_image(data_stream)
         image = self.clip_preprocess(pil_image).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
             image_embedding = self.clip_model.encode_image(image)
-
-
-        
 
         #TODO: None to be replaced with object list
         return [video_id, frame_id, description, None, image_embedding]
@@ -101,7 +97,5 @@ if __name__ == '__main__':
         transform = transforms.ToTensor()
         image_tensor = transform(image)
 
-        
         vid_id, frame_id, descrip, image_embed = captioner.run_pipeline(data_stream = image_tensor, video_id = 0)
-
-
+        

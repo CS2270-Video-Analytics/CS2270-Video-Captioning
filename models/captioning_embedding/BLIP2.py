@@ -3,7 +3,7 @@ sys.path.append('..')
 
 import os
 from config import Config
-from model import Model
+from ..model import Model
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from PIL import Image
 import torch
