@@ -6,7 +6,7 @@ from config import Config
 
 class SQLLiteDBInterface():
 
-    def __init__(self, db_name:str = None, table_name:str = None):
+    def __init__(self, db_name:str = None, table_name:str = None, caption_schema:str = None):
         # Connect to SQLite database (or create it if it doesn't exist)
         self.connection = sqlite3.connect(os.path.join(Config.base_db_path, Config.db_name if db_name is None else db_name))
         self.cursor = connection.cursor()
@@ -16,7 +16,7 @@ class SQLLiteDBInterface():
         #create the table during the init
         self.create_table()
 
-        self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys())])})"
+        self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
     
 
     def create_table(self):
@@ -28,7 +28,7 @@ class SQLLiteDBInterface():
             )
         ''')
 
-        self.cursor.commit()
+        self.connection.commit()
 
     def execute_query(self, query: list, args:tuple = None):
         '''
@@ -41,12 +41,20 @@ class SQLLiteDBInterface():
 
         return self.cursor.fetchall()  # return all rows relevant to query
 
-    def insert_many_frames(self, frame_data: list):
+    def insert_many_rows_list(self, rows_data: list):
         
         # Insert multiple rows at once using executemany()
-        self.cursor.executemany(self.insertion_query, frame_data[:-1])
+        self.cursor.executemany(self.insertion_query, rows_data)
 
-        self.cursor.commit()
+        self.connection.commit()
+    
+    def insert_many_rows_dict(self, rows_data: dict):
+
+        # Execute query with extracted values
+        self.cursor.executemany(self.insertion_query, [tuple(d.values()) for d in rows_data])
+
+        # Commit changes and close connection
+        self.connection.commit()
 
     def close_conn(self):
 

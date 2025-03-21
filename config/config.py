@@ -15,6 +15,9 @@ class Config:
     object_extraction_pormpt_format = "Current image description: {curr_img_caption}\nObjects (with unique IDs) seen so far: {obj_list}\nGiven the current image description and list of objects, identify any new objects (with their object IDs) not seen so far." 
     sliding_window_size = 3
 
+    #model to be used for text2table
+    text2table_model = 'Ollama' #options: [Ollama, GPT3, Seq2Seq]
+
     #models to be used for captioning
     caption_model = 'LLamaVision'
 
