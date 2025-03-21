@@ -1,7 +1,8 @@
 import torch
 
 class Config:
-    llama_model_name = 'llama3.2-vision:11b'
+    vision_model_name = 'llama3.2-vision:11b'
+    text_model_name = 'llama3.2:latest'
     clip_model_name = "ViT-L/14"
     model_precision = torch.float16
     system_eval = False

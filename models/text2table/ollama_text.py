@@ -20,23 +20,17 @@ import subprocess
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class LLamaVision(Model):
+class OllamaText(Model):
     
     def __init__(self):
         
         #attributes from configs 
         self.precision = Config.model_precision
         self.system_eval = Config.system_eval
-        
-        #auxilliary attributes for Tensor to image conversion
-        self.to_pil_image = transforms.ToPILImage()
-        self.model_name = Config.vision_model_name
+        self.model_name = Config.text_model_name
 
         #assert that LLaMa model is running on another terminal (sanity check)
         assert self.is_ollama_model_running(), "ERROR: Ollama is not running. Run it on another terminal first"
-
-        #auxilliary attributes for Tensor to image conversion
-        self.to_pil_image = transforms.ToPILImage()
 
 
     def get_gpu_processes(self):
@@ -58,24 +52,8 @@ class LLamaVision(Model):
             print(f"Error connecting to Ollama: {e}")
             return False
     
-    # Function to convert a PIL image to Base64
-    def pil_to_base64(self, image:Image):
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")  # Ensure a supported format like PNG or JPEG
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-    def convert_to_pil_image(self, torch_tensor:torch.Tensor):
-        # Convert NumPy array to PIL Image
-        return [self.pil_to_base64(self.to_pil_image(tensor)) for tensor in torch_tensor]
-
-    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
-        
-        base64_encoded_images = self.convert_to_pil_image(data_stream)[0]
-
-        return base64_encoded_images
     
-    
-    def run_inference(self, data_stream: torch.Tensor, **kwargs):
+    def run_inference(self, query: str, **kwargs):
         print("Starting inference...")
 
         #additional return values in a dictionary
@@ -85,9 +63,6 @@ class LLamaVision(Model):
         if self.system_eval:
             start_time = time.now()
 
-        print("Processing inputs...")
-        processed_inputs = self.preprocess_data(data_stream)
-
         print("Sending to Ollama...")
         with torch.no_grad():
             try:
@@ -95,9 +70,7 @@ class LLamaVision(Model):
                     model= self.model_name,
                     messages=[{
                         'role': 'user',
-                        'content':kwargs['prompt'],
-                        'images': [processed_inputs],
-                        'max_tokens': Config.max_tokens
+                        'content':query,
                     }])
                 print(f"Received response from Ollama")
                 outputs = outputs.message.content
