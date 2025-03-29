@@ -3,30 +3,37 @@ import sys
 import os
 sys.path.append('..')
 from config import Config
+from typing import List, Dict 
 
 class SQLLiteDBInterface():
 
-    def __init__(self, db_name:str = None, table_name:str = None, caption_schema:str = None):
+    def __init__(self, db_name:str = None, table_name_caption_dict:Dict = None):
         # Connect to SQLite database (or create it if it doesn't exist)
-        self.connection = sqlite3.connect(os.path.join(Config.base_db_path, Config.db_name if db_name is None else db_name))
+        self.connection = sqlite3.connect(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name))
         self.cursor = connection.cursor()
 
-        self.table_name = Config.table_name if table_name is None else table_name
-
+        if table_name_caption_dict None:
+            self.table_name_caption_dict = {Config.caption_table_name: Config.caption_table_schema, Config.processed_table_name : Config.processed_table_schema}
+        else:
+            self.table_name_caption_dict = table_name_caption_dict
+        
+        
         #create the table during the init
         self.create_table()
 
-        self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
-    
+        # self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
+        self.insertion_query = "INSERT INTO {table_name} {table_schema} VALUES ({table_schema_value})"
+
 
     def create_table(self):
 
         # Create a table (if it doesn't exist)
-        self.cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS {self.table_name} (
-                {','.join(key + ' ' + val for (key, val) in Config.caption_schema.items())}
-            )
-        ''')
+        for (table_name, schema) in self.table_name_caption_dict.items():
+            self.cursor.execute(f'''
+                CREATE TABLE IF NOT EXISTS {table_name} (
+                    {','.join(key + ' ' + val for (key, val) in schema.items())}
+                )
+            ''')
 
         self.connection.commit()
 
@@ -41,17 +48,30 @@ class SQLLiteDBInterface():
 
         return self.cursor.fetchall()  # return all rows relevant to query
 
-    def insert_many_rows_list(self, rows_data: list):
+    def insert_many_rows_list(self, table_name:int, rows_data: list):
         
+        table_schema = self.table_name_caption_dict[table_name]
+        schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
+        schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
+        
+        query = self.insertion_query.format(table_name = table_name, schema_prompt = schema_prompt, schema_value_prompt = schema_value_prompt)
+
         # Insert multiple rows at once using executemany()
-        self.cursor.executemany(self.insertion_query, rows_data)
+        self.cursor.executemany(query, rows_data)
 
         self.connection.commit()
     
     def insert_many_rows_dict(self, rows_data: dict):
 
+        table_schema = self.table_name_caption_dict[table_name]
+        schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
+        schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
+        
+        query = self.insertion_query.format(table_name = table_name, schema_prompt = schema_prompt, schema_value_prompt = schema_value_prompt)
+
+
         # Execute query with extracted values
-        self.cursor.executemany(self.insertion_query, [tuple(d.values()) for d in rows_data])
+        self.cursor.executemany(query, [tuple(d.values()) for d in rows_data])
 
         # Commit changes and close connection
         self.connection.commit()

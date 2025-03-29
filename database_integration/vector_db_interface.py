@@ -8,16 +8,16 @@ import torch.nn.functional as F
 
 class VectorDBInteface():
 
-    def __init__(self, db_name:str = None, table_name:str = None, caption_schema:str = None, save_path:str = None):
+    def __init__(self, sample_vector:torch.Tensor, db_name:str = None, save_path:str = None):
 
         #store the DB name
-        self.db_name = db_name
+        self.db_name = db_name if db_name is not None else Config.vec_db_name
 
         #path to saved vector DB
-        self.db_path = save_path
+        self.db_path = os.path.join(save_path if save_path is not None else Config.vec_db_path, self.db_name)
 
         #create the vector index during the init
-        self.create_index()
+        self.create_index(sample_vector = sample_vector)
     
 
     def create_index(self, sample_vector:torch.Tensor):
