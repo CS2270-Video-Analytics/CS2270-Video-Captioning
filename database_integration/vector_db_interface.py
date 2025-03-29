@@ -4,6 +4,7 @@ sys.path.append('..')
 from config import Config
 import faiss
 import torch
+import torch.nn.functional as F
 
 class VectorDBInteface():
 
@@ -24,11 +25,11 @@ class VectorDBInteface():
         if os.path.exists(self.db_path):
             self.load_vectordb()
         else:
-            self.vector_index = faiss.IndexFlatL2(sample_vector.shape[-1])
+            self.vector_index = faiss.IndexFlatIP(d = sample_vector.shape[-1])
 
     def seach_query(self, query: torch.Tensor, k:int = 1):
         
-        faiss.normalize_L2(query)  # Normalize the query vector
+        query = F.normalize(query, p=2, dim=1)   # Normalize the query vector
 
         distances, indices = self.vector_index.search(query, k)
 
@@ -36,7 +37,7 @@ class VectorDBInteface():
     
     def search_all(self, query: torch.Tensor):
         
-        faiss.normalize_L2(query)  # Normalize the query vector
+        query = F.normalize(query, p=2, dim=1)   # Normalize the query vector
 
         distances, indices = self.vector_index.search(query, k = self.vector_index.ntotal)
 
@@ -44,8 +45,8 @@ class VectorDBInteface():
 
     def insert_many_vectors(self, vectors: torch.Tensor):
         
-        # Insert multiple vectros at once: normalize first so L2 = cosine similarity for CLIP embeddings
-        faiss.normalize_L2(vectors)
+        # Insert multiple vectros at once: normalize first so inner-product = cosine similarity for CLIP embeddings
+        vectors = F.normalize(vectors, p=2, dim=1)
 
 
         self.vector_index.add(vectors)
