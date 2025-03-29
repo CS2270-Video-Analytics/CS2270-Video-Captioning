@@ -24,8 +24,12 @@ class Config:
     #model to be used for text2table
     text2table_model = 'Ollama' #options: [Ollama, GPT3, Seq2Seq]
 
+    text2sql_model = 'OpenAI' #options: [OpenAI, DeepSeek, HuggingFace, Anthropic, HuggingFace]
+    text2sql_model_name = 'gpt3.5-turbo'
+
     #models to be used for captioning
     caption_model = 'LLamaVision'
+
 
     #only for debugging
     debug = True

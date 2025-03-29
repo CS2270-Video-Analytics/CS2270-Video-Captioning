@@ -2,14 +2,16 @@ import os
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 import anthropic
-import sqlite3
+from config.config import Config
+if Config.debug:
+    import pdb
 
-def create_text2sql_func_openai(llm_model, temperature=0):
+def create_text2sql_func_openai(model_name="gpt-3.5-turbo", temperature=0):
     """
     Creates a function that generates SQL queries from natural language questions 
     using OpenAI's API with a specified LLM model.
     Parameters:
-        llm_model (str): The OpenAI language model to use (e.g., "gpt-3.5-turbo").
+        model_name (str): The OpenAI language model to use (e.g., "gpt-3.5-turbo").
         temperature (float, optional): Between 0 and 1.
 
     Returns:
@@ -72,7 +74,7 @@ def create_text2sql_func_openai(llm_model, temperature=0):
         messages = [{"role": "user", "content": prompt}]
 
         response = client.chat.completions.create(
-            model=llm_model,
+            model=model_name,
             messages=messages,
             temperature=temperature,
         )
@@ -82,7 +84,7 @@ def create_text2sql_func_openai(llm_model, temperature=0):
     return question_to_sql
 
 
-def create_text2sql_func_deepseek(temperature=0):
+def create_text2sql_func_deepseek(model_name = None, temperature=0):
     """
     Creates a function that generates SQL queries from natural language questions 
     using DeepSeek's API with a specified LLM model.
@@ -178,12 +180,12 @@ def create_text2sql_func_deepseek(temperature=0):
     return question_to_sql
 
 
-def create_text2sql_func_anthropic(llm_model="claude-3-5-haiku-latest", temperature=0):
+def create_text2sql_func_anthropic(model_name="claude-3-5-haiku-latest", temperature=0):
     """
     Creates a function that generates SQL queries from natural language questions 
     using Anthropic's API with a specified LLM model.
     Parameters:
-        llm_model (str): The OpenAI language model to use (e.g., "gpt-3.5-turbo").
+        model_name (str): The OpenAI language model to use (e.g., "gpt-3.5-turbo").
         temperature (float, optional): Between 0 and 1.
 
     Returns:
@@ -249,7 +251,7 @@ def create_text2sql_func_anthropic(llm_model="claude-3-5-haiku-latest", temperat
         messages = [{"role": "user", "content": prompt}]
 
         response = client.messages.create(
-            model=llm_model,
+            model=model_name,
             max_tokens=1024,
             messages=messages,
         )
