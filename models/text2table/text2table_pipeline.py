@@ -1,7 +1,7 @@
 import sys
 import os
 from config.config import Config
-
+from typing import List
 if Config.debug:
     import cv2
     import pdb
@@ -14,7 +14,7 @@ import sqlite3
 
 class Text2TablePipeline:
 
-    def __init__(self):
+    def __init__(self, all_captions:str=None, all_objects:List[str]):
 
         if Config.text2table_model == 'Seq2Seq':
             raise NotImplementedError("ERROR: not implemented yet")
@@ -25,62 +25,57 @@ class Text2TablePipeline:
         
         #store prompt for per frame information extraction
         self.text2table_frame_prompt = Config.text2table_frame_prompt
+
+        #store the attribute extraction prompt
+        self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         
         #initialize the model that needs to be used for captioning
         model_options = {'Ollama': OllamaText}
         assert Config.text2table_model in model_options, f'ERROR: model {Config.text2table_model} does not exist or is not supported yet'
         self.text2table_model = model_options[Config.text2table_model]()
 
+        #extract the list of attributes to capture across objects
+        self.object_attributes = ['video_id', 'frame_id', 'object', 'description', 'action']
+
+        #store a list of unique objects to extract data for
+        self.all_objects = all_objects
+    
+    def extract_attributes(self, all_captions:str):
+
+        base_attributes = ['video_id', 'frame_id', 'object']
+
+        frame_extraction_prompt = self.attribute_extraction_prompt.format(incontext_captions = Config.text2table_incontext_prompt, frame_captions = all_captions)
+
+        extracted_attributes, __ = self.text2table_model.run_inference(query= frame_extraction_prompt)
+        extracted_attributes = extracted_attributes.split('[')[1].split(']')[0].split(',')
+        base_attributes += extracted_attributes
+
+        return base_attributes
+
     
     def run_pipeline(self, caption: str, video_id:int, frame_id:int):
 
         #create the overall prompt structure
-        text2table_frame_prompt = self.text2table_frame_prompt.format(caption=caption, video_id=video_id, frame_id=frame_id)
+        text2table_frame_prompt = self.text2table_frame_prompt.format(formatted_schema = self.object_attributes, image_caption = caption, object_set = self.all_objects )
 
         #generate the structured caption using text2table model
         structured_caption, info = self.text2table_model.run_inference(query = text2table_frame_prompt if Config.text2table_model == 'Seq2Seq' else '\n'.join(self.text2table_incontext_prompt, text2table_frame_prompt))
 
         #parse the structured caption as a partitioned of structured elements in JSON
-        db_data_row = self.parse_table_output_json(structured_caption, video_id, frame_id)
+        db_data_row = self.parse_table_output_t2t(structured_caption, video_id, frame_id)
 
         return db_data_row
     
-    #NOTE: to be reconfigured if and when we use actual Text2Table formatting with <s> and <t> separators
-    def parse_table_output_json(self, structured_caption:str, video_id:int, frame_id:int):
-
-        # Regular expression pattern to match dictionary-like structures
-        pattern = r'\{\{(.*?)\}\}'
-
-        # Find all matches
-        parsed_rows = re.findall(pattern, structured_caption, re.DOTALL)
-
-        # Convert extracted matches to valid Python dictionaries
-        parsed_rows = [ast.literal_eval("{" + row.strip() + "}") for row in parsed_rows]
-        
-        for r in parsed_rows:
-            r['video_id'] = video_id
-            r['frame_id'] = frame_id
-        
-
-        return result
     
     def parse_table_output_t2t(self, structured_caption:str, video_id:int, frame_id:int):
 
-        # Split by new-line token
-        rows = t.split("<n>")
-
-        # Parse each row by removing leading/trailing spaces and splitting on <s>
-        parsed_rows = [list(filter(None, row.split("<s>"))) for row in rows]
-
-        # Remove extra whitespace and commas
-        parsed_rows = [[entry.strip(" ,") for entry in row] for row in parsed_rows]
         
-        for r in parsed_rows:
-            r['video_id'] = video_id
-            r['frame_id'] = frame_id
+        parsed_rows = structured_caption.strip().split("<n>")
         
-
-        return result
+        # Filter out empty rows and split remaining rows by <t>
+        parsed_rows = [[video_id, frame_id] + row.split("<t>") for row in rows if parsed_rows.strip()]
+        
+        return parsed_rows
 
 
 

@@ -71,7 +71,12 @@ class OllamaText(Model):
                     messages=[{
                         'role': 'user',
                         'content':query,
-                    }])
+                    }],
+                    options = {
+                        'stop': ['\n'],
+                        'batch_size': Config.batch_size,
+                        'num_threads': Config.num_threads
+                    })
                 print(f"Received response from Ollama")
                 outputs = outputs.message.content
             except Exception as e:

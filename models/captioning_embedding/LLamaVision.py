@@ -98,7 +98,13 @@ class LLamaVision(Model):
                         'content':kwargs['prompt'],
                         'images': [processed_inputs],
                         'max_tokens': Config.max_tokens
-                    }])
+                    }],
+                    keep_alive = Config.keep_alive,
+                    options = {
+                        'batch_size': Config.batch_size,
+                        'num_threads': Config.num_threads
+                    }
+                    )
                 print(f"Received response from Ollama")
                 outputs = outputs.message.content
             except Exception as e:
