@@ -42,6 +42,8 @@ class CaptioningPipeline():
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
 
+    def update_video_id(self, new_video_id:int):
+        self.video_id = new_video_id
 
     def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
 
