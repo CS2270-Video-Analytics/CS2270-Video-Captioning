@@ -16,7 +16,7 @@ class Text2TablePipeline:
     def __init__(self, all_objects:List[str], all_captions:str=None):
 
         if Config.text2table_model == 'Seq2Seq':
-            raise NotImplementedError("ERROR: not implemented yet")
+            raise NotImplementedError("nrERROR: not implemented yet")
         elif Config.text2table_model == 'GPT3':
             self.text2table_incontext_prompt = Config.text2table_prompt
         elif Config.text2table_model == 'Ollama':
@@ -104,14 +104,4 @@ The image captures a typical urban scene, with cars and pedestrians navigating t
 
     #dummy run with video and frame id 1
     db_data_row = t2t.run_pipeline(test_caption, 1, 1)
-
-
-
-
-
-
-
-
-
-
-
+    

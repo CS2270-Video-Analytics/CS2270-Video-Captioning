@@ -5,7 +5,7 @@ from models import captioning_embedding
 class CaptionDatabase:
     """Database handler for video captions."""
     
-    def __init__(self, db_path='captions.db'):
+    def __init__(self, db_path='captions_test.db'):
         """Initialize the database connection.
         
         Args:

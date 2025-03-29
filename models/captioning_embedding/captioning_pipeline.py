@@ -1,7 +1,8 @@
 import sys
 import os
-from config.config import Config
+from config import Config
 from collections import deque
+from ..text2table.OllamaText import OllamaText
 import clip
 
 if Config.debug:
@@ -38,6 +39,11 @@ class CaptioningPipeline():
         assert Config.caption_model in model_options, f'ERROR: model {Config.caption_model} does not exist or is not supported yet'
         self.caption_model = model_options[Config.caption_model]()
 
+        #initialize model that needs to be used for object extraction
+        model_options = {'Ollama': OllamaText}
+        assert Config.text2table_model in model_options, f'ERROR: model {Config.text2table_model} does not exist or is not supported yet'
+        self.object_extraction_model = model_options[Config.text2table_model]()
+
         #create models for clip vector embeddings
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
@@ -50,7 +56,7 @@ class CaptioningPipeline():
         #add the previous frame description to the prompt
         if Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
-            description_prompt = self.description_prompt.format(prev_frames_context = previous_frames_descriptions)
+            description_prompt = self.description_prompt.format(prev_frames_context = previous_frames_descriptions, obj_list = ','.join(self.object_list))
         else:
             description_prompt = self.description_prompt
 
@@ -65,10 +71,12 @@ class CaptioningPipeline():
         
         #generate a set of new objects in the current frame and add to the self.object_list
         if Config.obj_focus:
-            obj_prompt = self.object_prompt.format(self.previous_descriptions[-1], ','.join(self.object_list))
-            new_objs, info = self.caption_model.run_inference(data_stream = data_stream, kwargs = dict(prompt = description_prompt))
+            obj_prompt = self.object_prompt.format(curr_img_caption = self.previous_descriptions[-1], obj_list = ','.join(self.object_list))
+            new_objs, info = self.object_extraction_model.run_inference(query = obj_prompt)
+            new_objs = new_objs[1:-1].split(',')
+            new_objs = [obj.strip().lower() for obj in new_objs]
 
-            self.object_list.append(new_objs)
+            self.object_list.extend(new_objs)
 
         # generate clip embedding
         pil_image = self.caption_model.to_pil_image(data_stream)
@@ -83,7 +91,6 @@ class CaptioningPipeline():
 
 if __name__ == '__main__':
 
-    pdb.set_trace()
     captioner = CaptioningPipeline(video_id=1)
 
     image_base_path = os.path.relpath('../../datasets/mock_caption_data/bdd')

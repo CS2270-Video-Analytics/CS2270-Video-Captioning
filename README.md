@@ -8,3 +8,9 @@
 * `frontend': contains code to setup and run front-end for video uploading
 * `main.py': the initial entrypoint for code backend containing logic to select models and run pipeline
 * `baselines': contains all submodules and code for baseline models e.g. VIVA and ZELDA
+
+
+### Interactive GPU Session
+```bash
+# Request an interactive session with GPU
+interact -n 2 -m 32g -t 02:00:00 -q gpu

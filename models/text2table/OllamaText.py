@@ -90,3 +90,6 @@ class OllamaText(Model):
             info['time'] = elapsed
 
         return outputs, info
+    
+    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
+        pass
