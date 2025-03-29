@@ -1,31 +1,32 @@
 import sys
 sys.path.append('..')
-
 import os
+
 from config import Config
 from ..model import Model
-from transformers import Blip2Processor, Blip2ForConditionalGeneration
+from transformers import AutoProcessor, BlipModel
 from PIL import Image
 import torch
 
 from typing import Optional, Dict
 from torchvision import transforms
 from time import time
+
 if Config.debug:
     import pdb
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class BLIP2(Model):
+class BLIP(Model):
     
     def __init__(self):
-
+        
         #attributes from configs 
         self.precision = Config.model_precision
 
         # Load BLIP-2 model and processor
-        self.processor = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b", torch_dtype=self.precision)
-        self.model = Blip2ForConditionalGeneration.from_pretrained("Salesforce/blip2-opt-2.7b")
+        self.processor = BlipModel.from_pretrained("Salesforce/blip-image-captioning-base", torch_dtype=self.precision)
+        self.model = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base", torch_dtype=self.precision)
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -60,7 +61,6 @@ class BLIP2(Model):
 
         # Generate caption
         with torch.no_grad():
-
             try:
                 output_ids = self.model.generate(**processed_inputs)
                 outputs = self.processor.batch_decode(output_ids, skip_special_tokens=True)
@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     
 
-    model = BLIP2(model_configs={'model_precision':torch.float16, 
+    model = BLIP(model_configs={'model_precision':torch.float16, 
                                 'system_eval':False, 
                                 'fuckoff': 'Using the descriptions of the previous images of a video, generate a detailed description of the current image. Describe all entities and their relationship with each other in detail\nDescription of previous image sequence:\n{prev_frames_context}', 
                                 'template_prompt': 'Generate a detailed description of the current image. Describe all objects in the image and their relationship with each other in detail', 
