@@ -6,13 +6,16 @@ if Config.debug:
 
 class Text2SQLPipeline():
 
-    def __init__(self):
+    def __init__(self, text2sql_func):
+        """
+        Initializes the Text2SQLPipeline with a text-to-SQL function.
 
-        model_options = {'OpenAI': create_text2sql_func_openai, 'DeepSeek': create_text2sql_func_deepseek, 'Anthropic': create_text2sql_func_anthropic, 'HuggingFace': create_text2sql_func_hf}
-        assert Config.text2sql_model in model_options, f'ERROR: model {Config.text2sql_model} does not exist or is not supported yet'
-        self.model = model_options[Config.text2sql_model](model_name = Config.text2sql_model_name)
+        Parameters:
+            text2sql_func (function): A function that generates SQL queries given a question and schema.
+        """
+        self.model = text2sql_func
 
-    def run_pipeline(self, question:str, db_file, text2sql_func):
+    def run_pipeline(self, question:str, db_file):
         """
         Converts a natural language question into an SQL query and executes it on a given SQLite database.
 
@@ -24,7 +27,8 @@ class Text2SQLPipeline():
         Returns:
             tuple: The generated SQL query and its execution result.
         """
-        db_schema = self.get_schema(db_file)
+        db_schema = self.get_schema(db_file, ["object_detections"])
+        print(db_schema)
         sql_query = self.normalize_sql(self.model(question, db_schema))
         # sql_output = self.execute_sql(db_file, sql_query)
         return sql_query
@@ -53,31 +57,35 @@ class Text2SQLPipeline():
             conn.close()
             return f"Error: {str(e)}"
 
-    def get_schema(self, db_file):
+    def get_schema(self, db_file, tables_to_include):
         """
-        Extracts the schema information from an SQLite database.
+        Extracts the schema information from specific tables in an SQLite database.
 
         Parameters:
             db_file (str): Path to the SQLite database file.
+            tables_to_include (list of str): List of table names to include in the schema.
 
         Returns:
-            str: The database schema, including table names and column details.
+            str: The schema of specified tables, including column details.
         """
-        # Connect to SQLite database
+        import sqlite3
+
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
 
         try:
-            # Get all table names
+            # Verify table names against sqlite_master
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tables = cursor.fetchall()
-            if not tables:
-                return "No tables found in database."
+            all_tables = {row[0] for row in cursor.fetchall()}
+
+            # Filter only existing tables
+            valid_tables = [t for t in tables_to_include if t in all_tables]
+            if not valid_tables:
+                return "None of the specified tables exist in the database."
 
             schema_info = []
 
-            for table_name in tables:
-                table_name = table_name[0]
+            for table_name in valid_tables:
                 schema_info.append(f"Table: {table_name}")
 
                 # Get column details
@@ -91,7 +99,7 @@ class Text2SQLPipeline():
                 schema_info.append("\n")  # Add space between tables
 
             conn.close()
-            return "\n".join(schema_info)  # Return formatted schema
+            return "\n".join(schema_info)
 
         except Exception as e:
             conn.close()
