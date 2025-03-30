@@ -20,7 +20,7 @@ class SQLLiteDBInterface():
         self.create_table()
 
         # self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
-        self.insertion_query = "INSERT OR REPLACE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
+        self.insertion_query = "INSERT OR IGNORE OR REPLACE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
 
 
     def create_table(self):

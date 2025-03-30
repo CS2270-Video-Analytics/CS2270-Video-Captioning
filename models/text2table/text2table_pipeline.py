@@ -96,7 +96,7 @@ class Text2TablePipeline:
         
         # Filter out empty rows and split remaining rows by <t>
         parsed_rows = [[video_id, frame_id] + row.strip().split("<c>") for row in parsed_rows if parsed_rows]
-        pdb.set_trace()
+        parsed_rows = parsed_rows[1:-1]
         return parsed_rows
 
 

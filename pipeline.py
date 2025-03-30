@@ -21,7 +21,6 @@ class VideoQueryPipeline():
         self.sql_dbs = SQLLiteDBInterface()
 
         #vector db containing image embeddings
-        pdb.set_trace()
         self.vector_db = VectorDBInterface(vector_dim = self.captioning_pipeline.clip_model.visual.output_dim)
 
         #natural language 2 sql generation pipeline
@@ -44,8 +43,6 @@ class VideoQueryPipeline():
         while True:
             try:
                 sql_batch, vector_batch = next(frame_iterator)
-
-                pdb.set_trace()
 
                 #insert rows into the SQL db
                 self.sql_dbs.insert_many_rows_list(table_name = Config.caption_table_name, rows_data = sql_batch)
@@ -71,7 +68,7 @@ class VideoQueryPipeline():
         while True:
             try:
                 data_batch = next(obj_iterator)
-                pdb.set_trace()
+                
                 self.sql_dbs.insert_many_rows_list(table_name = Config.processed_table_name, rows_data = data_batch)
             except StopIteration:
                 break
