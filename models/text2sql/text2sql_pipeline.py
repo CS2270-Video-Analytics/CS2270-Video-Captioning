@@ -3,6 +3,8 @@ import sqlparse
 from config.config import Config
 if Config.debug:
     import pdb
+from models.text2sql.text2sql_models import create_text2sql_func_openai, create_text2sql_func_deepseek, create_text2sql_func_anthropic
+from models.text2sql.text2sql_hf import create_text2sql_func_hf
 
 class Text2SQLPipeline():
 

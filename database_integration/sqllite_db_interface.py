@@ -1,38 +1,38 @@
 import sqlite3
-import sys
 import os
-sys.path.append('..')
 from config import Config
 from typing import List, Dict 
 
 class SQLLiteDBInterface():
 
-    def __init__(self, db_name:str = None, table_name_caption_dict:Dict = None):
+    def __init__(self, db_name:str = None, table_name_schema_dict:Dict = None):
         # Connect to SQLite database (or create it if it doesn't exist)
         self.connection = sqlite3.connect(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name))
-        self.cursor = connection.cursor()
+        self.cursor = self.connection.cursor()
 
-        if table_name_caption_dict None:
-            self.table_name_caption_dict = {Config.caption_table_name: Config.caption_table_schema, Config.processed_table_name : Config.processed_table_schema, Config.vector_table_name:Config.vector_table_schema}
+        if table_name_schema_dict is None:
+            self.table_name_schema_dict = {Config.caption_table_name: [Config.caption_table_schema, Config.caption_table_pk], Config.processed_table_name : [Config.processed_table_schema, Config.processed_table_pk]}
         else:
-            self.table_name_caption_dict = table_name_caption_dict
+            self.table_name_schema_dict = table_name_schema_dict
         
         
         #create the table during the init
         self.create_table()
 
         # self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
-        self.insertion_query = "INSERT INTO {table_name} {table_schema} VALUES ({table_schema_value})"
+        self.insertion_query = "INSERT OR REPLACE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
 
 
     def create_table(self):
 
         # Create a table (if it doesn't exist)
-        for (table_name, schema) in self.table_name_caption_dict.items():
+        for (table_name, vals) in self.table_name_schema_dict.items():
+            [schema, primary_keys] = vals 
             self.cursor.execute(f'''
                 CREATE TABLE IF NOT EXISTS {table_name} (
-                    {','.join(key + ' ' + val for (key, val) in schema.items())}
-                )
+                    {','.join(key + ' ' + val for (key, val) in schema.items())},
+                    PRIMARY KEY ({','.join(primary_keys)})
+                ) 
             ''')
             self.connection.commit()
 
@@ -51,11 +51,11 @@ class SQLLiteDBInterface():
 
     def insert_many_rows_list(self, table_name:str, rows_data: list):
         
-        table_schema = self.table_name_caption_dict[table_name]
-        schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
-        schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
+        table_schema = self.table_name_schema_dict[table_name]
+        schema_prompt = tuple(table_schema[0].keys())
+        schema_value_prompt = ','.join(['?' for _ in range(len(table_schema[0].keys()))])
         
-        query = self.insertion_query.format(table_name = table_name, schema_prompt = schema_prompt, schema_value_prompt = schema_value_prompt)
+        query = self.insertion_query.format(table_name = table_name, table_schema = schema_prompt, table_schema_value = schema_value_prompt)
 
         # Insert multiple rows at once using executemany()
         self.cursor.executemany(query, rows_data)
@@ -72,7 +72,7 @@ class SQLLiteDBInterface():
         schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
         schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
         
-        query = self.insertion_query.format(table_name = table_name, schema_prompt = schema_prompt, schema_value_prompt = schema_value_prompt)
+        query = self.insertion_query.format(table_name = table_name, table_schema = schema_prompt, table_schema_value = schema_value_prompt)
 
 
         # Execute query with extracted values
@@ -85,28 +85,31 @@ class SQLLiteDBInterface():
 
         self.cursor.close()
     
-    def get_schema(self):
+    def get_schema(self, tables_to_include:List[str]):
         """
-        Extracts the schema information from an SQLite database.
+        Extracts the schema information from specific tables in an SQLite database.
 
         Parameters:
             db_file (str): Path to the SQLite database file.
+            tables_to_include (list of str): List of table names to include in the schema.
 
         Returns:
-            str: The database schema, including table names and column details.
+            str: The schema of specified tables, including column details.
         """
-       
+
         try:
-            # Get all table names
-            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tables = self.cursor.fetchall()
-            if not tables:
-                raise Exception("There should be tables in the DB for this method to work!")
+            # Verify table names against sqlite_master
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            all_tables = {row[0] for row in self.cursor.fetchall()}
+
+            # Filter only existing tables
+            valid_tables = [t for t in tables_to_include if t in all_tables]
+            if not valid_tables:
+                return "None of the specified tables exist in the database."
 
             schema_info = []
 
-            for table_name in tables:
-                table_name = table_name[0]
+            for table_name in valid_tables:
                 schema_info.append(f"Table: {table_name}")
 
                 # Get column details
@@ -120,7 +123,7 @@ class SQLLiteDBInterface():
                 schema_info.append("\n")  # Add space between tables
 
             self.connection.close()
-            return "\n".join(schema_info)  # Return formatted schema
+            return "\n".join(schema_info)
 
         except Exception as e:
             self.connection.close()

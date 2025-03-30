@@ -1,12 +1,10 @@
-import sys
 import os
-sys.path.append('..')
 from config import Config
 import faiss
 import torch
 import torch.nn.functional as F
 
-class VectorDBInteface():
+class VectorDBInterface():
 
     def __init__(self, vector_dim:torch.Tensor, db_name:str = None, save_path:str = None):
 

@@ -17,10 +17,7 @@ class Text2TablePipeline:
 
         if Config.text2table_model == 'Seq2Seq':
             raise NotImplementedError("ERROR: not implemented yet")
-        elif Config.text2table_model == 'GPT3':
-            self.text2table_incontext_prompt = Config.text2table_prompt
-        elif Config.text2table_model == 'Ollama':
-            self.text2table_incontext_prompt = Config.text2table_prompt
+        
         
         #store prompt for per frame information extraction
         self.text2table_frame_prompt = Config.text2table_frame_prompt

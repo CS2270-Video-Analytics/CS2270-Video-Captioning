@@ -9,11 +9,10 @@ class Config:
     clip_model_name = "ViT-L/14"
     model_precision = torch.float16
     system_eval = False
-    obj_focus = False
+    obj_focus = True
     previous_frames = True
     max_tokens = 300
-    keep_alive = 30000
-    batch_size = 5
+    keep_alive = 60000
     num_threads = 8
     
     question_prompt_format = "Question: {question} Answer:"
@@ -38,13 +37,15 @@ class Config:
     debug = True
 
     # batch size for inserting into the DB
-    batch_size = 40
+    batch_size = 4
     frames_per_video = 40
 
     #config definition for SQL databases
-    caption_table_schema = dict(video_id = "INTEGER UNIQUE NOT NULL", frame_id = "INTEGER UNIQUE NOT NULL", description="TEXT NOT NULL", vector_id = "INTEGER UNIQUE")
+    caption_table_schema = dict(video_id = "INTEGER", frame_id = "REAL NOT NULL", description="TEXT NOT NULL", vector_id = "INTEGER")
+    caption_table_pk = ['video_id', 'frame_id']
     caption_table_name = "raw_videos"
-    processed_table_schema = dict(video_id = "INTEGER UNIQUE NOT NULL", frame_id = "INTEGER UNIQUE NOT NULL", object = "TEXT NOT NULL", image_location="TEXT", description="TEXT", action="TEXT")
+    processed_table_schema = dict(video_id = "INTEGER", frame_id = "REAL NOT NULL", object = "TEXT NOT NULL", image_location="TEXT", description="TEXT", action="TEXT")
+    processed_table_pk = ['video_id', 'frame_id', 'object']
     processed_table_name = "processed_video"
 
     sql_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'

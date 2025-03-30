@@ -67,7 +67,7 @@ class CaptionDatabase:
             captions_data: List of (video_id, frame_id, caption) tuples
         """
         self.cursor.executemany(
-            'INSERT INTO captions (video_id, frame_id, caption) VALUES (?, ?, ?)',
+            'INSERT OR REPLACE INTO captions (video_id, frame_id, caption) VALUES (?, ?, ?)',
             captions_data
         )
         self.conn.commit()
