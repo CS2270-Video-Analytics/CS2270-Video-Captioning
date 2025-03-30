@@ -25,7 +25,7 @@ class CaptioningPipeline():
 
         if Config.obj_focus:
             self.object_prompt = Config.object_extraction_prompt_format
-            self.object_list = []
+            self.object_set = set([])
         
         #track the window of previous image descriptions
         self.previous_descriptions = deque()
@@ -47,7 +47,7 @@ class CaptioningPipeline():
         #add the previous frame description to the prompt
         if Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
-            description_prompt = self.description_prompt.format(prev_frames_context = previous_frames_descriptions)
+            description_prompt = self.description_prompt.format(object_set = ','.join(self.object_set))
         else:
             description_prompt = self.description_prompt
 
@@ -60,12 +60,13 @@ class CaptioningPipeline():
         if len(self.previous_descriptions) > self.sliding_window_size:
             self.previous_descriptions.popleft()
         
-        #generate a set of new objects in the current frame and add to the self.object_list
+        #generate a set of new objects in the current frame and add to the self.object_set
         if Config.obj_focus:
-            obj_prompt = self.object_prompt.format(self.previous_descriptions[-1], ','.join(self.object_list))
-            new_objs, info = self.caption_model.run_inference(data_stream = data_stream, kwargs = dict(prompt = description_prompt))
-
-            self.object_list.append(new_objs)
+            obj_prompt = self.object_prompt.format(curr_img_caption = self.previous_descriptions[-1], object_set = ','.join(self.object_set))
+            new_objs, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt))
+            new_objs = new_objs[1:-1].split(',')
+            new_objs = [obj.strip().lower() for obj in new_objs]
+            self.object_set.update(new_objs)
 
         # generate clip embedding
         pil_image = self.caption_model.to_pil_image(data_stream)

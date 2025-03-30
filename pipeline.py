@@ -59,7 +59,7 @@ class VideoQueryPipeline():
 
         
         #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
-        self.text2table_pipeline.update_objects(self.captioning_pipeline.object_list) #first update with list of all objects found in the video
+        self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
         #save the vector db after processing
         self.vector_db.save_vectordb()
 
@@ -70,8 +70,9 @@ class VideoQueryPipeline():
         #insert a batch of rows into the SQL object db
         while True:
             try:
-                video_id, frame_id, caption = next(obj_iterator)
-                self.sql_dbs.insert_many_rows_list(table_name = Config.processed_table_name, rows_data = obj_data_row)
+                data_batch = next(obj_iterator)
+                pdb.set_trace()
+                self.sql_dbs.insert_many_rows_list(table_name = Config.processed_table_name, rows_data = data_batch)
             except StopIteration:
                 break
 
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     dummy = VideoQueryPipeline()
 
     video_path = '/users/ssunda11/git/CS2270-Video-Captioning/datasets/BDD_test'
-    filename = 'test1.mov'
+    filename = 'test2.mov'
 
     dummy.process_video(video_path = video_path, video_filename = filename)
         

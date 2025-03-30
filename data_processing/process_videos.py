@@ -4,12 +4,12 @@ import tempfile
 from pathlib import Path
 import torch
 from torchvision import transforms
-from config import Config
+from config.config import Config
 from .extract_frames import FrameExtractor
 from models.captioning_embedding.captioning_pipeline import CaptioningPipeline
 from utils.database import CaptionDatabase
 from tqdm import tqdm
-
+import pdb
 
 class VideoProcessor:
     """Process videos: extract frames, generate captions, and store in database."""
@@ -70,7 +70,7 @@ class VideoProcessor:
 
             
             # Insert when batch is full or at end of frames
-            if len(frame_data) >= Config.batch_size or i == len(frames) - 1:
+            if len(sql_batch) >= Config.batch_size or i == len(frames) - 1:
                 yield (sql_batch, vector_batch)
                 sql_batch = []   # Clear the batch
                 vector_batch = [] # Clear the batch

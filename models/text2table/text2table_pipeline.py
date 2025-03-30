@@ -8,6 +8,7 @@ if Config.debug:
     from torchvision import transforms
 
 from .OllamaText import OllamaText
+from .GPT import GPTModel
 import torch
 import sqlite3
 
@@ -26,12 +27,12 @@ class Text2TablePipeline:
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         
         #initialize the model that needs to be used for captioning
-        model_options = {'Ollama': OllamaText}
+        model_options = {'Ollama': OllamaText, 'GPT': GPTModel}
         assert Config.text2table_model in model_options, f'ERROR: model {Config.text2table_model} does not exist or is not supported yet'
         self.text2table_model = model_options[Config.text2table_model]()
 
         #extract the list of attributes to capture across objects
-        self.object_attributes = ['video_id', 'frame_id', 'object', 'description', 'image_location', 'action']
+        self.object_attributes = ['object', 'description', 'image_location', 'action']
 
         #store a list of unique objects to extract data for
         self.all_objects = all_objects
@@ -55,7 +56,7 @@ class Text2TablePipeline:
         
         #iterate all rows from the video data raw captions and run the pipeline per batch
         frame_data = []
-        for i, (video_id, frame_id, caption) in enumerate(video_data):
+        for i, (video_id, frame_id, caption, __) in enumerate(video_data):
 
             frame_obj_data = self.run_pipeline(caption = caption, video_id = video_id, frame_id = frame_id)
             frame_data += frame_obj_data
@@ -70,7 +71,7 @@ class Text2TablePipeline:
 
     
     def run_pipeline(self, caption: str, video_id:int, frame_id:int):
-
+        
         #create the overall prompt structure
         if Config.text2table_model != 'Seq2Seq':
             text2table_frame_prompt = self.text2table_frame_prompt.format(formatted_schema = self.object_attributes, image_caption = caption, object_set = self.all_objects)
@@ -83,6 +84,7 @@ class Text2TablePipeline:
 
         #parse the structured caption as a partitioned of structured elements in JSON
         db_data_row = self.parse_table_output_t2t(structured_caption, video_id, frame_id)
+        db_data_row = [tuple(row) for row in db_data_row]
 
         return db_data_row
     
@@ -90,11 +92,11 @@ class Text2TablePipeline:
     def parse_table_output_t2t(self, structured_caption:str, video_id:int, frame_id:int):
 
         
-        parsed_rows = structured_caption.strip().split("<n>")
+        parsed_rows = structured_caption.strip().split("<r>")
         
         # Filter out empty rows and split remaining rows by <t>
-        parsed_rows = [[video_id, frame_id] + row.split("<t>") for row in rows if parsed_rows.strip()]
-        
+        parsed_rows = [[video_id, frame_id] + row.strip().split("<c>") for row in parsed_rows if parsed_rows]
+        pdb.set_trace()
         return parsed_rows
 
 
