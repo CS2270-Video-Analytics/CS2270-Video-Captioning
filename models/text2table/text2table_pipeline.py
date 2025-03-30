@@ -39,6 +39,9 @@ class Text2TablePipeline:
         #store a list of unique objects to extract data for
         self.all_objects = all_objects
     
+    def update_objects(self, all_objects:List[str]):
+        self.all_objects = all_objects
+
     def extract_attributes(self, all_captions:str):
 
         base_attributes = ['video_id', 'frame_id', 'object']
@@ -50,6 +53,23 @@ class Text2TablePipeline:
         base_attributes += extracted_attributes
 
         return base_attributes
+
+    def run_pipeline_video(self, video_data:List[tuple]):
+        
+        #iterate all rows from the video data raw captions and run the pipeline per batch
+        frame_data = []
+        for i, (video_id, frame_id, caption) in enumerate(video_data):
+
+            frame_obj_data = self.run_pipeline(caption = caption, video_id = video_id, frame_id = frame_id)
+            frame_data += frame_obj_data
+
+            if len(frame_data) >= Config.batch_size or i == len(video_data) - 1: 
+                yield frame_data
+                
+                frame_data = [] #empty the batch
+                
+
+
 
     
     def run_pipeline(self, caption: str, video_id:int, frame_id:int):

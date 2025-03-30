@@ -1,6 +1,9 @@
 import torch
 
 class Config:
+
+    save_frames = False
+    
     vision_model_name = 'llama3.2-vision:11b'
     text_model_name = 'llama3.2:latest'
     clip_model_name = "ViT-L/14"
@@ -38,8 +41,17 @@ class Config:
     batch_size = 40
     frames_per_video = 40
 
-    #schema definition for databases
-    caption_schema = dict(video_id = "INTEGER UNIQUE NOT NULL", frame_id = "INTEGER UNIQUE NOT NULL", description="TEXT NOT NULL", objects="TEXT")
-    table_name = "videos"
-    base_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
-    db_name = "video_frames.db"
+    #config definition for SQL databases
+    caption_table_schema = dict(video_id = "INTEGER UNIQUE NOT NULL", frame_id = "INTEGER UNIQUE NOT NULL", description="TEXT NOT NULL", vector_id = "INTEGER UNIQUE")
+    caption_table_name = "raw_videos"
+    processed_table_schema = dict(video_id = "INTEGER UNIQUE NOT NULL", frame_id = "INTEGER UNIQUE NOT NULL", object = "TEXT NOT NULL", image_location="TEXT", description="TEXT", action="TEXT")
+    processed_table_name = "processed_video"
+
+    sql_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
+    sql_db_name = "video_frames.db"
+
+
+    #config definition for vector databse
+    vec_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
+    vec_db_name = 'video_frames.index'
+    

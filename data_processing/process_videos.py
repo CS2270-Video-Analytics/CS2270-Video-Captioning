@@ -8,6 +8,8 @@ from config import Config
 from .extract_frames import FrameExtractor
 from models.captioning_embedding.captioning_pipeline import CaptioningPipeline
 from utils.database import CaptionDatabase
+from tqdm import tqdm
+
 
 class VideoProcessor:
     """Process videos: extract frames, generate captions, and store in database."""
@@ -22,12 +24,11 @@ class VideoProcessor:
         self.output_dir = output_dir
         self.frames_per_video = Config.frames_per_video
         self.extractor = FrameExtractor()
-        self.db = CaptionDatabase()
         
         # Ensure output directory exists
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
     
-    def process_single_video(self, video_path, video_id):
+    def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int):
         """Process a single video file.
         
         Args:
@@ -37,37 +38,46 @@ class VideoProcessor:
         Returns:
             Number of processed frames
         """
-        # Initialize captioning pipeline
-        captioner = CaptioningPipeline(video_id=video_id)
+
         # Extract frames
         frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video)
         # Save frames to disk (optional)
-        self.extractor.save_frames(video_id, frames, self.output_dir)
+        if Config.save_frames:
+            self.extractor.save_frames(video_id, frames, self.output_dir)
         
         # Process each frame for captioning
-        frame_data = []
-        for i, (timestamp, pil_img) in enumerate(frames):
+        sql_batch = []
+        vector_batch = []
+        
+        for i, (timestamp, pil_img) in tqdm(enumerate(frames)):
             # Convert PIL image to tensor
             to_tensor = transforms.ToTensor()
             image_tensor = to_tensor(pil_img)
             
             # Get caption
-            _, _, caption, _, _ = captioner.run_pipeline(
+            [video_id, frame_id, description, object_list, image_embedding] = captioning_pipeline.run_pipeline(
                 data_stream=image_tensor, 
                 video_id=video_id, 
                 frame_id=timestamp
             )
             
-            # Add to batch
-            frame_data.append((video_id, timestamp, caption))
+            #store the batch of data for sql db updates and vector db updates
+            sql_batch.append((video_id, frame_id, description, curr_vec_idx))
+            vector_batch.append(image_embedding)
+            
+            #increment the current vector index
+            curr_vec_idx += 1
+
             
             # Insert when batch is full or at end of frames
             if len(frame_data) >= Config.batch_size or i == len(frames) - 1:
-                self.db.insert_many_captions(frame_data)
-                frame_data = []  # Clear the batch
+                yield (sql_batch, vector_batch)
+                sql_batch = []   # Clear the batch
+                vector_batch = [] # Clear the batch
+                
                 print(f"Processed and saved batch of frames up to frame {i+1}/{len(frames)}")
                 
-        return len(frames)
+        
     
     def process_from_zip(self, zip_path):
         """Process the first video from a zip file.
@@ -113,7 +123,3 @@ class VideoProcessor:
                 self.process_single_video(video_path, video_id)
                 
                 return video_id
-    
-    def close(self):
-        """Close database connection."""
-        self.db.close()

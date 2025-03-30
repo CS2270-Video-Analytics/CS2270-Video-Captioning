@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 class VectorDBInteface():
 
-    def __init__(self, sample_vector:torch.Tensor, db_name:str = None, save_path:str = None):
+    def __init__(self, vector_dim:torch.Tensor, db_name:str = None, save_path:str = None):
 
         #store the DB name
         self.db_name = db_name if db_name is not None else Config.vec_db_name
@@ -17,15 +17,15 @@ class VectorDBInteface():
         self.db_path = os.path.join(save_path if save_path is not None else Config.vec_db_path, self.db_name)
 
         #create the vector index during the init
-        self.create_index(sample_vector = sample_vector)
+        self.create_index(vector_dim = vector_dim)
     
 
-    def create_index(self, sample_vector:torch.Tensor):
+    def create_index(self, vector_dim:int):
 
         if os.path.exists(self.db_path):
             self.load_vectordb()
         else:
-            self.vector_index = faiss.IndexFlatIP(d = sample_vector.shape[-1])
+            self.vector_index = faiss.IndexFlatIP(vector_dim)
 
     def seach_query(self, query: torch.Tensor, k:int = 1):
         
@@ -42,6 +42,9 @@ class VectorDBInteface():
         distances, indices = self.vector_index.search(query, k = self.vector_index.ntotal)
 
         return distances, indices
+    
+    def get_num_vecs(self):
+        return self.vector_index.ntotal
 
     def insert_many_vectors(self, vectors: torch.Tensor):
         
@@ -57,3 +60,10 @@ class VectorDBInteface():
     def save_vectordb(self):
 
         faiss.write_index(self.vector_index, self.db_path)
+
+
+if __name__ == '__main__':
+
+    import clip
+
+    dummy = VectorDBInteface()

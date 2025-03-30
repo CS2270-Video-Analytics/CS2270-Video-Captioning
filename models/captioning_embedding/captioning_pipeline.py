@@ -16,7 +16,7 @@ import torch
 
 class CaptioningPipeline():
 
-    def __init__(self, video_id: int):
+    def __init__(self):
         
         if Config.previous_frames:
             self.description_prompt = Config.sliding_window_caption_prompt_format
@@ -41,9 +41,6 @@ class CaptioningPipeline():
         #create models for clip vector embeddings
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
-
-    def update_video_id(self, new_video_id:int):
-        self.video_id = new_video_id
 
     def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
 
@@ -75,7 +72,7 @@ class CaptioningPipeline():
         image = self.clip_preprocess(pil_image).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
-            image_embedding = self.clip_model.encode_image(image)
+            image_embedding = self.clip_model.encode_image(image).detach().cpu()
 
         #TODO: None to be replaced with object list
         return [video_id, frame_id, description, None, image_embedding]
