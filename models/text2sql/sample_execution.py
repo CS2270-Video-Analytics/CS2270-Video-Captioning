@@ -15,7 +15,7 @@ db_file = os.path.join(DB_PATH, db_id, f"{db_id}.sqlite")
 
 db_file = os.path.join(SPIDER_PATH, "video_frames.db")
 
-output_db_file = os.path.join(SPIDER_PATH, "output_video_frames.db")
+output_db_file = os.path.join(SPIDER_PATH, "output_video_frames_new.db")
 
 populate_table(db_file, output_db_file)
 

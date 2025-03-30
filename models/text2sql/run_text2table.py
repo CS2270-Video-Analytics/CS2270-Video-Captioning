@@ -16,6 +16,12 @@ def clean_schema(schema: str) -> str:
     cleaned_lines = [line for line in lines if not re.match(r"^\s*```.*$", line)] 
     return "\n".join(cleaned_lines)
 
+def extract_json_from_response(text):
+    # Strip markdown-style code block if present
+    if "```" in text:
+        text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).strip()
+    return text.strip()
+
 def get_schema(db_path, table_name, num_rows=40):
     # Connect to the SQLite database
     conn = sqlite3.connect(db_path)
@@ -129,7 +135,7 @@ def get_schema_openai(combined_description, model_name, topic, temperature=0.2):
     Based on the following attributes, design a Database schema for a Sqlite3 Database with the
     attribute names as column headers.
 
-    Each table you create MUST have a column named "frame_id" which is should be the PRIMARY KEY and of TYPE TEXT.
+    Each table you create MUST have a column named "frame_id" which is SHOULD NOT be the PRIMARY KEY and SHOULD BE of TYPE REAL.
 
     ONLY RETURN THE SQLITE3 TABLE CREATION STATEMENT FOR ALL THE TABLES
     DO NOT RETURN ANY OTHER TEXT
@@ -225,19 +231,22 @@ def get_existing_schema(db_file):
         conn.close()
 
 def insert_into_table(db_file, output_db_file, output_db_schema):
-    # Function to parse CREATE TABLE schema into a dict
+    
     def parse_schema(schema_str):
         table_defs = {}
-        table_blocks = re.findall(r"CREATE TABLE (\w+)\s*\((.*?)\);", schema_str, re.DOTALL)
-        for table_name, columns_str in table_blocks:
-            columns = []
-            for line in columns_str.strip().splitlines():
-                line = line.strip().strip(",")  # clean up
-                if line:
-                    col_parts = line.split()
-                    col_name = col_parts[0]
-                    columns.append(col_name)
-            table_defs[table_name] = columns
+        current_table = None
+
+        for line in schema_str.strip().splitlines():
+            line = line.strip()
+            if line.startswith("Table:"):
+                current_table = line.split("Table:")[1].strip()
+                table_defs[current_table] = []
+            elif line.startswith("-") and current_table:
+                match = re.match(r"-\s*(\w+)\s*\(", line)
+                if match:
+                    column_name = match.group(1)
+                    table_defs[current_table].append(column_name)
+
         return table_defs
 
     # Parse schema to extract table and column structure
@@ -298,12 +307,12 @@ def insert_into_table(db_file, output_db_file, output_db_schema):
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
         client = OpenAI()
-        response = client.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4,
         )
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content.strip()
 
     # Process rows
     for frame_id, description in rows:
@@ -311,6 +320,10 @@ def insert_into_table(db_file, output_db_file, output_db_schema):
 
         try:
             structured_json = call_llm(prompt)
+            print("Structured JSON:\n", structured_json)
+            structured_json = extract_json_from_response(structured_json)
+            print("---------------------------------------")
+            print("Structured JSON (cleaned):\n", structured_json)
             parsed = json.loads(structured_json)
 
             for table, columns in parsed_schema.items():
