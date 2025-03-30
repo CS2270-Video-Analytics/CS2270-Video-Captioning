@@ -4,7 +4,7 @@ class Config:
     vision_model_name = 'llama3.2-vision:11b'
     text_model_name = 'llama3.2:latest'
     clip_model_name = "ViT-L/14"
-    model_precision = torch.float8
+    model_precision = torch.float16
     system_eval = False
     obj_focus = True
     previous_frames = True
@@ -17,33 +17,34 @@ class Config:
     # sliding_window_caption_prompt_format = "Here are descriptions of previous frames from a video.\nDescription of previous frames:{prev_frames_context}\nDescribe every individual object in the current image with unique object ids, as a continuation to previous image descriptions. Give descriptions of each object's attributes, the action each object performs and its relation to other objects:"
     
     sliding_window_caption_prompt_format = """
-    Task: given the current driving scene frame recorded from a dash cam angle, for each unique key object in the frame, output the object's id, category, attributes, action and location exactly using general template's format below. So say if we have 4 key objects then the output should be 4 chunks of 5-line output like below separted by new line. Don't include anything else such as the image shows xxx or image summary.
+    Task: given the current driving scene frame recorded from a dash cam angle, output a chunk of descriptions per key distinct object in the format of the general template below.
 
-    General template:
-    object id: the object's id starting from 1; restart from 1 for any new frame
-    category: object's category
-    attributes: object's identifying attributes of the category it belongs. If vehicle it can be vehicle type, brand, model, color, license plate, etc. For example, if pedestrian it can be gender, height, outfit, race, etc. If traffic light it can be current color of the light. Only include if they are identifiable and visible enough.
-    action: object's state or action inferred. If it occurs also in {prev_frames_context}, infer the action based on the difference of both frames.
-    location: object's relative position to other key objects in the frame
+    object id: the object's id (start from 1, auto increment by object)
+    (1) category: a high level category the object belongs to, which doesn't contain any attribute level details
+    (2) attributes: object's key identifying attributes, formatted as a string separated by comma
+    (3) action: object's state or action inferred
+    (4) location: object's relative location to other key objects in the frame
 
-    Example (for some non-existent frame):
+    Note:
+    - object's category should only consider the typical categories seen in traffic scene, such as vehicle, pedestrian, traffic light, building, road, etc
+    - for object's category, try to reuse category name from previously seen object categories in {object_set}
+    - put same category object's chunk next to each other
+    - keep description concise
+    
+    Example:
     object id: 1
-    category: vehicle
-    attributes: brand BMW, color white, license plate LW-527, type SUV
-    action: parking
-    location: right of the road
+    (1) category
+    (2) attributes
+    (3) action
+    (4) location
 
     object id: 2
-    category: traffic light
-    attributes: red
-    action: red
-    location: overhead
+    (1) category
+    (2) attributes
+    (3) action
+    (4) location
 
-    object id: 3
-    category: pedestrian
-    attributes: tall, yellow hat
-    action: walking
-    location: right of the street
+    ...
 
     Task (for the current frame):
     object id:"""
@@ -53,61 +54,44 @@ class Config:
 
     General template:
     current frame description:
-        object: object's id
-        category: object's category (try to reuse same name from {obj_list} if they are the same)
-        attributes: object's identifying attributes of the category it belongs; include attribute only if clearly visible
-        action: object's action
-        location: object's relative location to other key objects in the current frame
-    seen object category: a list of unique seen object categories before
-    unseen objects: a list of unseen object categories in the current frame
+        object id: the object's id
+        (1) category: a high level category the object belongs to, which doesn't contain any attribute level details
+        (2) attributes: object's key identifying attributes, formatted as a string separated by comma
+        (3) action: object's state or action inferred
+        (4) location: object's relative location to other key objects in the frame
+    seen object categories: a list of unique seen object categories before
+    unseen objects categories: a list of unseen object categories in the current frame; for each object in the frame, only append the category to unseen list here if its significantly different from seen categories. Otherwise count as seen object categories and don't include its category here.
 
-    Example 1 (non-existent):
+    Example 1 (non-existent just for illustration):
     current frame description:
-        object: 1
-        category: vehicle
-        attributes: brand BMW, color white, license plate LW-527, type SUV
-        action: parking
-        location: right of the road
+        object id: 1
+        category: A
+        attributes: some attribute
+        action: some attribute
+        location: some location
+    seen object categories: []
+    unseen objects categories: [A]
 
-        object: 2
-        category: vehicle
-        attributes: brand Benz, color green, type truck
-        action: driving
-        location: in the middle of the road
-
-    seen objects: []
-    unseen objects: [vehicle]
-
-    Example 2 (non-existent):
+    Example 2 (non-existent just for illustration):
     current frame description:
-        object: 1
-        category: traffic light
-        attributes: red
-        action: red
-        location: overhead
+        object id: 1
+        category: A
+        attributes: some attribute
+        action: some attribute
+        location: some location
 
-        object: 2
-        category: pedestrian
-        attributes: male, tall, asian
-        action: walking
-        location: right of the street
-    seen objects: [vehicle]
-    unseen objects: [traffic light, pedestrian]
-
-    Example 3 (non-existent):
-    current frame description:
-        object: 1
-        category: traffic light
-        attributes: green
-        action: green
-        location: overhead
-    seen objects: [vehicle, traffic light, pedestrian]
-    unseen objects: []
+        object id: 2
+        category: C
+        attributes: some attributes
+        action: some attributes
+        location: some location
+    seen object categories: [A]
+    unseen objects categories: [C]
 
     Task (for the current frame):
     current frame description: {curr_img_caption}
-    seen objects: [{obj_list}]
-    unseen objects:"""
+    seen objects categories: [{object_set}]
+    unseen objects categories:"""
 
     sliding_window_size = 1
 
