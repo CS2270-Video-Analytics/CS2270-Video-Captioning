@@ -47,32 +47,6 @@ def create_text2sql_func_openai(model_name="gpt-3.5-turbo", temperature=0, categ
         # SQL Query:
         # """
 
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries 
-        # specifically for an **SQLite3** database. 
-
-        # ### **Important SQLite Constraints:**
-        # - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        # - **No native JSON functions** (assume basic text handling).
-        # - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        # - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-        # - Use **LOWER()** for case-insensitive string matching.
-        # - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        # - Always assume **foreign key constraints are disabled unless explicitly turned on**.
-
-        # ### **Database Schema:**
-        # {schema_info}
-
-        # ### **User Question:**
-        # "{question}"
-
-        # ### **Expected Output:**
-        # Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
-
-        categories_str = ", ".join(f"'{c}'" for c in categories)
-
         prompt = f"""
         You are an AI that converts natural language questions into SQL queries 
         specifically for an **SQLite3** database. 
@@ -86,13 +60,6 @@ def create_text2sql_func_openai(model_name="gpt-3.5-turbo", temperature=0, categ
         - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
         - Always assume **foreign key constraints are disabled unless explicitly turned on**.
 
-        ### **Domain Knowledge:**
-        - The `category` column in the `object_detections` table has a **fixed set of known values**.
-        - These values are: {categories_str}.
-        - All category comparisons in the query should use **exact string equality** (e.g. `category = 'Vehicle'`) and not partial matches or `LIKE`.
-        - You can assume that values in the `category` column are clean, normalized, and always match one of the known options.
-        - If an aspect of the question can map onto a category, use the exact string equality comparison.
-
         ### **Database Schema:**
         {schema_info}
 
@@ -103,6 +70,39 @@ def create_text2sql_func_openai(model_name="gpt-3.5-turbo", temperature=0, categ
         Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
         SQL Query:
         """
+
+        # categories_str = ", ".join(f"'{c}'" for c in categories)
+
+        # prompt = f"""
+        # You are an AI that converts natural language questions into SQL queries 
+        # specifically for an **SQLite3** database. 
+
+        # ### **Important SQLite Constraints:**
+        # - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
+        # - **No native JSON functions** (assume basic text handling).
+        # - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
+        # - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
+        # - Use **LOWER()** for case-insensitive string matching.
+        # - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
+        # - Always assume **foreign key constraints are disabled unless explicitly turned on**.
+
+        # ### **Domain Knowledge:**
+        # - The `category` column in the `object_detections` table has a **fixed set of known values**.
+        # - These values are: {categories_str}.
+        # - All category comparisons in the query should use **exact string equality** (e.g. `category = 'Vehicle'`) and not partial matches or `LIKE`.
+        # - You can assume that values in the `category` column are clean, normalized, and always match one of the known options.
+        # - If an aspect of the question can map onto a category, use the exact string equality comparison.
+
+        # ### **Database Schema:**
+        # {schema_info}
+
+        # ### **User Question:**
+        # "{question}"
+
+        # ### **Expected Output:**
+        # Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
+        # SQL Query:
+        # """
 
         messages = [{"role": "user", "content": prompt}]
 

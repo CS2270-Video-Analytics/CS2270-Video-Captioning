@@ -27,7 +27,7 @@ class Text2SQLPipeline():
         Returns:
             tuple: The generated SQL query and its execution result.
         """
-        db_schema = self.get_schema(db_file, ["object_detections"])
+        db_schema = self.get_schema(db_file, tables_to_include=None)
         print(db_schema)
         sql_query = self.normalize_sql(self.model(question, db_schema))
         # sql_output = self.execute_sql(db_file, sql_query)
@@ -57,16 +57,17 @@ class Text2SQLPipeline():
             conn.close()
             return f"Error: {str(e)}"
 
-    def get_schema(self, db_file, tables_to_include):
+    def get_schema(self, db_file, tables_to_include=None):
         """
-        Extracts the schema information from specific tables in an SQLite database.
+        Extracts the schema information from specified tables in an SQLite database.
+        If no tables are specified, returns the schema of all tables.
 
         Parameters:
             db_file (str): Path to the SQLite database file.
-            tables_to_include (list of str): List of table names to include in the schema.
+            tables_to_include (list of str, optional): List of table names to include. If None, all tables are used.
 
         Returns:
-            str: The schema of specified tables, including column details.
+            str: The schema of the selected tables, including column details.
         """
         import sqlite3
 
@@ -74,36 +75,40 @@ class Text2SQLPipeline():
         cursor = conn.cursor()
 
         try:
-            # Verify table names against sqlite_master
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            # Get all table names from sqlite_master
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
             all_tables = {row[0] for row in cursor.fetchall()}
 
-            # Filter only existing tables
-            valid_tables = [t for t in tables_to_include if t in all_tables]
+            # If no specific tables given, use all
+            if not tables_to_include:
+                valid_tables = list(all_tables)
+            else:
+                valid_tables = [t for t in tables_to_include if t in all_tables]
+
             if not valid_tables:
                 return "None of the specified tables exist in the database."
 
             schema_info = []
 
-            for table_name in valid_tables:
+            for table_name in sorted(valid_tables):
                 schema_info.append(f"Table: {table_name}")
 
-                # Get column details
                 cursor.execute(f"PRAGMA table_info({table_name});")
                 columns = cursor.fetchall()
 
                 for col in columns:
-                    col_id, col_name, col_type, _, _, _ = col
+                    _, col_name, col_type, _, _, _ = col
                     schema_info.append(f"  - {col_name} ({col_type})")
 
-                schema_info.append("\n")  # Add space between tables
+                schema_info.append("")  # Blank line between tables
 
-            conn.close()
             return "\n".join(schema_info)
 
         except Exception as e:
-            conn.close()
             return f"Error retrieving schema: {str(e)}"
+
+        finally:
+            conn.close()
 
     def normalize_sql(self, sql):
         """Remove extraneous formatting, code block markers, and standardize SQL."""

@@ -17,24 +17,24 @@ db_file = os.path.join(SPIDER_PATH, "video_frames.db")
 
 output_db_file = os.path.join(SPIDER_PATH, "output_video_frames_new.db")
 
-populate_table(db_file, output_db_file)
+# populate_table(db_file, output_db_file)
 
 # create_table(db_file, output_db_file)
-
+ 
 # # question = "What are the earnings of players from either of the countries of Australia or Zimbabwe?"
-# question = "Do we have a black van?"
+question = "What are the license plates of all the vehicles in the video?"
 # # question = "How many clubs are there?"
 # # text2sql_func = create_text2sql_func_openai("gpt-3.5-turbo")
-# text2sql_func = create_text2sql_func_openai("gpt-4o", categories=["Vehicle", "Person"])
+text2sql_func = create_text2sql_func_openai("gpt-4o-mini")
 # # text2sql_func = create_text2sql_func_hf("apple/OpenELM-270M")
 # # text2sql_func = create_text2sql_func_deepseek()
 # # text2sql_func = create_text2sql_func_anthropic()
 # # text2sql_func = create_text2sql_func_hf("TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 # # text2sql_func = create_text2sql_func_hf("gaussalgo/T5-LM-Large-text2sql-spider")
 
-# pipeline = Text2SQLPipeline(text2sql_func)
-# sql_query = pipeline.run_pipeline(question, db_file)
-# print(f"SQL Query: {sql_query}")
-# # Execute the SQL query
-# result = pipeline.execute_sql(db_file, sql_query)
-# print(f"Execution Result: {result}")
+pipeline = Text2SQLPipeline(text2sql_func)
+sql_query = pipeline.run_pipeline(question, output_db_file)
+print(f"SQL Query: {sql_query}")
+# Execute the SQL query
+result = pipeline.execute_sql(output_db_file, sql_query)
+print(f"Execution Result: {result}")
