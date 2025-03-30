@@ -7,7 +7,7 @@ class Config:
     vision_model_name = 'llama3.2-vision:11b'
     text_model_name = 'llama3.2:latest'
     clip_model_name = "ViT-L/14"
-    model_precision = torch.float8
+    model_precision = torch.float16
     system_eval = False
     obj_focus = False
     previous_frames = True

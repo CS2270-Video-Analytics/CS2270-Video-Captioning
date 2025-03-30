@@ -5,6 +5,7 @@ from models.captioning_embedding.captioning_pipeline import CaptioningPipeline
 from models.text2sql.text2sql_pipeline import Text2SQLPipeline
 from models.text2table.text2table_pipeline import Text2TablePipeline
 from config.config import Config
+import pdb
 
 class VideoQueryPipeline():
 
@@ -66,6 +67,15 @@ class VideoQueryPipeline():
         #parse the language query into a SQL query
         sql_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
 
+
+if __name__ == '__main__':
+    pdb.set_trace()
+    dummy = VideoQueryPipeline()
+
+    video_path = '/users/ssunda11/git/CS2270-Video-Captioning/datasets/BDD_test'
+    filename = 'test1.mov'
+
+    dummy.process_video(video_path = video_path, video_filename = filename)
         
 
 
