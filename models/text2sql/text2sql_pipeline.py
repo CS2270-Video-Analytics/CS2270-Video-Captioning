@@ -28,7 +28,6 @@ class Text2SQLPipeline():
             tuple: The generated SQL query and its execution result.
         """
         db_schema = self.get_schema(db_file, tables_to_include=None)
-        print(db_schema)
         sql_query = self.normalize_sql(self.model(question, db_schema))
         # sql_output = self.execute_sql(db_file, sql_query)
         return sql_query
