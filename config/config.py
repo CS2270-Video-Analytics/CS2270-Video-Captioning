@@ -100,7 +100,7 @@ class Config:
 
     text2table_attribute_extraction_prompt = "All image captions:{incontext_captions}\nGiven captions of all images, generate a list of important attributes that can describe the objects in the image: [color, brand, size, action, speed, location, position, state]\n\nAll image captions:{frame_captions}\nGiven captions of all images, generate a list of important attributes that can describe objects in the image:"
     text2table_incontext_prompt = "\n-".join(["A red Nissan SUV is in the center of the road, putting on the breaks, whilst a young female pedestrian wearing yellow shirt crosses", "A red Nissan SUV driving to the left lane and a grey Chevrolet and blue motorbike on the right lane. The motorbike is speeding without breaks"])
-    text2table_frame_prompt = "Given a detailed description of an image and the set of objects below, output a structured table with the columns {formatted_schema}.  Separate the start/end of table rows with <r> and start/end of table columns with <c> in one line. STRICTLY follow the format without repeating the column names\n\nobject: one of the objects in set of objects\nattributes: detailed descriptive qualities about the object and its properties; where attribute is not present, leave empty\nimage_location: spatial location of object in the image relative to other objects\naction: the detailed process or movement the object is performing; where action is not relevant for an object, leave empty\n\nDetailed image description:{image_caption}\n\nSet of objects:{object_set}. Directly generate the table with no prefix or suffix"
+    text2table_frame_prompt = "Given a detailed description of an image and the set of objects below, output a structured table with the columns {formatted_schema}.  Separate the start/end of table rows with <r> and start/end of table columns with <c> in one line. STRICTLY follow the format\n\nobject: one of the objects in set of objects\nattributes: detailed descriptive qualities about the object and its properties; where attribute is not present, leave empty\nimage_location: spatial location of object in the image relative to other objects\naction: the detailed process or movement the object is performing; where action is not relevant for an object, leave empty\n\nDetailed image description:A silver audi car with license plate \"ABCD-1234\", that is driving whilst facing forward in front of a traffic light and a traffic light that is red to the right of the road\nSet of objects:{object_set}\nDirectly generate the table with no prefix or suffix:<r><c>vehicle<c>in front of traffic light, facing forwards<c>silver Audi car with license plate \"ABCD-1234\"<c>driving forward and stopping at red-light<c><r><c>traffic light<c>right of the road in front of silver car<c>red color signalling stop<c><c><r>\n\nDetailed image description:{image_caption}\nSet of objects:{object_set}\nDirectly generate the table with no prefix or suffix:"
     #model to be used for text2table
     text2table_model = 'GPT' #options: [Ollama, GPT, Seq2Seq]
 
@@ -111,12 +111,13 @@ class Config:
     caption_model = 'LLamaVision'
 
 
+
     #only for debugging
     debug = True
 
     # batch size for inserting into the DB
     batch_size = 4
-    frames_per_video = 20
+    frames_per_video = 40
 
     #config definition for SQL databases
     caption_table_schema = dict(video_id = "INTEGER", frame_id = "REAL NOT NULL", description="TEXT NOT NULL", vector_id = "INTEGER")

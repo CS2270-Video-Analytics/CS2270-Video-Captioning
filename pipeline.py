@@ -50,7 +50,7 @@ class VideoQueryPipeline():
                 #insert vectors into the vector db
                 vector_batch = torch.cat(vector_batch, dim=0)
                 self.vector_db.insert_many_vectors(vectors = vector_batch)
-                break #TODO: please remove after debug
+                
             except StopIteration:
                 break
 
@@ -68,7 +68,6 @@ class VideoQueryPipeline():
         while True:
             try:
                 data_batch = next(obj_iterator)
-                
                 self.sql_dbs.insert_many_rows_list(table_name = Config.processed_table_name, rows_data = data_batch)
             except StopIteration:
                 break

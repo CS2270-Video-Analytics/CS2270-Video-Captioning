@@ -32,7 +32,7 @@ class Text2TablePipeline:
         self.text2table_model = model_options[Config.text2table_model]()
 
         #extract the list of attributes to capture across objects
-        self.object_attributes = ['object', 'description', 'image_location', 'action']
+        self.object_attributes = ['object', 'image_location','description','action']
 
         #store a list of unique objects to extract data for
         self.all_objects = all_objects
@@ -92,11 +92,17 @@ class Text2TablePipeline:
     def parse_table_output_t2t(self, structured_caption:str, video_id:int, frame_id:int):
 
         
-        parsed_rows = structured_caption.strip().split("<r>")
+        # parsed_rows = structured_caption.strip().split("<r>")
+        # parsed_rows = [[video_id, frame_id] + row.strip().split("<c>") for row in parsed_rows if parsed_rows]
+        # parsed_rows = parsed_rows[1:-1]
         
-        # Filter out empty rows and split remaining rows by <t>
-        parsed_rows = [[video_id, frame_id] + row.strip().split("<c>") for row in parsed_rows if parsed_rows]
-        parsed_rows = parsed_rows[1:-1]
+        parsed_rows = [list(map(str.strip, row.split("<c>")))[1:-1] for row in structured_caption.split("<r>") if row.strip()]
+        
+        parsed_rows_test = [list(map(str.strip, row.split("<c>"))) for row in structured_caption.split("<r>") if row.strip()]
+        
+        #parse to ensure added rows have right number of columns
+        parsed_rows = [[video_id, frame_id] + row for row in parsed_rows if len(row)==len(self.object_attributes)]
+        
         return parsed_rows
 
 
