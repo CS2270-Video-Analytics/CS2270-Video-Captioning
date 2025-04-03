@@ -66,10 +66,6 @@ class Text2TablePipeline:
                 
                 frame_data = [] #empty the batch
                 
-
-
-
-    
     def run_pipeline(self, caption: str, video_id:int, frame_id:int):
         
         #create the overall prompt structure

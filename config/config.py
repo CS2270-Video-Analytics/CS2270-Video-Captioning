@@ -9,6 +9,7 @@ class Config:
     save_frames = False
     model_precision = torch.float16
     num_threads = 8
+    system_eval = False
 
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
@@ -20,7 +21,6 @@ class Config:
     keep_alive = 60000
     obj_focus = True
     previous_frames = True
-    system_eval = False
     sliding_window_size = 1
     frames_per_video = 40
 
