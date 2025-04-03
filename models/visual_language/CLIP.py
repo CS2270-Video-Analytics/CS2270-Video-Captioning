@@ -14,6 +14,9 @@ class CLIP(VisionLanguageModel):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
 
+        self.system_eval = Config.system_eval
+
+
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
         
@@ -29,12 +32,21 @@ class CLIP(VisionLanguageModel):
 
         info = {}
 
+        if self.system_eval:
+            start_time = time.now()
+
         try:
             with torch.no_grad():
                 image_embedding = self.clip_model.encode_image(processed_inputs)
             info['error'] = None
         except Exception as e:
             info['error'] = e
+
+        if self.system_eval:
+            end_time = time.now()
+            elapsed = end_time - start_time
+            info['time'] = elapsed
+
 
         return image_embedding, info
 

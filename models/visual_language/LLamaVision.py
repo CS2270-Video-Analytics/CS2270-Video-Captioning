@@ -30,7 +30,6 @@ class LLamaVision(VisualLanguageModel):
         self.system_eval = Config.system_eval
         
         #auxilliary attributes for Tensor to image conversion
-        self.to_pil_image = transforms.ToPILImage()
         self.model_name = Config.vision_model_name
 
         #assert that LLaMa model is running on another terminal (sanity check)
@@ -87,14 +86,20 @@ class LLamaVision(VisualLanguageModel):
                     messages=[{
                         'role': 'user',
                         'content':kwargs['prompt'],
-                        'images': [processed_inputs],
-                        'max_tokens': Config.max_tokens
+                        'images': [processed_inputs]
                     }],
                     keep_alive = Config.keep_alive,
-                    # options = {
-                    #     'batch_size': Config.batch_size,
-                    #     'num_threads': Config.num_threads
-                    # }
+                    options={
+                        'temperature': kwargs['temperature'],
+                        'top_k': kwargs['top_k'],
+                        'top_p': kwargs['top_p'],
+                        'num_ctx': kwrags['num_ctx'],
+                        'repeat_penalty': kwargs['repeat_penalty'],
+                        'presence_penalty': kwargs['presence_penalty'],
+                        'frequency_penalty': kwargs['frequency_penalty'],
+                        'num_predict': kwargs['max_tokens'],
+                        'stop': kwargs['stop_tokens']
+                    }
                     )
                 print(f"Received response from Ollama")
                 outputs = outputs.message.content
