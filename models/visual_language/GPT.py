@@ -1,5 +1,5 @@
 from config import Config
-from ..model import VisualLanguageModel
+from ..model import VisionLanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
@@ -9,16 +9,16 @@ from torchvision import transforms
 from time import time
 from torchvision import transforms
 
-class GPTModel(VisualLanguageModel):
+class GPTModel(VisionLanguageModel):
 
     def __init__(self, model_name="gpt-4o-mini"):
+        super().__init__()
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
         self.model_client = OpenAI()
         self.model_name = Config.vision_model_name if model_name is None else model_name
 
         #auxilliary attributes for Tensor to image conversion
-        self.to_pil_image = transforms.ToPILImage()
         self.system_eval = Config.system_eval
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
@@ -28,11 +28,6 @@ class GPTModel(VisualLanguageModel):
 
         return base64_encoded_images
     
-    # Function to convert a PIL image to Base64
-    def pil_to_base64(self, image:Image):
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")  # Ensure a supported format like PNG or JPEG
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
     
     def run_inference(self, data_stream: torch.Tensor, **kwargs):
 

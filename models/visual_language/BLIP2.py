@@ -3,7 +3,7 @@ sys.path.append('..')
 
 import os
 from config import Config
-from ..model import VisualLanguageModel
+from ..model import VisionLanguageModel
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from PIL import Image
 import torch
@@ -16,10 +16,10 @@ if Config.debug:
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class BLIP2(VisualLanguageModel):
+class BLIP2(VisionLanguageModel):
     
     def __init__(self):
-
+        super().__init__()
         #attributes from configs 
         self.precision = Config.model_precision
 
@@ -33,18 +33,11 @@ class BLIP2(VisualLanguageModel):
 
         self.system_eval = Config.system_eval
     
-        #auxilliary attributes for Tensor to image conversion
-        self.to_pil_image = transforms.ToPILImage()
-
-    def convert_to_pil_image(self, torch_tensor:torch.Tensor):
-        # Convert NumPy array to PIL Image
-        return [self.to_pil_image(tensor) for tensor in torch_tensor]
-
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):
         
-        images = self.convert_to_pil_image(data_stream)
+        image = self.convert_to_pil_image(data_stream)
 
-        return self.processor(images=images, text = prompt, return_tensors="pt").to(self.device, self.precision)
+        return self.processor(images=image, text = prompt, return_tensors="pt").to(self.device, self.precision)
     
     
     def run_inference(self, data_stream: torch.Tensor, **kwargs):

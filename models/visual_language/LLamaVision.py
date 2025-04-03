@@ -23,6 +23,7 @@ import subprocess
 class LLamaVision(VisualLanguageModel):
     
     def __init__(self):
+        super().__init__()
         
         #attributes from configs 
         self.precision = Config.model_precision
@@ -57,19 +58,10 @@ class LLamaVision(VisualLanguageModel):
             print(f"Error connecting to Ollama: {e}")
             return False
     
-    # Function to convert a PIL image to Base64
-    def pil_to_base64(self, image:Image):
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")  # Ensure a supported format like PNG or JPEG
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-    def convert_to_pil_image(self, torch_tensor:torch.Tensor):
-        # Convert NumPy array to PIL Image
-        return [self.pil_to_base64(self.to_pil_image(tensor)) for tensor in torch_tensor]
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
         
-        base64_encoded_images = self.convert_to_pil_image(data_stream)[0]
+        base64_encoded_images = self.pil_to_base64(self.convert_to_pil_image(data_stream))
 
         return base64_encoded_images
     
