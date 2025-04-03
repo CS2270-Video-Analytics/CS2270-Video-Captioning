@@ -1,6 +1,5 @@
 import sys
 sys.path.append('..')
-from config import Config
 import os
 import io
 import base64
@@ -84,7 +83,7 @@ class OllamaVision(VisualLanguageModel):
                         'content':kwargs['prompt'],
                         'images': [processed_inputs]
                     }],
-                    keep_alive = Config.keep_alive,
+                    keep_alive = kwargs['keep_alive'],
                     options={
                         'temperature': kwargs['temperature'],
                         'top_k': kwargs['top_k'],

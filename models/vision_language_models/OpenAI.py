@@ -1,4 +1,3 @@
-from config import Config
 from ..model import VisionLanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv

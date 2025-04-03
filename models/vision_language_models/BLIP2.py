@@ -2,7 +2,6 @@ import sys
 sys.path.append('..')
 
 import os
-from config import Config
 from ..model import VisionLanguageModel
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from PIL import Image
@@ -11,8 +10,7 @@ import torch
 from typing import Optional, Dict
 from torchvision import transforms
 from time import time
-if Config.debug:
-    import pdb
+import pdb
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
