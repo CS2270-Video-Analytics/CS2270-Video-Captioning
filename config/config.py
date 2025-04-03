@@ -14,16 +14,20 @@ class Config:
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
-    caption_model_name = 'LLamaVision/llama3.2-vision:11b'
-    caption_model_temperature = 0.7
-    caption_model_top_k = 3
-    caption_model_top_p = 0.9
-    caption_model_num_ctx = 2048
-    caption_model_repeat_penalty = 0.5
-    caption_model_presence_penalty = 0.7
-    caption_model_frequency_penalty = 0.3
-    caption_model_num_predict = 200
-    caption_model_stop = None
+    caption_model_name = 'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
+    
+    caption_model_params = {
+        'temperature': 0.7,
+        'top_k': 3,
+        'top_p': 0.9,
+        'num_ctx': 2048,
+        'repeat_penalty': 0.5,
+        'presence_penalty': 0.7,
+        'frequency_penalty':0.3,
+        'max_tokens': 200,
+        'stop_tokens': None
+    }
+ 
     obj_focus = True
     previous_frames = True
     sliding_window_size = 1
@@ -101,16 +105,18 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
-    text2table_model = 'GPT'  # options: [Ollama, GPT, Seq2Seq]
-    text2table_model_temperature = 0.7
-    text2table_model_top_k = 3
-    text2table_model_top_p = 0.9
-    text2table_model_num_ctx = 2048
-    text2table_model_repeat_penalty = 0.5
-    text2table_model_presence_penalty = 0.7
-    text2table_model_frequency_penalty = 0.3
-    text2table_model_num_predict = 200
-    text2table_model_stop = None
+    text2table_model = 'OpenAI'  # options: [Ollama, OpenAI, Seq2Seq]
+    text2table_params = {
+        'temperature': 0.7,
+        'top_k': 3,
+        'top_p': 0.9,
+        'num_ctx': 2048,
+        'repeat_penalty': 0.5,
+        'presence_penalty': 0.7,
+        'frequency_penalty':0.3,
+        'max_tokens': 200,
+        'stop_tokens': None
+    }
 
     # Text2Table pipeline prompts
     text2table_attribute_extraction_prompt = \
@@ -145,15 +151,17 @@ class Config:
     # Text2SQL Pipeline settings
     #-------------------------------------------------------------------------
     text2sql_model_name = 'OpenAI/gpt3.5-turbo' # options: [OpenAI/, DeepSeek/, HuggingFace/, Anthropic/]
-    text2sql_model_temperature = 0.7
-    text2sql_model_top_k = 3
-    text2sql_model_top_p = 0.9
-    text2sql_model_num_ctx = 2048
-    text2sql_model_repeat_penalty = 0.5
-    text2sql_model_presence_penalty = 0.7
-    text2sql_model_frequency_penalty = 0.3
-    text2sql_model_num_predict = 200
-    text2sql_model_stop = None
+    text2sql_params = {
+        'temperature': 0.7,
+        'top_k': 3,
+        'top_p': 0.9,
+        'num_ctx': 2048,
+        'repeat_penalty': 0.5,
+        'presence_penalty': 0.7,
+        'frequency_penalty':0.3,
+        'max_tokens': 200,
+        'stop_tokens': None
+    }
 
     #-------------------------------------------------------------------------
     # Database settings
