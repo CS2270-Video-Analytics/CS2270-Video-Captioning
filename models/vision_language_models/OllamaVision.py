@@ -20,7 +20,7 @@ import subprocess
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class LLamaVision(VisualLanguageModel):
+class OllamaVision(VisualLanguageModel):
     
     def __init__(self):
         super().__init__()
