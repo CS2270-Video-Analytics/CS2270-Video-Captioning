@@ -19,7 +19,7 @@ if Config.debug:
 class BLIP2(VisionLanguageModel):
     
     def __init__(self, model_name: str='Salesforce/blip2-opt-2.7b', model_precision = torch.float16, system_eval:bool = False):
-        super().__init__()
+        super().__init__(model_precision = model_precision, system_eval = system_eval)
         #attributes from configs 
         self.precision = model_precision
 
@@ -28,8 +28,6 @@ class BLIP2(VisionLanguageModel):
         self.model = Blip2ForConditionalGeneration.from_pretrained(model_name)
 
         self.model.to(self.device)
-
-        self.system_eval = system_eval
     
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):
         

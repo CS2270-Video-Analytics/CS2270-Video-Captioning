@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional, Union
-from config import Config
+import torch
 
 if TYPE_CHECKING:
     # Import the type-only dependencies
@@ -10,10 +10,10 @@ if TYPE_CHECKING:
     from torch import Tensor
 
 class Model(ABC):
-    def __init__(self, model_precision = model_precision, system_eval = system_eval):
+    def __init__(self, model_precision = torch.float16, system_eval:bool = True):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model_precision = Config.model_precision if model_precision is None else model_precision
-        self.system_eval = Config.system_eval if system_eval is None else system_eval
+        self.model_precision =  model_precision
+        self.system_eval = system_eval
 
     @abstractmethod
     def preprocess_data(self, data_stream:Union["Tensor",str], text_input:Optional[str]):

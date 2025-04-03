@@ -17,7 +17,7 @@ import pdb
 class BLIP(VisionLanguageModel):
     
     def __init__(self, model_name:str = "Salesforce/blip-image-captioning-base", model_precision = torch.float16, system_eval:bool = False):
-        super().__init__()
+        super().__init__(model_precision = model_precision, system_eval = system_eval)
         #attributes from configs 
         self.precision = model_precision
 
@@ -26,8 +26,6 @@ class BLIP(VisionLanguageModel):
         self.model = AutoProcessor.from_pretrained(model_name, torch_dtype=self.precision)
 
         self.model.to(self.device)
-
-        self.system_eval = system_eval
 
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):

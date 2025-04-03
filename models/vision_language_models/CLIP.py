@@ -6,15 +6,13 @@ from typing import Optional, Dict
 class CLIP(VisionLanguageModel):
 
     def __init__(self, model_name:int="ViT-L/14", model_precision = torch.float16, system_eval:bool = False):
-       super().__init__()
+       super().__init__(model_precision = model_precision, system_eval = system_eval)
         
         self.model_name = Config.clip_model_name if model_name is None else model_name
 
         #auxilliary attributes for Tensor to image conversion
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
-
-        self.system_eval = system_eval
 
 
 
