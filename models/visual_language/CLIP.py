@@ -1,9 +1,9 @@
 from config import Config
-from ..model import Model
+from ..model import VisualLanguageModel
 import torch
 from typing import Optional, Dict
 
-class CLIP(Model):
+class CLIP(VisualLanguageModel):
 
     def __init__(self, model_name="ViT-L/14"):
        

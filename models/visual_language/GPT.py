@@ -1,5 +1,5 @@
 from config import Config
-from ..model import Model
+from ..model import VisualLanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
@@ -9,7 +9,7 @@ from torchvision import transforms
 from time import time
 from torchvision import transforms
 
-class GPTModel(Model):
+class GPTModel(VisualLanguageModel):
 
     def __init__(self, model_name="gpt-4o-mini"):
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
