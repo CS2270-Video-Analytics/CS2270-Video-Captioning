@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     import numpy as np
     from torch import Tensor
 
-class Model(ABC):
+class VisualLanguageModel(ABC):
 
     def __init__(self):
         pass
@@ -19,6 +19,23 @@ class Model(ABC):
     
     @abstractmethod
     def run_inference(self, data_stream:"Tensor", **kwargs):
+        pass
+
+    #NOTE: optional to override, not all models have to be finetuned
+    def finetune_model(self, dataloader: "DataLoader"):
+        pass
+
+class LanguageModel(ABC):
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def preprocess_data(self, query:str):
+        pass
+    
+    @abstractmethod
+    def run_inference(self, query:str, **kwargs):
         pass
 
     #NOTE: optional to override, not all models have to be finetuned

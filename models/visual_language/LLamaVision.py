@@ -4,7 +4,7 @@ from config import Config
 import os
 import io
 import base64
-from ..model import Model
+from ..model import VisualLanguageModel
 import ollama
 from PIL import Image
 import torch
@@ -20,7 +20,7 @@ import subprocess
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class LLamaVision(Model):
+class LLamaVision(VisualLanguageModel):
     
     def __init__(self):
         

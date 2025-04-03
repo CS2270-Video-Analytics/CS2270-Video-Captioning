@@ -3,7 +3,7 @@ sys.path.append('..')
 import os
 
 from config import Config
-from ..model import Model
+from ..model import VisualLanguageModel
 from transformers import AutoProcessor, BlipModel
 from PIL import Image
 import torch
@@ -17,7 +17,7 @@ if Config.debug:
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class BLIP(Model):
+class BLIP(VisualLanguageModel):
     
     def __init__(self):
         
