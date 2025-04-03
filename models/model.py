@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     # Import the type-only dependencies
@@ -13,19 +13,18 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def preprocess_data(self, data_stream:"Tensor", text_input:Optional[str]):
+    def preprocess_data(self, data_stream:Union["Tensor",str], text_input:Optional[str]):
         pass
 
-class VisionLanguageModel(Model, ABC):
+    @abstractmethod
+    def run_inference(self, data_stream:Union["Tensor",str], **kwargs):
+        pass
+
+class VisionLanguageModel(Model):
     def __init__(self):
         super().__init__()
         self.to_pil_image = transforms.ToPILImage()
         
-    
-    @abstractmethod
-    def run_inference(self, data_stream:"Tensor", **kwargs):
-        pass
-
     #NOTE: optional to override, not all models have to be finetuned
     def finetune_model(self, dataloader: "DataLoader"):
         pass
@@ -41,14 +40,10 @@ class VisionLanguageModel(Model, ABC):
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
     
 
-class LanguageModel(Model, ABC):
+class LanguageModel(Model):
 
     def __init__(self):
         super().__init__()
-        pass
-
-    @abstractmethod
-    def run_inference(self, query:str, **kwargs):
         pass
 
     #NOTE: optional to override, not all models have to be finetuned
