@@ -21,8 +21,8 @@ import subprocess
 
 class OllamaVision(VisualLanguageModel):
     
-    def __init__(self, model_name: str, model_precision = torch.float16, system_eval:bool = False):
-        super().__init__(model_precision = model_precision, system_eval = system_eval)
+    def __init__(self, model_params:dict, model_name: str, model_precision = torch.float16, system_eval:bool = False):
+        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         
         #auxilliary attributes for Tensor to image conversion
         self.model_name = model_name
@@ -60,7 +60,7 @@ class OllamaVision(VisualLanguageModel):
         return base64_encoded_images
     
     
-    def run_inference(self, data_stream: torch.Tensor, **kwargs):
+    def run_inference(self, data_stream: torch.Tensor):
         print("Starting inference...")
 
         #additional return values in a dictionary

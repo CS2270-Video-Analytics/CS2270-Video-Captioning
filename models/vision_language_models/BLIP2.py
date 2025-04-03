@@ -16,14 +16,13 @@ import pdb
 
 class BLIP2(VisionLanguageModel):
     
-    def __init__(self, model_name: str='Salesforce/blip2-opt-2.7b', model_precision = torch.float16, system_eval:bool = False):
-        super().__init__(model_precision = model_precision, system_eval = system_eval)
-        #attributes from configs 
-        self.precision = model_precision
-
+    def __init__(self,  model_params:dict, model_name: str='Salesforce/blip2-opt-2.7b', model_precision = torch.float16, system_eval:bool = False):
+        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
+        
         # Load BLIP-2 model and processor
-        self.processor = Blip2Processor.from_pretrained(model_name, torch_dtype=self.precision)
-        self.model = Blip2ForConditionalGeneration.from_pretrained(model_name)
+        self.model_name = model_name
+        self.processor = Blip2Processor.from_pretrained(self.model_name, torch_dtype=self.precision)
+        self.model = Blip2ForConditionalGeneration.from_pretrained(self.model_name)
 
         self.model.to(self.device)
     
@@ -34,7 +33,7 @@ class BLIP2(VisionLanguageModel):
         return self.processor(images=image, text = prompt, return_tensors="pt").to(self.device, self.precision)
     
     
-    def run_inference(self, data_stream: torch.Tensor, **kwargs):
+    def run_inference(self, data_stream: torch.Tensor):
 
         #additional return values in a dictionary
         info = {}

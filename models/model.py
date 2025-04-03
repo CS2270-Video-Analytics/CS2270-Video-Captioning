@@ -10,10 +10,11 @@ if TYPE_CHECKING:
     from torch import Tensor
 
 class Model(ABC):
-    def __init__(self, model_precision = torch.float16, system_eval:bool = True):
+    def __init__(self, model_params = {}, model_precision = torch.float16, system_eval:bool = True):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model_precision =  model_precision
         self.system_eval = system_eval
+        self.model_params = model_params #store the parameters to the model
 
     @abstractmethod
     def preprocess_data(self, data_stream:Union["Tensor",str], text_input:Optional[str]):
@@ -24,8 +25,8 @@ class Model(ABC):
         pass
 
 class VisionLanguageModel(Model):
-    def __init__(self, model_name: str, model_precision, system_eval:bool):
-        super().__init__(model_precision = model_precision, system_eval = system_eval)
+    def __init__(self, model_params:dict, model_name: str, model_precision, system_eval:bool):
+        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         self.to_pil_image = transforms.ToPILImage()
         
     #NOTE: optional to override, not all models have to be finetuned
@@ -46,7 +47,7 @@ class VisionLanguageModel(Model):
 class LanguageModel(Model):
 
     def __init__(self):
-        super().__init__(model_precision = model_precision, system_eval = system_eval)
+        super().__init__(model_params:dict, model_precision = model_precision, system_eval = system_eval)
         pass
 
     #NOTE: optional to override, not all models have to be finetuned

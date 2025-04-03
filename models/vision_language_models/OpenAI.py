@@ -10,14 +10,14 @@ from torchvision import transforms
 
 class OpenAI(VisionLanguageModel):
 
-    def __init__(self, model_name:str="gpt-4o-mini", model_precision = torch.float16, system_eval:bool = False):
-        super().__init__(model_precision = model_precision, system_eval = system_eval)
+    def __init__(self, model_params:dict, model_name:str="gpt-4o-mini", model_precision = torch.float16, system_eval:bool = False):
+        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
         self.model_client = OpenAI()
         self.model_name = model_name
 
-    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
+    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):
         
         base64_encoded_images = self.pil_to_base64(self.to_pil_image(data_stream))
 
