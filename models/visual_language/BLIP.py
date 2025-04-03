@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     model = BLIP(model_configs={'model_precision':torch.float16, 
                                 'system_eval':False, 
-                                'fuckoff': 'Using the descriptions of the previous images of a video, generate a detailed description of the current image. Describe all entities and their relationship with each other in detail\nDescription of previous image sequence:\n{prev_frames_context}', 
+                                'h': 'Using the descriptions of the previous images of a video, generate a detailed description of the current image. Describe all entities and their relationship with each other in detail\nDescription of previous image sequence:\n{prev_frames_context}', 
                                 'template_prompt': 'Generate a detailed description of the current image. Describe all objects in the image and their relationship with each other in detail', 
 
                                 'obj_extraction_prompt': 'Given the generated prompt and list of objects, identify any new objects not in the object list:', 

@@ -55,7 +55,14 @@ class BLIP2(VisionLanguageModel):
         with torch.no_grad():
 
             try:
-                output_ids = self.model.generate(**processed_inputs)
+                output_ids = self.model.generate(
+                    **processed_inputs, 
+                    max_new_tokens=kwargs['max_tokens'],
+                    temperature=kwargs['temperature'],
+                    top_k=kwargs['top_k'],
+                    top_p=kwargs['top_p'],
+                    repetition_penalty=kwargs['repetition_penalty']
+                )
                 outputs = self.processor.batch_decode(output_ids, skip_special_tokens=True)
                 outputs = outputs.split(':')[2].strip()
             except Exception as e:

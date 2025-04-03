@@ -54,7 +54,7 @@ class GPTModel(VisionLanguageModel):
                 max_tokens=kwargs['max_tokens'],
                 frequency_penalty=kwargs['frequency_penalty'],
                 presence_penalty=kwargs['presence_penalty'],
-                stop_token=kwargs['stop_token']
+                stop_token=kwargs['stop_tokens']
             )
             info['error'] = None
         except openai.APIError as e:
