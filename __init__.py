@@ -1,1 +1,0 @@
-from models.captioning_embedding.captioning_pipeline import CaptioningPipeline
