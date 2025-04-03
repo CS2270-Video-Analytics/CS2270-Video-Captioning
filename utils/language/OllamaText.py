@@ -73,7 +73,13 @@ class OllamaText(Model):
                         'content':query,
                     }],
                     options = {
-                        'stop': ['\n'],
+                        'top_k':
+                        'top_p':
+                        'temperature':
+                        'repeat_penalty':
+                        'presence_penalty':
+                        'frequency_penalty':
+                        'stop': kwargs['stop_token'],
                         'batch_size': Config.batch_size,
                         'num_threads': Config.num_threads
                     })

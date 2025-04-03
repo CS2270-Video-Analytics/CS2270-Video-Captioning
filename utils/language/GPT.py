@@ -23,13 +23,23 @@ class GPTModel():
     
     def run_inference(self, query: str, **kwargs):
         info = {}
-        messages = [{"role": "user", "content": query}]
+        messages = [{"role": "system", "content": kwargs['system_content']},{"role": "user", "content": query}]
 
-        response = self.model_client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            temperature=0.7,
-        )
+        try:
+            response = self.model_client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=kwargs['temperature'],
+                top_p = kwargs['top_p'],
+                max_tokens=kwargs['max_tokens'],
+                frequency_penalty=kwargs['frequency_penalty'],
+                presence_penalty=kwargs['presence_penalty'],
+                stop_token=kwargs['stop_token']
+            )
+
+            info['error'] = None
+        except openai.APIError as e:
+            info['error'] = e
 
         return response.choices[0].message.content.strip(), info
 
