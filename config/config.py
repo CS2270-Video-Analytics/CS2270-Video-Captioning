@@ -7,8 +7,43 @@ class Config:
     vision_model_name = 'llama3.2-vision:11b'
     text_model_name = 'llama3.2:latest'
     clip_model_name = "ViT-L/14"
-
     
+    '''
+    ------------------------------------ MODEL HYPERPARAMS -----------------------------
+    '''
+    #params for caption and embedding models
+    caption_model_temperature = 0.7
+    caption_model_top_k = 3
+    caption_model_top_p = 0.9
+    caption_model_num_ctx = 2048
+    caption_model_repeat_penalty = 0.5
+    caption_model_presence_penalty = 0.7
+    caption_model_frequency_penalty = 0.3
+    caption_model_num_predict = 200
+    caption_model_stop = None
+    
+    #params for text2sql
+    text2sql_model_temperature = 0.7
+    text2sql_model_top_k = 3
+    text2sql_model_top_p = 0.9
+    text2sql_model_num_ctx = 2048
+    text2sql_model_repeat_penalty = 0.5
+    text2sql_model_presence_penalty = 0.7
+    text2sql_model_frequency_penalty = 0.3
+    text2sql_model_num_predict = 200
+    text2sql_model_stop = None
+
+    #params for text2table
+    text2table_model_temperature = 0.7
+    text2table_model_top_k = 3
+    text2table_model_top_p = 0.9
+    text2table_model_num_ctx = 2048
+    text2table_model_repeat_penalty = 0.5
+    text2table_model_presence_penalty = 0.7
+    text2table_model_frequency_penalty = 0.3
+    text2table_model_num_predict = 200
+    text2table_model_stop = None
+
     model_precision = torch.float16
     system_eval = False
     obj_focus = True
