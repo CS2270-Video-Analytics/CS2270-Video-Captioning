@@ -35,8 +35,7 @@ class LLamaVision(Model):
         #assert that LLaMa model is running on another terminal (sanity check)
         assert self.is_ollama_model_running(), "ERROR: Ollama is not running. Run it on another terminal first"
 
-        #auxilliary attributes for Tensor to image conversion
-        self.to_pil_image = transforms.ToPILImage()
+        
 
 
     def get_gpu_processes(self):

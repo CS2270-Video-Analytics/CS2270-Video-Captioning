@@ -72,6 +72,7 @@ class CaptioningPipeline():
         pil_image = self.caption_model.to_pil_image(data_stream)
         image = self.clip_preprocess(pil_image).unsqueeze(0).to(self.device)
 
+        #TODO: once integrating pipeline, need to call clip and do .detach().cpu()
         with torch.no_grad():
             image_embedding = self.clip_model.encode_image(image).detach().cpu()
 

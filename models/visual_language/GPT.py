@@ -15,15 +15,16 @@ class GPTModel(Model):
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
         self.model_client = OpenAI()
-        self.model_name = model_name
+        self.model_name = Config.vision_model_name if model_name is None else model_name
 
         #auxilliary attributes for Tensor to image conversion
         self.to_pil_image = transforms.ToPILImage()
-        self.model_name = Config.vision_model_name
+        self.system_eval = Config.system_eval
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
         
-        base64_encoded_images = self.convert_to_pil_image(data_stream)[0]
+        base64_encoded_images = self.pil_to_base64(self.to_pil_image(data_stream))
+
 
         return base64_encoded_images
     
@@ -32,12 +33,11 @@ class GPTModel(Model):
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")  # Ensure a supported format like PNG or JPEG
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-    def convert_to_pil_image(self, torch_tensor:torch.Tensor):
-        # Convert NumPy array to PIL Image
-        return [self.pil_to_base64(self.to_pil_image(tensor)) for tensor in torch_tensor]
     
     def run_inference(self, data_stream: torch.Tensor, **kwargs):
+
+        if self.system_eval:
+            start_time = time.now()
 
         processed_inputs = self.preprocess_data(data_stream)
 
@@ -47,7 +47,7 @@ class GPTModel(Model):
                     {"role": "system", "content": kwargs['system_content']},
                     {"role": "user", "content": [
                         {"type": "text", "text": kwargs['prompt']},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{preprocess_data}"}}
                     ]}]
 
         try:
@@ -64,6 +64,11 @@ class GPTModel(Model):
             info['error'] = None
         except openai.APIError as e:
             info['error'] = e
+        
+        if self.system_eval:
+            end_time = time.now()
+            elapsed = end_time - start_time
+            info['time'] = elapsed
 
         return response.choices[0].message.content.strip(), info
 
