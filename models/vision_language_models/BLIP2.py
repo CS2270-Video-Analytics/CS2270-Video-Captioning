@@ -18,20 +18,18 @@ if Config.debug:
 
 class BLIP2(VisionLanguageModel):
     
-    def __init__(self):
+    def __init__(self, model_name: str='Salesforce/blip2-opt-2.7b', model_precision = torch.float16, system_eval:bool = False):
         super().__init__()
         #attributes from configs 
-        self.precision = Config.model_precision
+        self.precision = model_precision
 
         # Load BLIP-2 model and processor
-        self.processor = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b", torch_dtype=self.precision)
-        self.model = Blip2ForConditionalGeneration.from_pretrained("Salesforce/blip2-opt-2.7b")
-        
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.processor = Blip2Processor.from_pretrained(model_name, torch_dtype=self.precision)
+        self.model = Blip2ForConditionalGeneration.from_pretrained(model_name)
 
         self.model.to(self.device)
 
-        self.system_eval = Config.system_eval
+        self.system_eval = system_eval
     
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):
         

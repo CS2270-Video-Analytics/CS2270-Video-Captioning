@@ -2,7 +2,6 @@ import sys
 sys.path.append('..')
 import os
 
-from config import Config
 from ..model import VisionLanguageModel
 from transformers import AutoProcessor, BlipModel
 from PIL import Image
@@ -11,28 +10,24 @@ import torch
 from typing import Optional, Dict
 from torchvision import transforms
 from time import time
-
-if Config.debug:
-    import pdb
+import pdb
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
 class BLIP(VisionLanguageModel):
     
-    def __init__(self):
+    def __init__(self, model_name:str = "Salesforce/blip-image-captioning-base", model_precision = torch.float16, system_eval:bool = False):
         super().__init__()
         #attributes from configs 
-        self.precision = Config.model_precision
+        self.precision = model_precision
 
         # Load BLIP-2 model and processor
-        self.processor = BlipModel.from_pretrained("Salesforce/blip-image-captioning-base", torch_dtype=self.precision)
-        self.model = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base", torch_dtype=self.precision)
-        
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.processor = BlipModel.from_pretrained(model_name, torch_dtype=self.precision)
+        self.model = AutoProcessor.from_pretrained(model_name, torch_dtype=self.precision)
 
         self.model.to(self.device)
 
-        self.system_eval = Config.system_eval
+        self.system_eval = system_eval
 
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):

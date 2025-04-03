@@ -22,15 +22,15 @@ import subprocess
 
 class OllamaVision(VisualLanguageModel):
     
-    def __init__(self):
+    def __init__(self, model_name: str, model_precision = torch.float16, system_eval:bool = False):
         super().__init__()
         
         #attributes from configs 
-        self.precision = Config.model_precision
-        self.system_eval = Config.system_eval
+        self.precision = model_precision
+        self.system_eval = system_eval
         
         #auxilliary attributes for Tensor to image conversion
-        self.model_name = Config.vision_model_name
+        self.model_name = model_name
 
         #assert that LLaMa model is running on another terminal (sanity check)
         assert self.is_ollama_model_running(), "ERROR: Ollama is not running. Run it on another terminal first"

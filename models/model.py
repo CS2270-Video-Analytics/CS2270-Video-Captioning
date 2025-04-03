@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional, Union
+from config import Config
 
 if TYPE_CHECKING:
     # Import the type-only dependencies
@@ -9,8 +10,10 @@ if TYPE_CHECKING:
     from torch import Tensor
 
 class Model(ABC):
-    def __init__(self):
-        pass
+    def __init__(self, model_precision = model_precision, system_eval = system_eval):
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model_precision = Config.model_precision if model_precision is None else model_precision
+        self.system_eval = Config.system_eval if system_eval is None else system_eval
 
     @abstractmethod
     def preprocess_data(self, data_stream:Union["Tensor",str], text_input:Optional[str]):
@@ -21,8 +24,8 @@ class Model(ABC):
         pass
 
 class VisionLanguageModel(Model):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, model_name: str, model_precision, system_eval:bool):
+        super().__init__(model_precision = model_precision, system_eval = system_eval)
         self.to_pil_image = transforms.ToPILImage()
         
     #NOTE: optional to override, not all models have to be finetuned
@@ -43,7 +46,7 @@ class VisionLanguageModel(Model):
 class LanguageModel(Model):
 
     def __init__(self):
-        super().__init__()
+        super().__init__(model_precision = model_precision, system_eval = system_eval)
         pass
 
     #NOTE: optional to override, not all models have to be finetuned
