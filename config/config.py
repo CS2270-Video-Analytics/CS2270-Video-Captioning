@@ -14,15 +14,21 @@ class Config:
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
-    caption_model = 'LLamaVision'
-    vision_model_name = 'llama3.2-vision:11b'
-    clip_model_name = "ViT-L/14"
-    max_tokens = 300
-    keep_alive = 60000
+    caption_model_name = 'LLamaVision/llama3.2-vision:11b'
+    caption_model_temperature = 0.7
+    caption_model_top_k = 3
+    caption_model_top_p = 0.9
+    caption_model_num_ctx = 2048
+    caption_model_repeat_penalty = 0.5
+    caption_model_presence_penalty = 0.7
+    caption_model_frequency_penalty = 0.3
+    caption_model_num_predict = 200
+    caption_model_stop = None
     obj_focus = True
     previous_frames = True
     sliding_window_size = 1
     frames_per_video = 40
+    clip_model_name = "ViT-L/14"
 
     # Captioning pipeline prompts
     question_prompt_format = "Question: {question} Answer:"
@@ -96,7 +102,16 @@ class Config:
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
     text2table_model = 'GPT'  # options: [Ollama, GPT, Seq2Seq]
-    
+    text2table_model_temperature = 0.7
+    text2table_model_top_k = 3
+    text2table_model_top_p = 0.9
+    text2table_model_num_ctx = 2048
+    text2table_model_repeat_penalty = 0.5
+    text2table_model_presence_penalty = 0.7
+    text2table_model_frequency_penalty = 0.3
+    text2table_model_num_predict = 200
+    text2table_model_stop = None
+
     # Text2Table pipeline prompts
     text2table_attribute_extraction_prompt = \
     "All image captions: {incontext_captions} " \
@@ -129,13 +144,16 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2SQL Pipeline settings
     #-------------------------------------------------------------------------
-    text2sql_model = 'OpenAI'  # options: [OpenAI, DeepSeek, HuggingFace, Anthropic]
-    text2sql_model_name = 'gpt3.5-turbo'
-
-    #-------------------------------------------------------------------------
-    # Language Model settings
-    #-------------------------------------------------------------------------
-    text_model_name = 'llama3.2:latest'
+    text2sql_model_name = 'OpenAI/gpt3.5-turbo' # options: [OpenAI/, DeepSeek/, HuggingFace/, Anthropic/]
+    text2sql_model_temperature = 0.7
+    text2sql_model_top_k = 3
+    text2sql_model_top_p = 0.9
+    text2sql_model_num_ctx = 2048
+    text2sql_model_repeat_penalty = 0.5
+    text2sql_model_presence_penalty = 0.7
+    text2sql_model_frequency_penalty = 0.3
+    text2sql_model_num_predict = 200
+    text2sql_model_stop = None
 
     #-------------------------------------------------------------------------
     # Database settings
