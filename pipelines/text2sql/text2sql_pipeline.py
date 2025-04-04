@@ -11,8 +11,11 @@ class Text2SQLPipeline():
     def __init__(self):
 
         model_options = {'OpenAI': create_text2sql_func_openai, 'DeepSeek': create_text2sql_func_deepseek, 'Anthropic': create_text2sql_func_anthropic, 'HuggingFace': create_text2sql_func_hf}
-        assert Config.text2sql_model in model_options, f'ERROR: model {Config.text2sql_model} does not exist or is not supported yet'
-        self.model = model_options[Config.text2sql_model](model_name = Config.text2sql_model_name)
+        
+        [text2sql_model, text2sql_model_name] = Config.text2sql_model_name.split(';') 
+
+        assert text2sql_model in model_options, f'ERROR: model {Config.text2sql_model} does not exist or is not supported yet'
+        self.model = model_options[text2sql_model](model_name = text2sql_model_name)
 
     def run_pipeline(self, question:str, table_schema:str):
         """
