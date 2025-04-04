@@ -45,12 +45,12 @@ class OpenAI(VisionLanguageModel):
             response = client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
-                temperature=kwargs['temperature'],
-                top_p = kwargs['top_p'],
-                max_tokens=kwargs['max_tokens'],
-                frequency_penalty=kwargs['frequency_penalty'],
-                presence_penalty=kwargs['presence_penalty'],
-                stop_token=kwargs['stop_tokens']
+                temperature=self.model_params['temperature'],
+                top_p = self.model_params['top_p'],
+                max_tokens=self.model_params['max_tokens'],
+                frequency_penalty=self.model_params['frequency_penalty'],
+                presence_penalty=kwself.model_paramsargs['presence_penalty'],
+                stop_token=self.model_params['stop_tokens']
             )
             info['error'] = None
         except openai.APIError as e:

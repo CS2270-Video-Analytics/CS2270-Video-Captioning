@@ -25,7 +25,8 @@ class Config:
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
         'max_tokens': 200,
-        'stop_tokens': None
+        'stop_tokens': None,
+        'keep_alive': 30000
     }
  
     obj_focus = True
@@ -115,7 +116,9 @@ class Config:
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
         'max_tokens': 200,
-        'stop_tokens': None
+        'stop_tokens': None,
+        'keep_alive': 30000
+
     }
 
     # Text2Table pipeline prompts
@@ -160,7 +163,9 @@ class Config:
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
         'max_tokens': 200,
-        'stop_tokens': None
+        'stop_tokens': None,
+        'keep_alive': 30000
+
     }
 
     #-------------------------------------------------------------------------

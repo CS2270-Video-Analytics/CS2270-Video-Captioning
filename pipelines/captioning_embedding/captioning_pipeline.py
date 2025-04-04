@@ -9,9 +9,11 @@ if Config.debug:
     import pdb
     from torchvision import transforms
 
-from .BLIP import BLIP
-from .BLIP2 import BLIP2
-from .LLamaVision import LLamaVision
+from .vision_language_models.BLIP import BLIP
+from .vision_language_models.BLIP2 import BLIP2
+from .vision_language_models.CLIP import CLIP
+from .vision_language_models.OllamaVision import OllamaVision
+from .vision_language_models.OpenAI import OpenAI
 import torch
 
 class CaptioningPipeline():
@@ -34,13 +36,16 @@ class CaptioningPipeline():
         self.sliding_window_size = Config.sliding_window_size
 
         #initialize the model that needs to be used for captioning
-        model_options = {'LLamaVision': LLamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2}
-        assert Config.caption_model in model_options, f'ERROR: model {Config.caption_model} does not exist or is not supported yet'
-        self.caption_model = model_options[Config.caption_model]()
+        model_options = {'OllamaVision': LLamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2, 'OpenAI':OpenAI}
+
+        [caption_model, caption_model_name] = Config.caption_model_name.split(';')
+
+        assert caption_model in model_options, f'ERROR: model {Config.caption_model_name} does not exist or is not supported yet'
+        
+        self.caption_model = model_options[caption_model](model_name = caption_model_name, model_params = Config.caption_model_params, model_precision=Config.model_precision, system_eval=Config.system_eval)
 
         #create models for clip vector embeddings
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.clip_model, self.clip_preprocess = clip.load(Config.clip_model_name, device=self.device)
+        self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.model_precision)
 
     def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
 
@@ -69,12 +74,7 @@ class CaptioningPipeline():
             self.object_set.update(new_objs)
 
         # generate clip embedding
-        pil_image = self.caption_model.to_pil_image(data_stream)
-        image = self.clip_preprocess(pil_image).unsqueeze(0).to(self.device)
-
-        #TODO: once integrating pipeline, need to call clip and do .detach().cpu()
-        with torch.no_grad():
-            image_embedding = self.clip_model.encode_image(image).detach().cpu()
+        image_embedding, info = self.clip_model.run_inference(image).detach().cpu()
 
         #TODO: None to be replaced with object list
         return [video_id, frame_id, description, None, image_embedding]
