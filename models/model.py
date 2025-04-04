@@ -45,7 +45,6 @@ class VisionLanguageModel(Model):
     
 
 class LanguageModel(Model):
-
     def __init__(self):
         super().__init__(model_params:dict, model_precision = model_precision, system_eval = system_eval)
         pass

@@ -13,14 +13,8 @@ import torch
 import sqlite3
 
 class Text2TablePipeline:
-
-    def __init__(self, all_objects:List[str], all_captions:str=None):
-
-        if Config.text2table_model == 'Seq2Seq':
-            raise NotImplementedError("ERROR: not implemented yet")
-        
-        
-        #store prompt for per frame information extraction
+    def __init__(self, all_objects:List[str], all_captions:str=None, text2table_params: Dict=None):
+        self.text2table_params = text2table_params
         self.text2table_frame_prompt = Config.text2table_frame_prompt
 
         #store the attribute extraction prompt
@@ -67,13 +61,8 @@ class Text2TablePipeline:
                 frame_data = [] #empty the batch
                 
     def run_pipeline(self, caption: str, video_id:int, frame_id:int):
-        
-        #create the overall prompt structure
-        if Config.text2table_model != 'Seq2Seq':
-            text2table_frame_prompt = self.text2table_frame_prompt.format(formatted_schema = self.object_attributes, image_caption = caption, object_set = self.all_objects)
-        else:
-            text2table_frame_prompt = None
-            raise NotImplementedError
+        text2table_frame_prompt = self.text2table_frame_prompt.format(formatted_schema = self.object_attributes, image_caption = caption, object_set = self.all_objects)
+
 
         #generate the structured caption using text2table model
         structured_caption, info = self.text2table_model.run_inference(query = text2table_frame_prompt)

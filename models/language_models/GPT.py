@@ -1,5 +1,5 @@
 from config import Config
-from ..model import Model
+from ..model import LanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
@@ -9,8 +9,7 @@ from torchvision import transforms
 from time import time
 from torchvision import transforms
 
-class GPTModel():
-
+class GPTModel(LanguageModel):
     def __init__(self, model_name="gpt-4o-mini"):
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment

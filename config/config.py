@@ -15,7 +15,6 @@ class Config:
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
     caption_model_name = 'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
-    
     caption_model_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -105,7 +104,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
-    text2table_model = 'OpenAI'  # options: [Ollama, OpenAI, Seq2Seq]
+    text2table_model_name = 'OpenAI/gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
     text2table_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -115,7 +114,11 @@ class Config:
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
         'max_tokens': 200,
-        'stop_tokens': None
+        'stop_tokens': None,
+        'batch_size': 4,
+        'num_threads': 8,
+        'model_precision': torch.float16,
+        'system_eval': False,
     }
 
     # Text2Table pipeline prompts

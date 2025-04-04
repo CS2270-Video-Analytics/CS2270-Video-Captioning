@@ -4,7 +4,7 @@ from config import Config
 import os
 import io
 import base64
-from ..model import Model
+from ..model import LanguageModel
 import ollama
 from PIL import Image
 import torch
