@@ -76,8 +76,7 @@ class CaptioningPipeline():
         # generate clip embedding
         image_embedding, info = self.clip_model.run_inference(image).detach().cpu()
 
-        #TODO: None to be replaced with object list
-        return [video_id, frame_id, description, None, image_embedding]
+        return [video_id, frame_id, description, self.object_set, image_embedding]
         
 
 if __name__ == '__main__':

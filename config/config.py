@@ -14,7 +14,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
-    caption_model_name = 'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
+    caption_model_name = 'OpenAI/gpt4o-mini' #'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
     
     caption_model_params = {
         'temperature': 0.7,
@@ -106,7 +106,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
-    text2table_model = 'OpenAI'  # options: [Ollama, OpenAI, Seq2Seq]
+    text2table_model = 'OpenAI/gpt4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
     text2table_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -153,7 +153,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2SQL Pipeline settings
     #-------------------------------------------------------------------------
-    text2sql_model_name = 'OpenAI/gpt3.5-turbo' # options: [OpenAI/, DeepSeek/, HuggingFace/, Anthropic/]
+    text2sql_model_name = 'OpenAI/gpt4o-mini' # options: [OpenAI/, DeepSeek/, HuggingFace/, Anthropic/]
     text2sql_params = {
         'temperature': 0.7,
         'top_k': 3,
