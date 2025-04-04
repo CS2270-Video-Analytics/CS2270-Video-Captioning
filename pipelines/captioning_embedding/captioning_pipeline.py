@@ -13,7 +13,7 @@ from .vision_language_models.BLIP import BLIP
 from .vision_language_models.BLIP2 import BLIP2
 from .vision_language_models.CLIP import CLIP
 from .vision_language_models.OllamaVision import OllamaVision
-from .vision_language_models.OpenAI import OpenAI
+from .vision_language_models.OpenAI import OpenAIVision
 import torch
 
 class CaptioningPipeline():
@@ -36,10 +36,8 @@ class CaptioningPipeline():
         self.sliding_window_size = Config.sliding_window_size
 
         #initialize the model that needs to be used for captioning
-        model_options = {'OllamaVision': LLamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2, 'OpenAI':OpenAI}
-
+        model_options = {'OllamaVision': LLamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2, 'OpenAI':OpenAIVision}
         [caption_model, caption_model_name] = Config.caption_model_name.split(';')
-
         assert caption_model in model_options, f'ERROR: model {Config.caption_model_name} does not exist or is not supported yet'
         
         self.caption_model = model_options[caption_model](model_name = caption_model_name, model_params = Config.caption_model_params, model_precision=Config.model_precision, system_eval=Config.system_eval)

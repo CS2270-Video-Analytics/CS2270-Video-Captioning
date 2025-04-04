@@ -7,8 +7,10 @@ if Config.debug:
     import pdb
     from torchvision import transforms
 
-from .OllamaText import OllamaText
-from .GPT import GPTModel
+from models.langauge_models.Anthropic import Anthropic
+from models.langauge_models.OpenAI import OpenAIText
+from models.langauge_models.OllamaText import OllamaText
+from models.langauge_models.DeepSeek import DeepSeek
 import torch
 import sqlite3
 
@@ -21,9 +23,11 @@ class Text2TablePipeline:
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         
         #initialize the model that needs to be used for captioning
-        model_options = {'Ollama': OllamaText, 'GPT': GPTModel}
-        assert Config.text2table_model in model_options, f'ERROR: model {Config.text2table_model} does not exist or is not supported yet'
-        self.text2table_model = model_options[Config.text2table_model]()
+        model_options = {'Ollama': OllamaText, 'OpenAI': OpenAIText, 'Anthropic': Anthropic, 'DeepSeek':DeepSeek}
+        [text2table_model, text2table_model_name] = Config.caption_model_name.split(';')
+        assert text2table_model in model_options, f'ERROR: model {text2table_model} does not exist or is not supported yet'
+        
+        self.text2table_model = model_options[text2table_model_name](model_params = Config.text2table_params, model_name=text2table_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
 
         #extract the list of attributes to capture across objects
         self.object_attributes = ['object', 'image_location','description','action']
