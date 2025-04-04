@@ -34,7 +34,7 @@ class BLIP(VisionLanguageModel):
         return self.processor(images=image, text = prompt, return_tensors="pt").to(self.device, self.precision)
     
     
-    def run_inference(self, data_stream: torch.Tensor):
+    def run_inference(self, data_stream: torch.Tensor, **kwargs):
 
         #additional return values in a dictionary
         info = {}

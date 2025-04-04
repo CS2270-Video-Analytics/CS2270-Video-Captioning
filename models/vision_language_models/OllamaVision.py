@@ -60,7 +60,7 @@ class OllamaVision(VisualLanguageModel):
         return base64_encoded_images
     
     
-    def run_inference(self, data_stream: torch.Tensor):
+    def run_inference(self, data_stream: torch.Tensor,  **kwargs):
         print("Starting inference...")
 
         #additional return values in a dictionary
@@ -83,17 +83,17 @@ class OllamaVision(VisualLanguageModel):
                         'content':kwargs['prompt'],
                         'images': [processed_inputs]
                     }],
-                    keep_alive = kwargs['keep_alive'],
+                    keep_alive = self.model_params['keep_alive'],
                     options={
-                        'temperature': kwargs['temperature'],
-                        'top_k': kwargs['top_k'],
-                        'top_p': kwargs['top_p'],
-                        'num_ctx': kwrags['num_ctx'],
-                        'repeat_penalty': kwargs['repeat_penalty'],
-                        'presence_penalty': kwargs['presence_penalty'],
-                        'frequency_penalty': kwargs['frequency_penalty'],
-                        'num_predict': kwargs['max_tokens'],
-                        'stop': kwargs['stop_tokens']
+                        'temperature': self.model_params['temperature'],
+                        'top_k': self.model_params['top_k'],
+                        'top_p': self.model_params['top_p'],
+                        'num_ctx': self.model_params['num_ctx'],
+                        'repeat_penalty': self.model_params['repeat_penalty'],
+                        'presence_penalty': self.model_params['presence_penalty'],
+                        'frequency_penalty': self.model_params['frequency_penalty'],
+                        'num_predict': self.model_params['max_tokens'],
+                        'stop': self.model_params['stop_tokens']
                     }
                     )
                 print(f"Received response from Ollama")

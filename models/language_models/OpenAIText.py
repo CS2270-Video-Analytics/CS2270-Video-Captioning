@@ -9,7 +9,7 @@ from torchvision import transforms
 from time import time
 from torchvision import transforms
 
-class GPTModel(LanguageModel):
+class OpenAIText(LanguageModel):
     def __init__(self, model_name="gpt-4o-mini"):
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
@@ -17,12 +17,15 @@ class GPTModel(LanguageModel):
         self.model_name = model_name
 
 
-    def preprocess_data(self, data_stream:"Tensor", text_input:Optional[str]):
+    def preprocess_data(self, data_stream: str, text_input:Optional[str]):
         pass
     
-    def run_inference(self, query: str, **kwargs):
+    def run_inference(self, data_stream: str, **kwargs):
         info = {}
-        messages = [{"role": "system", "content": kwargs['system_content']},{"role": "user", "content": query}]
+        messages = [
+            {"role": "system", "content": kwargs['system_content']},
+            {"role": "user", "content": data_stream}
+        ]
 
         try:
             response = self.model_client.chat.completions.create(
@@ -37,7 +40,7 @@ class GPTModel(LanguageModel):
             )
 
             info['error'] = None
-        except openai.APIError as e:
+        except OpenAI.APIError as e:
             info['error'] = e
 
         return response.choices[0].message.content.strip(), info

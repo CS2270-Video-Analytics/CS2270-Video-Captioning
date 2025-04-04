@@ -14,7 +14,8 @@ class Config:
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
-    caption_model_name = 'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
+    caption_model_name = 'OpenAI/gpt4o-mini' #'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
+    
     caption_model_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -24,7 +25,8 @@ class Config:
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
         'max_tokens': 200,
-        'stop_tokens': None
+        'stop_tokens': None,
+        'keep_alive': 30000
     }
  
     obj_focus = True
@@ -104,7 +106,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
-    text2table_model_name = 'OpenAI/gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
+    text2table_model_name = 'OpenAI/gpt4o-mini/gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
     text2table_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -115,6 +117,8 @@ class Config:
         'frequency_penalty':0.3,
         'max_tokens': 200,
         'stop_tokens': None,
+        'keep_alive': 30000
+,
         'batch_size': 4,
         'num_threads': 8,
         'model_precision': torch.float16,
@@ -153,7 +157,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2SQL Pipeline settings
     #-------------------------------------------------------------------------
-    text2sql_model_name = 'OpenAI/gpt3.5-turbo' # options: [OpenAI/, DeepSeek/, HuggingFace/, Anthropic/]
+    text2sql_model_name = 'OpenAI/gpt4o-mini' # options: [OpenAI/, DeepSeek/deepseek-chat, HuggingFace/, Anthropic/claude-3-5-haiku-latest]
     text2sql_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -163,8 +167,34 @@ class Config:
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
         'max_tokens': 200,
-        'stop_tokens': None
+        'stop_tokens': None,
+        'keep_alive': 30000
+
     }
+
+    text2sql_prompt = 
+    f"""You are an AI that converts natural language questions into SQL queries 
+        specifically for an **SQLite3** database. 
+
+        ### **Important SQLite Constraints:**
+        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
+        - **No native JSON functions** (assume basic text handling).
+        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
+        - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
+        - Use **LOWER()** for case-insensitive string matching.
+        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
+        - Always assume **foreign key constraints are disabled unless explicitly turned on**.
+
+        ### **Database Schema:**
+        {schema_info}
+
+        ### **User Question:**
+        "{question}"
+
+        ### **Expected Output:**
+        Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
+        SQL Query:
+    """
 
     #-------------------------------------------------------------------------
     # Database settings

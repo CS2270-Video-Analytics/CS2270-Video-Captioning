@@ -33,7 +33,7 @@ class BLIP2(VisionLanguageModel):
         return self.processor(images=image, text = prompt, return_tensors="pt").to(self.device, self.precision)
     
     
-    def run_inference(self, data_stream: torch.Tensor):
+    def run_inference(self, data_stream: torch.Tensor,  **kwargs):
 
         #additional return values in a dictionary
         info = {}
@@ -50,11 +50,11 @@ class BLIP2(VisionLanguageModel):
             try:
                 output_ids = self.model.generate(
                     **processed_inputs, 
-                    max_new_tokens=kwargs['max_tokens'],
-                    temperature=kwargs['temperature'],
-                    top_k=kwargs['top_k'],
-                    top_p=kwargs['top_p'],
-                    repetition_penalty=kwargs['repetition_penalty']
+                    max_new_tokens=self.model_params['max_tokens'],
+                    temperature=self.model_params['temperature'],
+                    top_k=self.model_params['top_k'],
+                    top_p=self.model_params['top_p'],
+                    repetition_penalty=self.model_params['repetition_penalty']
                 )
                 outputs = self.processor.batch_decode(output_ids, skip_special_tokens=True)
                 outputs = outputs.split(':')[2].strip()

@@ -1,7 +1,7 @@
 from data_processing.process_videos import VideoProcessor
-from models.captioning_embedding.captioning_pipeline import CaptioningPipeline
-from models.text2sql.text2sql_pipeline import Text2SQLPipeline
-from models.text2table.text2table_pipeline import Text2TablePipeline
+from pipelines.captioning_embedding.captioning_pipeline import CaptioningPipeline
+from pipelines.text2sql.text2sql_pipeline import Text2SQLPipeline
+from pipelines.text2table.text2table_pipeline import Text2TablePipeline
 from database_integration import SQLLiteDBInterface, VectorDBInterface
 from config.config import Config
 import os

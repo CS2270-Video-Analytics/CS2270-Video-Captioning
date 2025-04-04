@@ -10,7 +10,6 @@ class CLIP(VisionLanguageModel):
         self.model_name = model_name
 
         #auxilliary attributes for Tensor to image conversion
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.clip_model, self.clip_preprocess = clip.load(self.model_name, device=self.device)
 
 
@@ -23,7 +22,7 @@ class CLIP(VisionLanguageModel):
         return image
     
     
-    def run_inference(self, data_stream: torch.Tensor):
+    def run_inference(self, data_stream: torch.Tensor,  **kwargs):
 
         processed_inputs = self.preprocess_data(data_stream)
 
