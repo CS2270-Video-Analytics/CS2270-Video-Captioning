@@ -1,7 +1,7 @@
 import sys
 import os
 from config.config import Config
-from typing import List
+from typing import List, Dict
 import re
 import json
 
@@ -18,7 +18,7 @@ import torch
 import sqlite3
 
 class Text2TablePipeline:
-    def __init__(self, all_objects:List[str], all_captions:str=None, text2table_params: Dict=None):
+    def __init__(self, all_objects:List[str], text2table_params: Dict=None):
         self.text2table_params = text2table_params
         self.text2table_frame_prompt = Config.text2table_frame_prompt
 
@@ -107,7 +107,7 @@ class Text2TablePipeline:
 
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
-        json_schema_template = self.build_json_template(schema_dict=parsed_schema)
+        json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
         
         #collate all data for all frames before inserting
         frame_data = []
@@ -138,6 +138,8 @@ class Text2TablePipeline:
                 for record in records:
                     table_vals = [record.get(col) for col in columns]
                     db_data_rows.append(table_vals)
+        except Exception as e:
+            raise f"ERROR: Cannot process video {video_id} and frame {frame_id} - {e}"
 
         return db_data_rows
     
