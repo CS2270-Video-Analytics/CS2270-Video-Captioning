@@ -1,15 +1,14 @@
-from ..model import VisionLanguageModel
+from models.model import VisionLanguageModel
 import torch
 from typing import Optional, Dict
+import clip
 
 class CLIP(VisionLanguageModel):
 
-    def __init__(self, model_params:dict, model_name:int="ViT-L/14", model_precision = torch.float16, system_eval:bool = False):
-
-        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
-        
+    def __init__(self, model_params:dict = {}, model_name:int="ViT-L/14", model_precision = torch.float16, system_eval:bool = False):
+        super().__init__(model_name = model_name, model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         self.model_name = model_name
-
+        
         #auxilliary attributes for Tensor to image conversion
         self.clip_model, self.clip_preprocess = clip.load(self.model_name, device=self.device)
 

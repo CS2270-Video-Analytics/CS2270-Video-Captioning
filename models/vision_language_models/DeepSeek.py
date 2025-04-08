@@ -1,4 +1,4 @@
-from ..model import VisionLanguageModel
+from models.model import VisionLanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
@@ -11,7 +11,7 @@ from torchvision import transforms
 class DeepSeek(VisionLanguageModel):
 
     def __init__(self, model_params:dict, model_name:str="deepseek-chat", model_precision = torch.float16, system_eval:bool = False):
-        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
+        super().__init__(model_name = model_name, model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['DEEPSEEK_API_KEY']  # Set API key from environment
@@ -19,7 +19,7 @@ class DeepSeek(VisionLanguageModel):
         self.model_client = OpenAI()
         self.model_name = model_name
 
-    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]):
+    def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
         
         base64_encoded_images = self.pil_to_base64(self.to_pil_image(data_stream))
 

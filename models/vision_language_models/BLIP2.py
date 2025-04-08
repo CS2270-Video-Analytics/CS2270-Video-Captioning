@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 
 import os
-from ..model import VisionLanguageModel
+from models.model import VisionLanguageModel
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from PIL import Image
 import torch
@@ -17,7 +17,7 @@ import pdb
 class BLIP2(VisionLanguageModel):
     
     def __init__(self,  model_params:dict, model_name: str='Salesforce/blip2-opt-2.7b', model_precision = torch.float16, system_eval:bool = False):
-        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
+        super().__init__(model_name = model_name, model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         
         # Load BLIP-2 model and processor
         self.model_name = model_name

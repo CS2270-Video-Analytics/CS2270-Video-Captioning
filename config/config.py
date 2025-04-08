@@ -14,7 +14,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
-    caption_model_name = 'OpenAI;gpt4o-mini' #'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
+    caption_model_name = 'OpenAI;gpt-4o-mini' #'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
     
     caption_model_params = {
         'temperature': 0.7,
@@ -30,12 +30,15 @@ class Config:
     }
  
     obj_focus = True
+    init_object_set = []
     previous_frames = True
     sliding_window_size = 1
     frames_per_video = 40
     clip_model_name = "ViT-L/14"
 
     # Captioning pipeline prompts
+    captioning_context_prompt_format = \
+    "You are a system designed to provide detailed captions for images (frames) in a video"
     question_prompt_format = "Question: {question} Answer:"
     sliding_window_caption_prompt_format = \
         "Task: given the current driving scene frame recorded from a dash cam angle, output a chunk of descriptions per key distinct object in the format of the general template below. " \
@@ -176,6 +179,9 @@ class Config:
         """Generate the prompt for text2sql model with given schema and question."""
         return f"""You are an AI that converts natural language questions into SQL queries 
             specifically for an **SQLite3** database. 
+    text2sql_prompt =\
+    """You are an AI that converts natural language questions into SQL queries 
+        specifically for an **SQLite3** database. 
 
             ### **Important SQLite Constraints:**
             - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).

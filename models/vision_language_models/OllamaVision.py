@@ -22,7 +22,7 @@ import subprocess
 class OllamaVision(VisionLanguageModel):
     
     def __init__(self, model_params:dict, model_name: str, model_precision = torch.float16, system_eval:bool = False):
-        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
+        super().__init__(model_name = model_name, model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         
         #auxilliary attributes for Tensor to image conversion
         self.model_name = model_name
