@@ -20,9 +20,10 @@ class OpenAIVision(VisionLanguageModel):
         self.model_name = model_name
 
     def preprocess_data(self, data_stream: torch.Tensor, prompt:Optional[str]=None):
-        base64_encoded_images = self.pil_to_base64(self.to_pil_image(data_stream))
-
-
+        # Convert tensor to PIL image
+        pil_image = self.to_pil_image(data_stream)
+        # Convert PIL image to base64
+        base64_encoded_images = self.pil_to_base64(pil_image)
         return base64_encoded_images
     
     
@@ -33,54 +34,39 @@ class OpenAIVision(VisionLanguageModel):
             start_time = time.time()
 
         processed_inputs = self.preprocess_data(data_stream)
-
         info = {}
 
-        # messages = [
-        #             {"role": "system", "content": kwargs['system_content']},
-        #             {"role": "user", "content": [
-        #                 {"type": "text", "text": kwargs['prompt']},
-        #                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{preprocess_data}"}}
-        #             ]}]
-        pdb.set_trace()
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "What's in this image?"},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
-                            "detail": "low"
-                        }
-                    }
-                ]
-            }
-        ]
+        messages = []
+        if 'system_content' in kwargs:
+            messages.append({"role": "system", "content": kwargs['system_content']})
+        
+        messages.append({"role": "user", "content": [
+                        {"type": "text", "text": kwargs['prompt']},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{processed_inputs}", "detail": kwargs['detail']}}
+                    ]})
 
         try:
-            response = self.model_client.chat.completions.create(
-                model=self.model_name,
+            request_params = dict(model=self.model_name,
                 messages=messages,
                 temperature=self.model_params['temperature'],
                 top_p = self.model_params['top_p'],
                 max_tokens=self.model_params['max_tokens'],
                 frequency_penalty=self.model_params['frequency_penalty'],
-                presence_penalty=self.model_params['presence_penalty'],
-                stop=self.model_params['stop_tokens']
-            )
-            info_dict['error'] = None
+                presence_penalty=self.model_params['presence_penalty'])
+            if self.model_params['stop_tokens'] and type(self.model_params['stop_tokens']) is list:
+                request_params['stop'] = self.model_params['stop_tokens']
+            
+            response = self.model_client.chat.completions.create(**request_params)
+            info['error'] = None
         except openai.APIError as e:
-            pdb.set_trace()
-            info_dict['error'] = e
+            info['error'] = e
         
         if self.system_eval:
             end_time = time.time()
             end_time = time.time()
             elapsed = end_time - start_time
-            info_dict['time'] = elapsed
-        pdb.set_trace()
+            info['time'] = elapsed
+
         return response.choices[0].message.content.strip(), info
 
 

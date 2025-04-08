@@ -58,7 +58,7 @@ class CaptioningPipeline():
 
         #create models for clip vector embeddings
         self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
-
+        
     def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
         
         #(1) add the previous frame description to the prompt

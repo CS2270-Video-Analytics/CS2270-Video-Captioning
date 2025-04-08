@@ -67,6 +67,7 @@ class Config:
         "Task (for the current frame): " \
         "object id:"
 
+    prior_object_extraction_prompt = "Task: given the current frame, extract a list of object categories visible in the frame\nobjects:["
     object_extraction_prompt_format = \
         "Task: given current frame description and seen object categories so far, output a list of unique unseen new object categories from the current frame's description that are not seen before. Don't return me the code as I want the actual the output. " \
         "General template: " \
@@ -128,34 +129,145 @@ class Config:
         'system_eval': False,
     }
 
-    # Text2Table pipeline prompts
-    text2table_attribute_extraction_prompt = \
-    "All image captions: {incontext_captions} " \
-    "Given captions of all images, generate a list of important attributes " \
-    "that can describe the objects in the image: " \
-    "[color, brand, size, action, speed, location, position, state] " \
-    "All image captions: {frame_captions} " \
-    "Given captions of all images, generate a list of important attributes " \
-    "that can describe objects in the image:"
+    #Text2Table SQL queries
+    combined_description_query =\
+    """
+        SELECT GROUP_CONCAT(description, ' ') AS combined_description
+        FROM (
+            SELECT description FROM {caption_table_name} LIMIT ?
+        )
+    """
 
-    text2table_incontext_prompt = "\n-".join([
-        "A red Nissan SUV is in the center of the road, putting on the breaks, whilst a young female pedestrian wearing yellow shirt crosses", 
-        "A red Nissan SUV driving to the left lane and a grey Chevrolet and blue motorbike on the right lane. The motorbike is speeding without breaks"
-    ])
+    #Text2Table pipeline prompts
+    text2table_incontext_prompt = \
+    """
+    Sample text :
+    < tr class =" mergedrow " > < th scope =" row " class =" infobox -
+    label " > < div style =" text - indent : -0.9 em ; margin - left
+    :1.2 em ; font - weight : normal ;" > < a href ="/ wiki /
+    Monarchy_of_Canada " title =" Monarchy of Canada " >
+    Monarch </ a > </ div > </ th > < td class =" infobox - data " > <
+    a href ="/ wiki / Charles_III " title =" Charles III " >
+    Charles III </ a > </ td > </ tr >
+    < tr class =" mergedrow " > < th scope =" row " class =" infobox -
+    label " > < div style =" text - indent : -0.9 em ; margin - left
+    :1.2 em ; font - weight : normal ;" > < span class =" nowrap
+    " > < a href ="/ wiki / Governor_General_of_Canada "
+    title =" Governor General of Canada " > Governor
+    General </ a > </ span > </ div > </ th > < td class =" infobox -
+    data " > < a href ="/ wiki / Mary_Simon " title =" Mary
+    Simon " > Mary Simon </ a > </ td > </ tr >
+    <b > Provinces and Territories </ b class =' navlinking
+    countries '>
+    <ul >
+    <li > Saskatchewan </ li >
+    <li > Manitoba </ li >
+    <li > Ontario </ li >
+    <li > Quebec </ li >
+    <li > New Brunswick </ li >
+    <li > Prince Edward Island </ li >
+    <li > Nova Scotia </ li >
+    <li > Newfoundland and Labrador </ li >
+    <li > Yukon </ li >
+    <li > Nunavut </ li >
+    <li > Northwest Territories </ li >
+    </ ul >
+    Question : List all relevant attributes that are exactly mentioned in this sample text if
+    any .
+    Answer :
+    - Monarch : Charles III
+    - Governor General : Mary Simon
+    - Provinces and Territories : Saskatchewan , Manitoba ,
+    Ontario , Quebec , New Brunswick , Prince Edward
+    Island , Nova Scotia , Newfoundland and Labrador ,
+    Yukon , Nunavut , Northwest Territories
+    ----
+    Sample text :
+    Patient birth date : 1990 -01 -01
+    Prescribed medication : aspirin , ibuprofen ,
+    acetaminophen
+    Prescribed dosage : 1 tablet , 2 tablets , 3 tablets
+    Doctor 's name : Dr . Burns
+    Date of discharge : 2020 -01 -01
+    Hospital address : 123 Main Street , New York , NY 10001
+    Question : List all relevant attributes that are exactly mentioned in this sample text if any .
+    Answer :
+    - Prescribed medication : aspirin , ibuprofen , acetaminophen
+    - Prescribed dosage : 1 tablet , 2 tablets , 3 tablets
+    ----
+    """
+    text2table_attribute_extraction_prompt =\
+    """
+    {incontext_examples}
+    ----
+    Sample text :
+    {all_joined_captions}
+    Question : List all relevant attributes that are exactly mentioned in this sample
+    text if any .
+    Answer :
+    """
+
+    text2table_schema_generation =\
+    """
+    Based on the following attributes, design a Database schema for a Sqlite3 Database with the
+    attribute names as column headers.
+
+    Each table you create MUST have a column named "frame_id" which SHOULD NOT be the PRIMARY KEY and SHOULD BE of TYPE REAL.
+
+    ONLY RETURN THE SQLITE3 TABLE CREATION STATEMENT FOR ALL THE TABLES
+    DO NOT RETURN ANY OTHER TEXT
+
+    Attributes: {attributes}
+    Database schema:
+    """
+
+    text2table_frame_prompt =\
+    """
+    You are an expert at converting natural language descriptions of traffic scenes into structured data.
+
+    Given the following description and set of objects:
     
-    text2table_frame_prompt = \
-        "Given a detailed description of an image and the set of objects below, output a structured table with the columns {formatted_schema}. " \
-        "Separate the start/end of table rows with <r> and start/end of table columns with <c> in one line. STRICTLY follow the format. " \
-        "object: one of the objects in set of objects " \
-        "attributes: detailed descriptive qualities about the object and its properties; where attribute is not present, leave empty " \
-        "image_location: spatial location of object in the image relative to other objects " \
-        "action: the detailed process or movement the object is performing; where action is not relevant for an object, leave empty " \
-        "Detailed image description:A silver audi car with license plate \"ABCD-1234\", that is driving whilst facing forward in front of a traffic light and a traffic light that is red to the right of the road " \
-        "Set of objects:{object_set} " \
-        "Directly generate the table with no prefix or suffix:<r><c>vehicle<c>in front of traffic light, facing forwards<c>silver Audi car with license plate \"ABCD-1234\"<c>driving forward and stopping at red-light<c><r><c>traffic light<c>right of the road in front of silver car<c>red color signalling stop<c><c><r> " \
-        "Detailed image description:{image_caption} " \
-        "Set of objects:{object_set} " \
-        "Directly generate the table with no prefix or suffix:"
+    "{caption}"
+
+    Object Set: [{object_set}]
+
+    Extract the structured information and return it as JSON using this format:
+
+    {{
+    {schema}
+    }}
+
+    Only include fields that can be reasonably inferred. Leave out objects that are not mentioned. Use null for missing but relevant fields.
+    """
+
+    # Text2Table pipeline prompts
+    # text2table_attribute_extraction_prompt = \
+    # "All image captions: {incontext_captions} " \
+    # "Given captions of all images, generate a list of important attributes " \
+    # "that can describe the objects in the image: " \
+    # "[color, brand, size, action, speed, location, position, state] " \
+    # "All image captions: {frame_captions} " \
+    # "Given captions of all images, generate a list of important attributes " \
+    # "that can describe objects in the image:"
+
+    # text2table_incontext_prompt = "\n-".join([
+    #     "A red Nissan SUV is in the center of the road, putting on the breaks, whilst a young female pedestrian wearing yellow shirt crosses", 
+    #     "A red Nissan SUV driving to the left lane and a grey Chevrolet and blue motorbike on the right lane. The motorbike is speeding without breaks"
+    # ])
+    
+    # text2table_frame_prompt = \
+    #     "Given a detailed description of an image and the set of objects below, output a structured table with the columns {formatted_schema}. " \
+    #     "Separate the start/end of table rows with <r> and start/end of table columns with <c> in one line. STRICTLY follow the format. " \
+    #     "object: one of the objects in set of objects " \
+    #     "attributes: detailed descriptive qualities about the object and its properties; where attribute is not present, leave empty " \
+    #     "image_location: spatial location of object in the image relative to other objects " \
+    #     "action: the detailed process or movement the object is performing; where action is not relevant for an object, leave empty " \
+    #     "Detailed image description:A silver audi car with license plate \"ABCD-1234\", that is driving whilst facing forward in front of a traffic light and a traffic light that is red to the right of the road " \
+    #     "Set of objects:{object_set} " \
+    #     "Directly generate the table with no prefix or suffix:<r><c>vehicle<c>in front of traffic light, facing forwards<c>silver Audi car with license plate \"ABCD-1234\"<c>driving forward and stopping at red-light<c><r><c>traffic light<c>right of the road in front of silver car<c>red color signalling stop<c><c><r> " \
+    #     "Detailed image description:{caption} " \
+    #     "Set of objects:{object_set} " \
+    #     "Directly generate the table with no prefix or suffix:"
     
     #-------------------------------------------------------------------------
     # Text2SQL Pipeline settings

@@ -2,6 +2,8 @@ from models.model import VisionLanguageModel
 import torch
 from typing import Optional, Dict
 import clip
+import time
+
 
 class CLIP(VisionLanguageModel):
 
