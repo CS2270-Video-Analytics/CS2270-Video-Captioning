@@ -5,7 +5,8 @@ from typing import Optional, Dict
 class CLIP(VisionLanguageModel):
 
     def __init__(self, model_params:dict, model_name:int="ViT-L/14", model_precision = torch.float16, system_eval:bool = False):
-       super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
+
+        super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         
         self.model_name = model_name
 

@@ -3,7 +3,7 @@ sys.path.append('..')
 import os
 import io
 import base64
-from ..model import VisualLanguageModel
+from ..model import VisionLanguageModel
 import ollama
 from PIL import Image
 import torch
@@ -19,7 +19,7 @@ import subprocess
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
-class OllamaVision(VisualLanguageModel):
+class OllamaVision(VisionLanguageModel):
     
     def __init__(self, model_params:dict, model_name: str, model_precision = torch.float16, system_eval:bool = False):
         super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)

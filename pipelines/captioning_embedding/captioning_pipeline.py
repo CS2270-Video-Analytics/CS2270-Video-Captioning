@@ -9,11 +9,11 @@ if Config.debug:
     import pdb
     from torchvision import transforms
 
-from .vision_language_models.BLIP import BLIP
-from .vision_language_models.BLIP2 import BLIP2
-from .vision_language_models.CLIP import CLIP
-from .vision_language_models.OllamaVision import OllamaVision
-from .vision_language_models.OpenAI import OpenAIVision
+from models.vision_language_models.BLIP import BLIP
+from models.vision_language_models.BLIP2 import BLIP2
+from models.vision_language_models.CLIP import CLIP
+from models.vision_language_models.OllamaVision import OllamaVision
+from models.vision_language_models.OpenAIVision import OpenAIVision
 import torch
 
 class CaptioningPipeline():
@@ -36,7 +36,7 @@ class CaptioningPipeline():
         self.sliding_window_size = Config.sliding_window_size
 
         #initialize the model that needs to be used for captioning
-        model_options = {'OllamaVision': LLamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2, 'OpenAI':OpenAIVision}
+        model_options = {'OllamaVision': OllamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2, 'OpenAI':OpenAIVision}
         [caption_model, caption_model_name] = Config.caption_model_name.split(';')
         assert caption_model in model_options, f'ERROR: model {Config.caption_model_name} does not exist or is not supported yet'
         
@@ -80,7 +80,7 @@ class CaptioningPipeline():
 if __name__ == '__main__':
 
     pdb.set_trace()
-    captioner = CaptioningPipeline(video_id=1)
+    captioner = CaptioningPipeline()
 
     image_base_path = os.path.relpath('../../datasets/mock_caption_data/bdd')
 
