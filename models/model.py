@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, Union
+from PIL import Image
+import io
+import base64
 import torch
+from torchvision import transforms
+from typing import TYPE_CHECKING, Optional, Union
+
 
 if TYPE_CHECKING:
     # Import the type-only dependencies
@@ -41,12 +46,12 @@ class VisionLanguageModel(Model):
     def pil_to_base64(self, image:Image):
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")  # Ensure a supported format like PNG or JPEG
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+        return base64.b64encode(buffered.read()).decode("utf-8")
     
 
 class LanguageModel(Model):
     def __init__(self):
-        super().__init__(model_params:dict, model_precision = model_precision, system_eval = system_eval)
+        super().__init__(model_params, model_precision = model_precision, system_eval = system_eval)
         pass
 
     #NOTE: optional to override, not all models have to be finetuned
