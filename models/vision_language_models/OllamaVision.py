@@ -68,7 +68,7 @@ class OllamaVision(VisualLanguageModel):
         outputs = None
 
         if self.system_eval:
-            start_time = time.now()
+            start_time = time.time()
 
         print("Processing inputs...")
         processed_inputs = self.preprocess_data(data_stream)
@@ -104,7 +104,7 @@ class OllamaVision(VisualLanguageModel):
                 outputs = "Error generating caption"
         
         if self.system_eval:
-            end_time = time.now()
+            end_time = time.time()
             elapsed = end_time - start_time
             info['time'] = elapsed
 

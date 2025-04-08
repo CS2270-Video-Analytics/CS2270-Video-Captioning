@@ -40,7 +40,7 @@ class BLIP(VisionLanguageModel):
         info = {}
 
         if self.system_eval:
-            start_time = time.now()
+            start_time = time.time()
 
         self.model.eval()
         processed_inputs = self.preprocess_data(data_stream, kwargs['prompt'])
@@ -55,7 +55,7 @@ class BLIP(VisionLanguageModel):
                 info['error'] = e
         
         if self.system_eval:
-            end_time = time.now()
+            end_time = time.time()
             elapsed = end_time - start_time
             info['time'] = elapsed
 

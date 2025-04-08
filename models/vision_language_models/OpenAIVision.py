@@ -28,7 +28,7 @@ class OpenAIVision(VisionLanguageModel):
     def run_inference(self, data_stream: torch.Tensor, **kwargs):
 
         if self.system_eval:
-            start_time = time.now()
+            start_time = time.time()
 
         processed_inputs = self.preprocess_data(data_stream)
 
@@ -57,7 +57,7 @@ class OpenAIVision(VisionLanguageModel):
             info['error'] = e
         
         if self.system_eval:
-            end_time = time.now()
+            end_time = time.time()
             elapsed = end_time - start_time
             info['time'] = elapsed
 

@@ -29,7 +29,7 @@ class CLIP(VisionLanguageModel):
         info = {}
 
         if self.system_eval:
-            start_time = time.now()
+            start_time = time.time()
 
         try:
             with torch.no_grad():
@@ -39,7 +39,7 @@ class CLIP(VisionLanguageModel):
             info['error'] = e
 
         if self.system_eval:
-            end_time = time.now()
+            end_time = time.time()
             elapsed = end_time - start_time
             info['time'] = elapsed
 
