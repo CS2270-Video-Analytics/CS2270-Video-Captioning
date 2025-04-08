@@ -28,7 +28,7 @@ class Config:
         'stop_tokens': None,
         'keep_alive': 30000
     }
- 
+    caption_detail = 'high'
     obj_focus = True
     init_object_set = []
     previous_frames = True
@@ -77,7 +77,7 @@ class Config:
         "    (3) action: object's state or action inferred " \
         "    (4) location: object's relative location to other key objects in the frame " \
         "seen object categories: a list of unique seen object categories before " \
-        "unseen objects categories: a list of unseen object categories in the current frame; for each object in the frame, only append the category to unseen list here if its significantly different from seen categories. Otherwise count as seen object categories and don't include its category here. " \
+        "unseen objects categories: a list of objects in the current frame description that are NOT in seen object categories " \
         "Example 1 (non-existent just for illustration): " \
         "current frame description: " \
         "    object id: 1 " \
@@ -102,7 +102,7 @@ class Config:
         "seen object categories: [A] " \
         "unseen objects categories: [C] " \
         "Task (for the current frame): " \
-        "current frame description: {curr_img_caption} " \
+        "current frame description: {curr_img_caption}\n\n" \
         "seen objects categories: [{object_set}] " \
         "unseen objects categories:"
 
@@ -178,29 +178,29 @@ class Config:
     def get_text2sql_prompt(schema_info: str, question: str) -> str:
         """Generate the prompt for text2sql model with given schema and question."""
         return f"""You are an AI that converts natural language questions into SQL queries 
-            specifically for an **SQLite3** database. 
-    text2sql_prompt =\
-    """You are an AI that converts natural language questions into SQL queries 
-        specifically for an **SQLite3** database. 
+            specifically for an **SQLite3** database.""" 
+    text2sql_prompt = """
+        You are an AI that converts natural language questions into SQL queries
+        specifically for an **SQLite3** database.
 
-            ### **Important SQLite Constraints:**
-            - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-            - **No native JSON functions** (assume basic text handling).
-            - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-            - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-            - Use **LOWER()** for case-insensitive string matching.
-            - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-            - Always assume **foreign key constraints are disabled unless explicitly turned on**.
+        ### **Important SQLite Constraints:**
+        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
+        - **No native JSON functions** (assume basic text handling).
+        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
+        - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
+        - Use **LOWER()** for case-insensitive string matching.
+        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
+        - Always assume **foreign key constraints are disabled unless explicitly turned on**.
 
-            ### **Database Schema:**
-            {schema_info}
+        ### **Database Schema:**
+        {schema_info}
 
-            ### **User Question:**
-            "{question}"
+        ### **User Question:**
+        {question}
 
-            ### **Expected Output:**
-            Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-            SQL Query:
+        ### **Expected Output:**
+        Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
+        SQL Query:
         """
 
     #-------------------------------------------------------------------------

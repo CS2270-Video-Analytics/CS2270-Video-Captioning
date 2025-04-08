@@ -44,9 +44,18 @@ class VisionLanguageModel(Model):
 
     # Function to convert a PIL image to Base64
     def pil_to_base64(self, image:Image):
+        """
+        Convert a PIL image to a base64 encoded string.
+        
+        Args:
+            image (PIL.Image): The PIL image to convert
+            
+        Returns:
+            str: Base64 encoded string of the image
+        """
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")  # Ensure a supported format like PNG or JPEG
-        return base64.b64encode(buffered.read()).decode("utf-8")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
     
 
 class LanguageModel(Model):

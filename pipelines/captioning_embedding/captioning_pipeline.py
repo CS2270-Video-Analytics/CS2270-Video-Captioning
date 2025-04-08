@@ -12,7 +12,6 @@ from models.vision_language_models.OpenAIVision import OpenAIVision
 from config.config import Config
 
 
-
 if Config.debug:
     import cv2
     import pdb
@@ -41,6 +40,9 @@ class CaptioningPipeline():
         #construct prompt specific for OpenAI system context
         self.context_prompt = Config.captioning_context_prompt_format
 
+        #level of detail to caption the image (only for OpenAI model)
+        self.caption_detail = Config.caption_detail
+
         #track the window of previous image descriptions
         self.previous_descriptions = deque()
         self.previous_descriptions.append('')
@@ -55,7 +57,7 @@ class CaptioningPipeline():
         self.caption_model = model_options[caption_model](model_name = caption_model_name, model_params = Config.caption_model_params, model_precision=Config.model_precision, system_eval=Config.system_eval)
 
         #create models for clip vector embeddings
-        self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.model_precision)
+        self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
 
     def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
         
@@ -68,7 +70,7 @@ class CaptioningPipeline():
 
         #(2) pass the model the captioning prompt for captioning
         #TODO: figure out data streaming
-        description, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = description_prompt, system_content = self.context_prompt))
+        description, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = description_prompt, system_content = self.context_prompt, detail=self.caption_detail))
         
         #(3) process the new description: append into previous queue + pop out from queue if needed
         self.previous_descriptions.append(description)
@@ -78,13 +80,14 @@ class CaptioningPipeline():
         #(4) generate a set of new objects in the current frame and add to the self.object_set
         if Config.obj_focus:
             obj_prompt = self.object_prompt.format(curr_img_caption = self.previous_descriptions[-1], object_set = ','.join(self.object_set))
-            new_objs, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt))
-            new_objs = new_objs[1:-1].split(',')
-            new_objs = [obj.strip().lower() for obj in new_objs]
+            new_objs, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt, detail='low'))
+            new_objs = new_objs.split('[')[1].split(']')[0].split(',')
+            new_objs = [obj.strip().lower() for obj in new_objs if len(obj.strip().lower()) > 0]
             self.object_set.update(new_objs)
 
         #(5) generate clip embedding
-        image_embedding, info = self.clip_model.run_inference(image).detach().cpu()
+        image_embedding, info = self.clip_model.run_inference(image)
+        image_embedding = image_embedding.detach().cpu()
 
         return [video_id, frame_id, description, self.object_set, image_embedding]
         
@@ -107,5 +110,5 @@ if __name__ == '__main__':
         transform = transforms.ToTensor()
         image_tensor = transform(image)
         
-        vid_id, frame_id, descrip, image_embed = captioner.run_pipeline(data_stream = image_tensor, video_id = 0, frame_id=i)
+        [vid_id, frame_id, descrip, obj_set, image_embed] = captioner.run_pipeline(data_stream = image_tensor, video_id = 0, frame_id=i)
         
