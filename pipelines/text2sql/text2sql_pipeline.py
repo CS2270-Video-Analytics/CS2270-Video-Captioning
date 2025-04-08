@@ -1,37 +1,51 @@
 import sqlite3
 import sqlparse
+import logging
 from config.config import Config
 if Config.debug:
     import pdb
-from models.text2sql.text2sql_models import create_text2sql_func_openai, create_text2sql_func_deepseek, create_text2sql_func_anthropic
-from models.text2sql.text2sql_hf import create_text2sql_func_hf
+from models.text2sql import Text2SQLModelFactory
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class Text2SQLPipeline():
+    """Pipeline for converting natural language questions to SQL queries and executing them"""
 
     def __init__(self):
-
-        model_options = {'OpenAI': create_text2sql_func_openai, 'DeepSeek': create_text2sql_func_deepseek, 'Anthropic': create_text2sql_func_anthropic, 'HuggingFace': create_text2sql_func_hf}
-        
-        [text2sql_model, text2sql_model_name] = Config.text2sql_model_name.split(';') 
-
-        assert text2sql_model in model_options, f'ERROR: model {Config.text2sql_model} does not exist or is not supported yet'
-        self.model = model_options[text2sql_model](model_name = text2sql_model_name)
-
-    def run_pipeline(self, question:str, table_schema:str):
         """
-        Converts a natural language question into an SQL query and executes it on a given SQLite database.
+        Initialize the Text2SQL pipeline with the model specified in the config
+        """
+        try:
+            # Parse model type and name from config
+            [text2sql_model, text2sql_model_name] = Config.text2sql_model_name.split(';')
+            
+            # Create the model using the factory
+            self.model = Text2SQLModelFactory.create_model(text2sql_model, text2sql_model_name)
+            logger.info(f"Initialized Text2SQL pipeline with model: {text2sql_model}:{text2sql_model_name}")
+            
+        except Exception as e:
+            logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
+            raise
+
+    def run_pipeline(self, question: str, table_schema: str):
+        """
+        Converts a natural language question into an SQL query.
 
         Parameters:
             question (str): The natural language question to convert to SQL.
-            db_file (str): Path to the SQLite database file.
-            text2sql_func (function): A function that generates SQL queries given a question and schema.
+            table_schema (str): The database schema information.
 
         Returns:
-            tuple: The generated SQL query and its execution result.
+            str: The generated SQL query.
         """
-        sql_query = self.normalize_sql(self.model(question, table_schema))
-        # sql_output = self.execute_sql(db_file, sql_query)
-        return sql_query
+        try:
+            sql_query = self.normalize_sql(self.model(question, table_schema))
+            logger.debug(f"Generated SQL query: {sql_query}")
+            return sql_query
+        except Exception as e:
+            logger.error(f"Error in run_pipeline: {str(e)}")
+            raise
 
     def execute_sql(self, db_file, sql_query):
         """
@@ -45,19 +59,90 @@ class Text2SQLPipeline():
             list: Query result as a list of tuples, or an error message if execution fails.
         """
         # Connect to the SQLite database
-        conn = sqlite3.connect(db_file)
-        cursor = conn.cursor()
-
+        conn = None
         try:
+            conn = sqlite3.connect(db_file)
+            cursor = conn.cursor()
+
             cursor.execute(sql_query)
             result = cursor.fetchall()  # Fetch query results
-            conn.close()
+            logger.debug(f"SQL execution result: {result}")
             return result
         except Exception as e:
-            conn.close()
+            logger.error(f"Error executing SQL: {str(e)}")
             return f"Error: {str(e)}"
+        finally:
+            if conn:
+                conn.close()
 
     def normalize_sql(self, sql):
-        """Remove extraneous formatting, code block markers, and standardize SQL."""
+        """
+        Remove extraneous formatting, code block markers, and standardize SQL.
+        
+        Parameters:
+            sql (str): The SQL query to normalize
+            
+        Returns:
+            str: The normalized SQL query
+        """
         sql = sql.strip().replace("```sql", "").replace("```", "").strip()  # Remove markdown SQL blocks
         return sqlparse.format(sql, reindent=True, keyword_case='upper').strip()  # Standardize format
+
+if __name__ == "__main__":
+    # Simple test setup
+    test_schema = """
+    CREATE TABLE cars (
+        id INTEGER PRIMARY KEY,
+        make TEXT,
+        model TEXT,
+        year INTEGER,
+        color TEXT,
+        price REAL
+    );
+    """
+    
+    # Initialize pipeline
+    pipeline = Text2SQLPipeline()
+    
+    # Test questions
+    test_questions = [
+        "Show me all red cars",
+        "What is the average price of cars?",
+        "Find cars made after 2020",
+        "List all Toyota models sorted by price"
+    ]
+    
+    print("\n=== Testing Text2SQL Pipeline ===")
+    for question in test_questions:
+        print(f"\nQuestion: {question}")
+        try:
+            sql_query = pipeline.run_pipeline(question, test_schema)
+            print(f"Generated SQL: {sql_query}")
+            
+            # Optional: Test execution with a sample database
+            conn = sqlite3.connect(':memory:')
+            cursor = conn.cursor()
+            
+            # Create test table and insert sample data
+            cursor.execute(test_schema)
+            sample_data = [
+                (1, 'Toyota', 'Corolla', 2020, 'Blue', 25000),
+                (2, 'Honda', 'Civic', 2021, 'Red', 27000),
+                (3, 'Toyota', 'Camry', 2019, 'Red', 30000)
+            ]
+            cursor.executemany(
+                'INSERT INTO cars VALUES (?, ?, ?, ?, ?, ?)',
+                sample_data
+            )
+            
+            # Execute generated query
+            print("Executing query...")
+            cursor.execute(sql_query)
+            results = cursor.fetchall()
+            print(f"Results: {results}")
+            
+            conn.close()
+            
+        except Exception as e:
+            print(f"Error: {e}")
+        print("-" * 50)
