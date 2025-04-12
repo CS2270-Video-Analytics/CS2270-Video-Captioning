@@ -11,7 +11,6 @@ import torch
 class VideoQueryPipeline():
 
     def __init__(self):
-        pdb.set_trace()
         #video sampling module to sample videos
         self.video_processor = VideoProcessor()
 
@@ -37,10 +36,10 @@ class VideoQueryPipeline():
         assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {video_filename} does not exist"
 
         #process the video to get a frame extractor
-        # frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = self.vector_db.get_num_vecs())
+        frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = self.vector_db.get_num_vecs())
 
         #iterate all frame batches and add to both sql and vector DBs
-        while False:
+        while True:
             try:
                 sql_batch, vector_batch = next(frame_iterator)
 
@@ -50,15 +49,12 @@ class VideoQueryPipeline():
                 #insert vectors into the vector db
                 vector_batch = torch.cat(vector_batch, dim=0)
                 self.vector_db.insert_many_vectors(vectors = vector_batch)
-                #save the vector db after processing
-                self.vector_db.save_vectordb()
-                
+                                
             except StopIteration:
                 break
         
-        self.captioning_pipeline.object_set = ['vehicle', 'traffic light','road']
-        #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
-        # self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
+        # self.captioning_pipeline.object_set = {'traffic light', 'traffic sign', 'vehicle', 'vegetation', 'building', 'road'}        #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
+        self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
         
         #extract a combined caption from the raw table and create new tables from the schema the LLM generates
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description')
@@ -68,14 +64,16 @@ class VideoQueryPipeline():
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
         db_schema = self.sql_dbs.get_schema()
-        pdb.set_trace()
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
 
         #insert a batch of rows into the SQL object db
         while True:
+
             try:
                 data_batch = next(obj_iterator)
-                self.sql_dbs.insert_many_rows_list(table_name = Config.processed_table_name, rows_data = data_batch)
+                for data_dict in data_batch:
+                    for (table_name, rows_data) in data_dict.items():
+                        self.sql_dbs.insert_many_rows_list(table_name = table_name, rows_data = rows_data)
             except StopIteration:
                 break
 

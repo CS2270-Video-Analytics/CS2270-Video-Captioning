@@ -20,6 +20,7 @@ import sqlite3
 class Text2TablePipeline():
     def __init__(self, all_objects:List[str]):
         self.text2table_frame_prompt = Config.text2table_frame_prompt
+        self.text2table_frame_context = Config.text2table_frame_context
 
         #store all prompts for text2table
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
@@ -64,7 +65,6 @@ class Text2TablePipeline():
         return generated_schemas
     
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}"):
-        pdb.set_trace()
         lines = []
         for table, cols in schema_dict.items():
             lines.append(f'  "{table}": [')
@@ -89,7 +89,6 @@ class Text2TablePipeline():
 
 
     def parse_db_schema(self, schema_str):
-        pdb.set_trace()
         table_defs = {}
         current_table = None
 
@@ -105,18 +104,79 @@ class Text2TablePipeline():
                     table_defs[current_table].append(column_name)
 
         return table_defs
+    def extract_complete_json(self, s: str) -> dict:
+        """
+        Extracts all complete top-level JSON key-value entries from a raw string.
+        It skips any entries that are malformed or incomplete.
+        """
 
+        # Trim everything after the last closing brace to cut off obvious trailing junk
+        s = s[:s.rfind('}') + 1] if '}' in s else s
+
+        # Ensure we only look at the object body (if wrapped in outer {})
+        try:
+            s = s.strip()
+            if s.startswith('{') and s.endswith('}'):
+                s = s[1:-1]
+        except:
+            return {}
+
+        result = {}
+
+        # Regex pattern to match top-level key-value pairs with nested JSON arrays or objects
+        pattern = r'"(\w+)":\s*(\[[^\[\]]*\{.*?\}[^\[\]]*\])'  # Matches: "key": [ {...} ]
+        matches = re.finditer(pattern, s, re.DOTALL)
+
+        for match in matches:
+            key = match.group(1)
+            value_str = match.group(2).strip()
+            try:
+                value = json.loads(value_str)
+                result[key] = value
+            except json.JSONDecodeError:
+                continue  # Skip incomplete or malformed entries
+
+        return result
+        
+    def extract_valid_json(self, s: str):
+        """
+        Extracts the largest valid JSON object from a noisy string that may contain extra text or be partially malformed.
+        Returns a parsed JSON dict or raises an error if none found.
+        """
+        # Trim everything after the last closing brace
+        s = s[:s.rfind('}') + 1] if '}' in s else s
+
+        # Find the largest valid JSON object from within the string
+        stack = []
+        json_start = None
+        for i, char in enumerate(s):
+            if char == '{':
+                if not stack:
+                    json_start = i
+                stack.append('{')
+            elif char == '}':
+                if stack:
+                    stack.pop()
+                    if not stack:
+                        try:
+                            candidate = s[json_start:i+1]
+                            candidate = candidate.strip()
+                            return json.loads(candidate)
+                        except json.JSONDecodeError:
+                            continue
+        raise ValueError("No valid JSON object found in the input.")
+    
     def extract_json_from_response(self, text:str):
         # Strip markdown-style code block if present
         if "```" in text:
             text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).strip()
-        return text.strip()
+        valid_json = self.extract_complete_json(text)
+        return valid_json
     
     def run_pipeline_video(self, video_data:List[tuple], database_schema:str):
-        pdb.set_trace()
+        
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
-        json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
         
         #collate all data for all frames before inserting
         frame_data = []
@@ -132,26 +192,30 @@ class Text2TablePipeline():
                 frame_data = [] #empty the batch
                 
     def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
+        
+
+        json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
+            
+        raw_response, _ = self.text2table_model.run_inference(self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}")), **dict(system_content= self.text2table_frame_context))
         pdb.set_trace()
-        try:
-            raw_response, _ = self.text2table_model.run_inference(data_stream= self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template, frame_id = frame_id))
-            json_response = self.extract_json_from_response(raw_response)
-            json_response = json.loads(json_response)
+        json_response = self.extract_json_from_response(raw_response)
 
-            db_data_rows = []
-
-            for table, columns in parsed_db_schema.items():
+        db_data_rows = {}
+        for table, columns in parsed_db_schema.items():
+            try:
                 records = json_response.get(table, [])
                 if not isinstance(records, list):
                     continue
-
+                if table not in db_data_rows:
+                    db_data_rows[table] = []
                 for record in records:
-                    table_vals = [record.get(col) for col in columns]
-                    db_data_rows.append(table_vals)
-        except Exception as e:
-            raise f"ERROR: Cannot process video {video_id} and frame {frame_id} - {e}"
+                    table_vals = tuple([json.dumps(record.get(col)) if type(record.get(col))==list or type(record.get(col))==dict else record.get(col) for col in columns]) #NOTE: need to be inserting list of tuples into DB
+                    db_data_rows[table].append(table_vals)
+            except Exception as e:
+                print(f"ERROR: skipped processing video {video_id} and frame {frame_id} - {e}")
+                continue
 
-        return db_data_rows
+        return [db_data_rows]
     
     
     def parse_table_output_t2t(self, structured_caption:str, video_id:int, frame_id:int):

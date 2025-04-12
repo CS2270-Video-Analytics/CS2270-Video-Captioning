@@ -119,10 +119,9 @@ class Config:
         'repeat_penalty': 0.5,
         'presence_penalty': 0.0,
         'frequency_penalty':0.0,
-        'max_tokens': 200,
+        'max_tokens': 300,
         'stop_tokens': None,
-        'keep_alive': 30000
-,
+        'keep_alive': 30000,
         'batch_size': 4,
         'num_threads': 8,
         'model_precision': torch.float16,
@@ -220,10 +219,10 @@ class Config:
     Sqlite3 Query:
     """
 
+    text2table_frame_context = "You are an expert at converting natural language descriptions of traffic scenes into structured data."
+
     text2table_frame_prompt =\
     """
-    You are an expert at converting natural language descriptions of traffic scenes into structured data.
-
     Given the following description and set of objects:
     
     "{caption}"

@@ -18,7 +18,12 @@ class SQLLiteDBInterface():
         
         
         #create the table during the init
-        self.create_table()
+        if not os.path.exists(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name)):
+            self.create_table()
+        #otherwiese populate the table schema dictionary from before
+        else:
+            self.table_name_schema_dict = self.extract_schema_dict()
+            
 
         # self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
         self.insertion_query = "INSERT OR IGNORE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
@@ -39,6 +44,30 @@ class SQLLiteDBInterface():
             ''')
             self.connection.commit()
 
+    def extract_schema_dict(self):
+
+        # Get all user-defined table names (exclude internal SQLite tables)
+        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+        tables = [row[0] for row in self.cursor.fetchall()]
+
+        table_name_schema_dict = {}
+
+        for table in tables:
+            self.cursor.execute(f"PRAGMA table_info({table});")
+            rows = self.cursor.fetchall()
+
+            # Format: (cid, name, type, notnull, dflt_value, pk)
+            column_dict = {}
+            primary_keys = []
+
+            for cid, name, col_type, notnull, default, pk in rows:
+                column_dict[name] = col_type
+                if pk > 0:
+                    primary_keys.append(name)
+
+            table_name_schema_dict[table] = [column_dict, primary_keys]
+
+        return table_name_schema_dict
 
     def execute_query(self, query: str, args:tuple = None):
         '''
@@ -60,6 +89,7 @@ class SQLLiteDBInterface():
         try:
             self.cursor.executescript(queries)
             self.connection.commit()
+            self.table_name_schema_dict = self.extract_schema_dict() #update the schema dictionary if we create new tables
             return self.cursor.fetchall()  # return all rows relevant to query
         except Exception as e:
             print(f"Error executing multiple queries: {e}")
@@ -131,10 +161,9 @@ class SQLLiteDBInterface():
         Returns:
             str: The schema of specified tables, including column details.
         """
-        pdb.set_trace()
         try:
             # Verify table names against sqlite_master
-            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            self.cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name != '{Config.caption_table_name}';")
             all_tables = {row[0] for row in self.cursor.fetchall()}
 
             # Filter only existing tables
@@ -157,7 +186,7 @@ class SQLLiteDBInterface():
 
                 schema_info.append("")  # Add space between tables
 
-            self.connection.close()
+            # self.connection.close()
             return "\n".join(schema_info)
 
         except Exception as e:

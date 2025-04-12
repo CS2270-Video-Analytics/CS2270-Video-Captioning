@@ -50,15 +50,14 @@ class VectorDBInterface():
     def get_num_vecs(self):
         self.load_vectordb()
         num_vecs = self.vector_index.ntotal
+        self.save_vectordb()
         self.vector_index = None
         return num_vecs
 
     def insert_many_vectors(self, vectors: torch.Tensor):
-        pdb.set_trace()
         self.load_vectordb()
         # Insert multiple vectros at once: normalize first so inner-product = cosine similarity for CLIP embeddings
         vectors = F.normalize(vectors, p=2, dim=1)
-
         self.vector_index.add(vectors)
         self.save_vectordb()
         self.vector_index = None

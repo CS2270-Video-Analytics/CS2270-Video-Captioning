@@ -24,12 +24,12 @@ class OpenAIText(LanguageModel):
     def run_inference(self, data_stream: str, **kwargs):
         info = {}
 
-        if 'system_content' in kwargs:
-            messages.append({"role": "system", "content": kwargs['system_content']})
         messages = [
             {"role": "user", "content": data_stream}
         ]
-
+        if 'system_content' in kwargs:
+            messages.append({"role": "system", "content": kwargs['system_content']})
+        
         try:
             request_params = dict(model=self.model_name,
                 messages=messages,
