@@ -4,7 +4,7 @@ from config import Config
 import os
 import io
 import base64
-from ..model import Model
+from ..model import LanguageModel
 import ollama
 from PIL import Image
 import torch
@@ -12,18 +12,16 @@ import torch
 from typing import Optional, Dict
 from torchvision import transforms
 from time import time
-from torchvision import transforms
 import requests
 import subprocess
-
 
 #TODO: find a way to batch process and parallelize processing of frames from many videos
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
 class OllamaText(LanguageModel):
-    def __init__(self, model_name: str, model_params: Dict = None):
+    def __init__(self, model_name: str, model_params: Dict = None, model_precision = torch.float16, system_eval:bool = False):
+        super().__init__(model_params=model_params, model_precision=model_precision, system_eval=system_eval)
         self.model_name = model_name
-        self.model_params = model_params
         assert self.is_ollama_model_running(), "ERROR: Ollama is not running. Run it on another terminal first"
 
     def get_gpu_processes(self):
@@ -51,7 +49,7 @@ class OllamaText(LanguageModel):
         info = {}
         outputs = None
 
-        if self.model_params['system_eval']:
+        if self.system_eval:
             start_time = time.now()
 
         print("Sending to Ollama...")
@@ -82,7 +80,7 @@ class OllamaText(LanguageModel):
                 info['error'] = e
                 outputs = "Error generating caption"
         
-        if self.model_params['system_eval']:
+        if self.system_eval:
             end_time = time.now()
             elapsed = end_time - start_time
             info['time'] = elapsed

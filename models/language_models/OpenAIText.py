@@ -2,20 +2,21 @@ from config import Config
 from ..model import LanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
+import openai
 from openai import OpenAI
 import os 
 from typing import Optional, Dict
 from torchvision import transforms
 from time import time
-from torchvision import transforms
+
 
 class OpenAIText(LanguageModel):
-    def __init__(self, model_name="gpt-4o-mini"):
+    def __init__(self, model_params: Dict, model_name:str="gpt-4o-mini", model_precision = torch.float16, system_eval:bool = False):
+        super().__init__(model_params=model_params, model_precision=model_precision, system_eval=system_eval)
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
         OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
         self.model_client = OpenAI()
         self.model_name = model_name
-
 
     def preprocess_data(self, data_stream: str, text_input:Optional[str]):
         pass
@@ -28,19 +29,20 @@ class OpenAIText(LanguageModel):
         ]
 
         try:
-            response = self.model_client.chat.completions.create(
-                model=self.model_name,
+            request_params = dict(model=self.model_name,
                 messages=messages,
-                temperature=kwargs['temperature'],
-                top_p = kwargs['top_p'],
-                max_tokens=kwargs['max_tokens'],
-                frequency_penalty=kwargs['frequency_penalty'],
-                presence_penalty=kwargs['presence_penalty'],
-                stop_token=kwargs['stop_token']
-            )
+                temperature=self.model_params['temperature'],
+                top_p = self.model_params['top_p'],
+                max_tokens=self.model_params['max_tokens'],
+                frequency_penalty=self.model_params['frequency_penalty'],
+                presence_penalty=self.model_params['presence_penalty'])
+            if self.model_params['stop_tokens'] and type(self.model_params['stop_tokens']) is list:
+                request_params['stop'] = self.model_params['stop_tokens']
+            
+            response = self.model_client.chat.completions.create(**request_params)
 
             info['error'] = None
-        except OpenAI.APIError as e:
+        except openai.APIError as e:
             info['error'] = e
 
         return response.choices[0].message.content.strip(), info

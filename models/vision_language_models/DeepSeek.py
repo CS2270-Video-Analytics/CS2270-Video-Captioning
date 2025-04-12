@@ -2,6 +2,7 @@ from models.model import VisionLanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
+import openai
 import os 
 from typing import Optional, Dict
 from torchvision import transforms
@@ -44,14 +45,14 @@ class DeepSeek(VisionLanguageModel):
                     ]}]
 
         try:
-            response = client.chat.completions.create(
+            response = self.model_client.chat.completions.create(
                 model=self.model_name,
                 messages=messages,
                 temperature=self.model_params['temperature'],
                 top_p = self.model_params['top_p'],
                 max_tokens=self.model_params['max_tokens'],
                 frequency_penalty=self.model_params['frequency_penalty'],
-                presence_penalty=kwself.model_paramsargs['presence_penalty'],
+                presence_penalty=self.model_params['presence_penalty'],
                 stop_token=self.model_params['stop_tokens']
             )
             info['error'] = None

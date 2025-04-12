@@ -4,7 +4,7 @@ import io
 import base64
 import torch
 from torchvision import transforms
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, Dict
 
 
 if TYPE_CHECKING:
@@ -59,9 +59,8 @@ class VisionLanguageModel(Model):
     
 
 class LanguageModel(Model):
-    def __init__(self):
-        super().__init__(model_params, model_precision = model_precision, system_eval = system_eval)
-        pass
+    def __init__(self, model_params: Dict, model_precision = torch.float16, system_eval = False):
+        super().__init__(model_params=model_params, model_precision=model_precision, system_eval=system_eval)
 
     #NOTE: optional to override, not all models have to be finetuned
     def finetune_model(self, dataloader: "DataLoader"):
