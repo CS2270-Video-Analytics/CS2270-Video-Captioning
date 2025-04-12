@@ -1,4 +1,4 @@
-from data_processing.process_videos import VideoProcessor
+from pipelines.frame_extraction import VideoProcessor
 from pipelines.captioning_embedding.captioning_pipeline import CaptioningPipeline
 from pipelines.text2sql.text2sql_pipeline import Text2SQLPipeline
 from pipelines.text2table.text2table_pipeline import Text2TablePipeline
@@ -11,6 +11,7 @@ import torch
 class VideoQueryPipeline():
 
     def __init__(self):
+        pdb.set_trace()
         #video sampling module to sample videos
         self.video_processor = VideoProcessor()
 
@@ -21,11 +22,10 @@ class VideoQueryPipeline():
         self.sql_dbs = SQLLiteDBInterface()
 
         #vector db containing image embeddings
-        self.vector_db = VectorDBInterface(vector_dim = self.captioning_pipeline.clip_model.visual.output_dim)
+        self.vector_db = VectorDBInterface(vector_dim = self.captioning_pipeline.clip_model.clip_model.visual.output_dim)
 
         #natural language 2 sql generation pipeline
-        #TODO: debug this afterwards
-        # self.text2sql_pipeline = Text2SQLPipeline()
+        self.text2sql_pipeline = Text2SQLPipeline()
 
         #raw caption 2 formatted table pipeline
         self.text2table_pipeline = Text2TablePipeline(all_objects = [])
@@ -60,9 +60,14 @@ class VideoQueryPipeline():
         #save the vector db after processing
         self.vector_db.save_vectordb()
 
+        #extract a combined caption from the raw table
+        combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description')
+        table_attributes = self.text2table_pipeline.extract_table_attributes(all_captions = combined_description)
+        
+        
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
-        obj_iterator = self.text2table_pipeline.run_pipeline_video(db_rows)
+        obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=table_attributes)
 
         #insert a batch of rows into the SQL object db
         while True:
@@ -72,7 +77,10 @@ class VideoQueryPipeline():
             except StopIteration:
                 break
 
-
+        #clear cached data in pipeline for multiple videos
+        self.captioning_pipeline.clear_pipeline()
+        self.text2sql_pipeline.clear_pipeline()
+        self.text2table_pipeline.clear_pipeline()
     
     def process_query(self, language_query:str):
 
@@ -80,7 +88,11 @@ class VideoQueryPipeline():
         table_schema = self.sql_dbs.get_schema(table_name = [Config.processed_table_name])
 
         #parse the language query into a SQL query
-        sql_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
+        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
+
+        #execute query on the sql db
+        #TODO: hwo to parse arguments to query
+        self.sql_dbs.execute_query(query = user_query)
 
 
 if __name__ == '__main__':

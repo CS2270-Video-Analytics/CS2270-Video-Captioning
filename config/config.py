@@ -207,7 +207,7 @@ class Config:
     Answer :
     """
 
-    text2table_schema_generation =\
+    text2table_schema_generation_prompt =\
     """
     Based on the following attributes, design a Database schema for a Sqlite3 Database with the
     attribute names as column headers.

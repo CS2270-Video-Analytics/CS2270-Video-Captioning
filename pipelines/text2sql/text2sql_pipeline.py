@@ -5,7 +5,6 @@ from config.config import Config
 if Config.debug:
     import pdb
 from models.text2sql import Text2SQLModelFactory
-
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -46,6 +45,11 @@ class Text2SQLPipeline():
         except Exception as e:
             logger.error(f"Error in run_pipeline: {str(e)}")
             raise
+    
+    def clear_pipeline(self):
+        #clear the cache that remains for previous runs of text2table
+        self.table_attributes = []
+        self.all_objects = []
 
     def execute_sql(self, db_file, sql_query):
         """

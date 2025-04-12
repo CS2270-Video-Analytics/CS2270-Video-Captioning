@@ -9,29 +9,28 @@ if Config.debug:
     import cv2
     import pdb
     from torchvision import transforms
-
-from models.langauge_models.Anthropic import Anthropic
-from models.langauge_models.OpenAI import OpenAIText
-from models.langauge_models.OllamaText import OllamaText
-from models.langauge_models.DeepSeek import DeepSeek
+import pdb
+from models.language_models.Anthropic import Anthropic
+from models.language_models.OpenAIText import OpenAIText
+from models.language_models.OllamaText import OllamaText
+from models.language_models.DeepSeek import DeepSeek
 import torch
 import sqlite3
 
-class Text2TablePipeline:
-    def __init__(self, all_objects:List[str], text2table_params: Dict=None):
-        self.text2table_params = text2table_params
+class Text2TablePipeline():
+    def __init__(self, all_objects:List[str]):
         self.text2table_frame_prompt = Config.text2table_frame_prompt
 
         #store all prompts for text2table
-        self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt.format(incontext_examples = Config.text2table_incontext_prompt)
-        self.schema_extraction_prompt_format = Config.schema_generation_prompt
+        self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
+        self.schema_extraction_prompt_format = Config.text2table_schema_generation_prompt
 
         #initialize the model that needs to be used for captioning
         model_options = {'Ollama': OllamaText, 'OpenAI': OpenAIText, 'Anthropic': Anthropic, 'DeepSeek':DeepSeek}
         [text2table_model, text2table_model_name] = Config.caption_model_name.split(';')
         assert text2table_model in model_options, f'ERROR: model {text2table_model} does not exist or is not supported yet'
         
-        self.text2table_model = model_options[text2table_model_name](model_params = Config.text2table_params, model_name=text2table_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
+        self.text2table_model = model_options[text2table_model](model_params = Config.text2table_params, model_name=text2table_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
 
         #extract the list of attributes to capture across frame descriptions
         self.table_attributes = []
@@ -39,6 +38,11 @@ class Text2TablePipeline:
         #store a list of unique objects to extract data for
         self.all_objects = all_objects
     
+    def clear_pipeline(self):
+        #clear the cache that remains for previous runs of text2table
+        self.table_attributes = []
+        self.all_objects = []
+
     def update_objects(self, all_objects:List[str]):
         self.all_objects = all_objects
 
