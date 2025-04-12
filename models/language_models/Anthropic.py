@@ -1,5 +1,5 @@
 from config import Config
-from ..model import Model
+from ..model import LanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 from anthropic import Anthropic, APIStatusError, APIConnectionError

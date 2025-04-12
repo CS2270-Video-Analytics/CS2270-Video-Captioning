@@ -4,7 +4,7 @@ from config import Config
 import os
 import io
 import base64
-from ..model import Model
+from ..model import LanguageModel
 import ollama
 from PIL import Image
 import torch
@@ -21,9 +21,8 @@ import subprocess
 #TODO: object extraction - siteratively update set of objects in the video across frames
 
 class OllamaText(LanguageModel):
-    def __init__(self, model_name: str, model_params: Dict = None):
+    def __init__(self, model_name: str):
         self.model_name = model_name
-        self.model_params = model_params
         assert self.is_ollama_model_running(), "ERROR: Ollama is not running. Run it on another terminal first"
 
     def get_gpu_processes(self):
