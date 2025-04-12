@@ -30,7 +30,7 @@ class Model(ABC):
         pass
 
 class VisionLanguageModel(Model):
-    def __init__(self, model_params:dict, model_name: str, model_precision, system_eval:bool):
+    def __init__(self, model_params:dict, model_name: str, model_precision = torch.float16, system_eval:bool = False):
         super().__init__(model_params = model_params, model_precision = model_precision, system_eval = system_eval)
         self.to_pil_image = transforms.ToPILImage()
         
@@ -59,7 +59,7 @@ class VisionLanguageModel(Model):
     
 
 class LanguageModel(Model):
-    def __init__(self, model_params: Dict, model_precision = torch.float16, system_eval = False):
+    def __init__(self, model_params: Dict, model_precision = torch.float16, system_eval: bool = False):
         super().__init__(model_params=model_params, model_precision=model_precision, system_eval=system_eval)
 
     #NOTE: optional to override, not all models have to be finetuned

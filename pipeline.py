@@ -50,6 +50,8 @@ class VideoQueryPipeline():
                 #insert vectors into the vector db
                 vector_batch = torch.cat(vector_batch, dim=0)
                 self.vector_db.insert_many_vectors(vectors = vector_batch)
+                #save the vector db after processing
+                self.vector_db.save_vectordb()
                 
             except StopIteration:
                 break
@@ -57,9 +59,7 @@ class VideoQueryPipeline():
         
         #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
         self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
-        #save the vector db after processing
-        self.vector_db.save_vectordb()
-
+        
         #extract a combined caption from the raw table
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description')
         table_attributes = self.text2table_pipeline.extract_table_attributes(all_captions = combined_description)
@@ -91,7 +91,7 @@ class VideoQueryPipeline():
         user_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
 
         #execute query on the sql db
-        #TODO: hwo to parse arguments to query
+        #TODO: hwo to parse arguments to SQL query
         self.sql_dbs.execute_query(query = user_query)
 
 
