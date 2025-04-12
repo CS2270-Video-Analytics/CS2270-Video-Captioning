@@ -37,10 +37,10 @@ class VideoQueryPipeline():
         assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {video_filename} does not exist"
 
         #process the video to get a frame extractor
-        frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = self.vector_db.get_num_vecs())
+        # frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = self.vector_db.get_num_vecs())
 
         #iterate all frame batches and add to both sql and vector DBs
-        while True:
+        while False:
             try:
                 sql_batch, vector_batch = next(frame_iterator)
 
@@ -55,15 +55,16 @@ class VideoQueryPipeline():
                 
             except StopIteration:
                 break
-
         
+        pdb.set_trace()
+        self.captioning_pipeline.object_set = ['vehicle', 'traffic light','road']
         #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
-        self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
+        # self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
         
-        #extract a combined caption from the raw table
+        #extract a combined caption from the raw table and create new tables from the schema the LLM generates
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description')
-        table_attributes = self.text2table_pipeline.extract_table_attributes(all_captions = combined_description)
-        
+        structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
+        self.sql_dbs.execute_many_queries(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)

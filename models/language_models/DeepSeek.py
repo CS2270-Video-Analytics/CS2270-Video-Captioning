@@ -19,10 +19,10 @@ class DeepSeek(LanguageModel):
         self.model_name = model_name
 
 
-    def preprocess_data(self, data_stream:"Tensor", text_input:Optional[str]):
+    def preprocess_data(self, data_stream:str, text_input:Optional[str]):
         pass
     
-    def run_inference(self, query: str, **kwargs):
+    def run_inference(self, data_stream: str, **kwargs):
         info = {}
         messages = [{"role": "system", "content": kwargs['system_content']},{"role": "user", "content": query}]
 

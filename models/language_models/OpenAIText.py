@@ -23,8 +23,10 @@ class OpenAIText(LanguageModel):
     
     def run_inference(self, data_stream: str, **kwargs):
         info = {}
+
+        if 'system_content' in kwargs:
+            messages.append({"role": "system", "content": kwargs['system_content']})
         messages = [
-            {"role": "system", "content": kwargs['system_content']},
             {"role": "user", "content": data_stream}
         ]
 

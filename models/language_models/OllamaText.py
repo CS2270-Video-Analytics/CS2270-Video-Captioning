@@ -42,7 +42,10 @@ class OllamaText(LanguageModel):
             print(f"Error connecting to Ollama: {e}")
             return False
     
-    def run_inference(self, query: str, **kwargs):
+    def preprocess_data(self, data_stream:str, text_input:Optional[str]):
+        pass
+    
+    def run_inference(self, data_stream: str, **kwargs):
         print("Starting inference...")
 
         #additional return values in a dictionary

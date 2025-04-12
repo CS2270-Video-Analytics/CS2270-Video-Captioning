@@ -22,7 +22,7 @@ class AnthropicText(LanguageModel):
         info = {}
         messages = [
             {"role": "system", "content": kwargs['system_content']},
-            {"role": "user", "content": data_stream}
+            {"role": "user", "content": query}
         ]
 
         if self.system_eval:

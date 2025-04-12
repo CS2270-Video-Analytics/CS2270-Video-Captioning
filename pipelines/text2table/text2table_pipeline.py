@@ -48,10 +48,20 @@ class Text2TablePipeline():
 
     def extract_table_attributes(self, all_captions:str):
 
-        frame_extraction_prompt = self.attribute_extraction_prompt.format(incontext_captions = Config.text2table_incontext_prompt, all_joined_captions = all_captions)
-        extracted_attributes, __ = self.text2table_model.run_inference(query= frame_extraction_prompt)
+        frame_extraction_prompt = self.attribute_extraction_prompt.format(incontext_examples = Config.text2table_incontext_prompt, all_joined_captions = all_captions)
+        extracted_attributes, __ = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
 
         return extracted_attributes.strip()
+    
+    def extract_table_schemas(self, all_captions:str):
+
+        extracted_attributes = self.extract_table_attributes(all_captions)
+
+        schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
+        generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)
+        generated_schemas = self.clean_schema(generated_schemas)
+
+        return generated_schemas
     
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}"):
         lines = []
@@ -76,13 +86,6 @@ class Text2TablePipeline():
         cleaned_lines = [line for line in lines if not re.match(r"^\s*```.*$", line)] 
         return "\n".join(cleaned_lines)
 
-    def extract_table_schemas(self, extracted_attributes:str):
-
-        schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
-        generated_schemas, __ = self.text2table_model.run_inference(query = schema_extraction_prompt_format)
-        generated_schemas = self.clean_schema(generated_schemas)
-
-        return generated_schemas
 
     def parse_db_schema(self, schema_str):
         table_defs = {}
@@ -128,7 +131,7 @@ class Text2TablePipeline():
                 
     def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
         try:
-            raw_response, _ = self.text2table_model.run_inference(query= self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template, frame_id = frame_id))
+            raw_response, _ = self.text2table_model.run_inference(data_stream= self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template, frame_id = frame_id))
             json_response = self.extract_json_from_response(raw_response)
             json_response = json.loads(json_response)
 

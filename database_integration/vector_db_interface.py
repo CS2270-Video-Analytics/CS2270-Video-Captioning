@@ -3,6 +3,7 @@ from config import Config
 import faiss
 import torch
 import torch.nn.functional as F
+import pdb
 
 class VectorDBInterface():
 
@@ -24,33 +25,43 @@ class VectorDBInterface():
             self.load_vectordb()
         else:
             self.vector_index = faiss.IndexFlatIP(vector_dim)
+        
+        self.save_vectordb()
 
     def seach_query(self, query: torch.Tensor, k:int = 1):
-        
+        self.load_vectordb()
         query = F.normalize(query, p=2, dim=1)   # Normalize the query vector
 
         distances, indices = self.vector_index.search(query, k)
+        self.save_vectordb()
+        self.vector_index = None
 
         return distances, indices
     
     def search_all(self, query: torch.Tensor):
-        
+        self.load_vectordb()
         query = F.normalize(query, p=2, dim=1)   # Normalize the query vector
 
         distances, indices = self.vector_index.search(query, k = self.vector_index.ntotal)
-
+        self.save_vectordb()
+        self.vector_index = None
         return distances, indices
     
     def get_num_vecs(self):
-        return self.vector_index.ntotal
+        self.load_vectordb()
+        num_vecs = self.vector_index.ntotal
+        self.vector_index = None
+        return num_vecs
 
     def insert_many_vectors(self, vectors: torch.Tensor):
-        
+        pdb.set_trace()
+        self.load_vectordb()
         # Insert multiple vectros at once: normalize first so inner-product = cosine similarity for CLIP embeddings
         vectors = F.normalize(vectors, p=2, dim=1)
 
-
         self.vector_index.add(vectors)
+        self.save_vectordb()
+        self.vector_index = None
 
     def load_vectordb(self):
         self.vector_index = faiss.read_index(self.db_path)
