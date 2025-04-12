@@ -64,6 +64,7 @@ class Text2TablePipeline():
         return generated_schemas
     
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}"):
+        pdb.set_trace()
         lines = []
         for table, cols in schema_dict.items():
             lines.append(f'  "{table}": [')
@@ -88,6 +89,7 @@ class Text2TablePipeline():
 
 
     def parse_db_schema(self, schema_str):
+        pdb.set_trace()
         table_defs = {}
         current_table = None
 
@@ -111,7 +113,7 @@ class Text2TablePipeline():
         return text.strip()
     
     def run_pipeline_video(self, video_data:List[tuple], database_schema:str):
-
+        pdb.set_trace()
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
         json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
@@ -130,6 +132,7 @@ class Text2TablePipeline():
                 frame_data = [] #empty the batch
                 
     def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
+        pdb.set_trace()
         try:
             raw_response, _ = self.text2table_model.run_inference(data_stream= self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template, frame_id = frame_id))
             json_response = self.extract_json_from_response(raw_response)

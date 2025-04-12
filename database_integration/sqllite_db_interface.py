@@ -2,6 +2,7 @@ import sqlite3
 import os
 from config import Config
 from typing import List, Dict,Set
+import pdb
 
 class SQLLiteDBInterface():
 
@@ -48,7 +49,7 @@ class SQLLiteDBInterface():
         else:
             self.cursor.execute(query, args)
 
-        self.conn.commit()
+        self.connection.commit()
 
         return self.cursor.fetchall()  # return all rows relevant to query
     
@@ -130,10 +131,10 @@ class SQLLiteDBInterface():
         Returns:
             str: The schema of specified tables, including column details.
         """
-
+        pdb.set_trace()
         try:
             # Verify table names against sqlite_master
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
             all_tables = {row[0] for row in self.cursor.fetchall()}
 
             # Filter only existing tables

@@ -209,16 +209,15 @@ class Config:
 
     text2table_schema_generation_prompt =\
     """
-    Based on the following attributes, design a Database schema for a Sqlite3 Database with the
-    attribute names as column headers.
+    Based on the following attributes, design a Sqlite3 Database schema with the following constraints:
+    * use the attribute names as column headers.
+    * each table name is unique
+    * each table has a column named "frame_id" with type REAL which should not be the PRIMARY KEY.
 
-    Each table you create MUST have a column named "frame_id" which SHOULD NOT be the PRIMARY KEY and SHOULD BE of TYPE REAL.
-
-    ONLY RETURN THE SQLITE3 TABLE CREATION STATEMENT FOR ALL THE TABLES
-    DO NOT RETURN ANY OTHER TEXT
+    RETURN THE SQLITE3 QUERY THAT CREATES ALL THE TABLES. DO NOT RETURN ANY OTHER TEXT
 
     Attributes: {attributes}
-    Database schema:
+    Sqlite3 Query:
     """
 
     text2table_frame_prompt =\

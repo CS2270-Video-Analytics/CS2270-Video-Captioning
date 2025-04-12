@@ -56,7 +56,6 @@ class VideoQueryPipeline():
             except StopIteration:
                 break
         
-        pdb.set_trace()
         self.captioning_pipeline.object_set = ['vehicle', 'traffic light','road']
         #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
         # self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
@@ -68,7 +67,9 @@ class VideoQueryPipeline():
         
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
-        obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=table_attributes)
+        db_schema = self.sql_dbs.get_schema()
+        pdb.set_trace()
+        obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
 
         #insert a batch of rows into the SQL object db
         while True:
