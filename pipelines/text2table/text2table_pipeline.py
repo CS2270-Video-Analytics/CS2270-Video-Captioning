@@ -197,7 +197,7 @@ class Text2TablePipeline():
         json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
             
         raw_response, _ = self.text2table_model.run_inference(self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}")), **dict(system_content= self.text2table_frame_context))
-        pdb.set_trace()
+        # pdb.set_trace()
         json_response = self.extract_json_from_response(raw_response)
 
         db_data_rows = {}
@@ -236,7 +236,7 @@ class Text2TablePipeline():
 
 
 if __name__ == '__main__':
-    pdb.set_trace()
+    # pdb.set_trace()
 
     test_caption = "The image shows a city street with cars and buildings.\
 The foreground features a white car with a yellow license plate, facing away from the camera. The license plate reads \"54-628-74\" and has a yellow background with black text.\

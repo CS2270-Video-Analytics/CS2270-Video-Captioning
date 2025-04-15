@@ -316,10 +316,12 @@ class Config:
     #-------------------------------------------------------------------------
     # Database settings
     #-------------------------------------------------------------------------
-    sql_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
+    # sql_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
+    sql_db_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/database_integration'
     sql_db_name = "video_frames.db"
     batch_size = 4
-    vec_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
+    # vec_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
+    vec_db_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/database_integration'
     vec_db_name = 'video_frames.index'
     
     # Table definitions

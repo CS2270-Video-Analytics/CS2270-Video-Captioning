@@ -21,6 +21,7 @@ class VideoQueryPipeline():
         self.sql_dbs = SQLLiteDBInterface()
 
         #vector db containing image embeddings
+        # Since we are no longer doing VectorDB, we can comment this out
         self.vector_db = VectorDBInterface(vector_dim = self.captioning_pipeline.clip_model.clip_model.visual.output_dim)
 
         #natural language 2 sql generation pipeline
@@ -29,9 +30,7 @@ class VideoQueryPipeline():
         #raw caption 2 formatted table pipeline
         self.text2table_pipeline = Text2TablePipeline(all_objects = [])
 
-
-    def process_video(self, video_path:str, video_filename:str):
-
+    def generate_captions(self, video_path:str, video_filename:str):
         #first check for valid video path
         assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {video_filename} does not exist"
 
@@ -53,22 +52,23 @@ class VideoQueryPipeline():
             except StopIteration:
                 break
         
-        # self.captioning_pipeline.object_set = {'traffic light', 'traffic sign', 'vehicle', 'vegetation', 'building', 'road'}        #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
+        # # self.captioning_pipeline.object_set = {'traffic light', 'traffic sign', 'vehicle', 'vegetation', 'building', 'road'}        #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
         self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
-        
+    
+    def run_text2table(self):
         #extract a combined caption from the raw table and create new tables from the schema the LLM generates
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description')
+        
         structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
+        print("Schema", structured_table_schemas)
         self.sql_dbs.execute_many_queries(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
         db_schema = self.sql_dbs.get_schema()
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
-
         #insert a batch of rows into the SQL object db
         while True:
-
             try:
                 data_batch = next(obj_iterator)
                 for data_dict in data_batch:
@@ -77,6 +77,10 @@ class VideoQueryPipeline():
             except StopIteration:
                 break
 
+    def process_video(self, video_path:str, video_filename:str):
+        self.generate_captions(video_path = video_path, video_filename = video_filename)
+        self.run_text2table()
+        
         #clear cached data in pipeline for multiple videos
         self.captioning_pipeline.clear_pipeline()
         self.text2sql_pipeline.clear_pipeline()
@@ -96,13 +100,16 @@ class VideoQueryPipeline():
 
 
 if __name__ == '__main__':
-    pdb.set_trace()
+    # pdb.set_trace()
     dummy = VideoQueryPipeline()
 
-    video_path = '/users/ssunda11/git/CS2270-Video-Captioning/datasets/BDD_test'
-    filename = 'test2.mov'
+    # video_path = '/users/ssunda11/git/CS2270-Video-Captioning/datasets/BDD_test'
+    # filename = 'test2.mov'
+    video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
+    filename = 'BDD.mp4'
 
-    dummy.process_video(video_path = video_path, video_filename = filename)
+    # dummy.process_video(video_path = video_path, video_filename = filename)
+    dummy.run_text2table()
         
 
 
