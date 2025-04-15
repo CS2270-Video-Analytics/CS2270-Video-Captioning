@@ -46,16 +46,36 @@ class Text2TablePipeline():
 
     def update_objects(self, all_objects:List[str]):
         self.all_objects = all_objects
+    
+    def get_scene_description(self, all_captions: str):
+        prompt = f"""
+        You are given a list of object-level captions describing elements detected in a video frame. 
+        Based on these descriptions, summarize the overall scene depicted in the video using a short phrase of 1–3 words. 
+        The summary should capture the general setting or type of scene shown (e.g., "general street scene", "kitchen interior", "sports match", "forest trail", "battlefield", "concert stage").
+
+        Captions:
+        {all_captions}
+
+        Scene Summary:
+        """
+
+        return self.text2table_model.run_inference(data_stream= prompt)[0]
+
 
     def extract_table_attributes(self, all_captions:str):
-        frame_extraction_prompt = self.attribute_extraction_prompt.format(incontext_examples = Config.text2table_incontext_prompt, all_joined_captions = all_captions)
+        scene_descriptor = self.get_scene_description(all_captions)
+        frame_extraction_prompt = self.attribute_extraction_prompt.format(
+            incontext_examples = Config.text2table_incontext_prompt, 
+            all_joined_captions = all_captions,
+            scene_descriptor = scene_descriptor)
         extracted_attributes, __ = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
 
         return extracted_attributes.strip()
     
     def extract_table_schemas(self, all_captions:str):
         extracted_attributes = self.extract_table_attributes(all_captions)
-        print("Extracted attributes:", extracted_attributes)
+        print("Extracted attributes:")
+        print(extracted_attributes), extracted_attributes
     
         schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
         generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)

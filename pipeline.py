@@ -61,8 +61,9 @@ class VideoQueryPipeline():
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
 
         structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
-        print("Schema", structured_table_schemas)
-        return
+        print("Schema")
+        print(structured_table_schemas)
+
         self.sql_dbs.execute_many_queries(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db

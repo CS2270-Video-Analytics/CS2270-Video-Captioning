@@ -204,22 +204,24 @@ class Config:
     ----
     Sample text :
     {all_joined_captions}
-    Question : List all relevant attributes about 'general street scene ' that are exactly mentioned in this sample
+    Question : List all relevant attributes about '{scene_descriptor} ' that are exactly mentioned in this sample
     text if any .
     Answer :
     """
 
     text2table_schema_generation_prompt =\
     """
-    Based on the following attributes, design a Sqlite3 Database schema with the following constraints:
-    * use the attribute names as column headers.
-    * each table name is unique
-    * each table has a column named "frame_id" with type REAL which should not be the PRIMARY KEY.
+    Based on the following attributes, design a Database schema for a Sqlite3 Database with the
+    attribute names as column headers.
 
-    RETURN THE SQLITE3 QUERY THAT CREATES ALL THE TABLES. DO NOT RETURN ANY OTHER TEXT
+    Each table you create MUST have a column named "frame_id" which is SHOULD NOT be the PRIMARY KEY and SHOULD BE of TYPE REAL.
 
-    Attributes: {attributes}
-    Sqlite3 Query:
+    ONLY RETURN THE SQLITE3 TABLE CREATION STATEMENT FOR ALL THE TABLES
+    DO NOT RETURN ANY OTHER TEXT
+
+    Attributes:
+    {attributes}
+    Database schema:
     """
 
     text2table_frame_context = "You are an expert at converting natural language descriptions of traffic scenes into structured data."
