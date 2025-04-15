@@ -224,20 +224,17 @@ class Config:
     Database schema:
     """
 
-    text2table_frame_context = "You are an expert at converting natural language descriptions of traffic scenes into structured data."
+    text2table_frame_prompt = """
+    You are an expert at converting natural language descriptions of {scene_descriptor} into structured data.
 
-    text2table_frame_prompt =\
-    """
-    Given the following description and set of objects:
-    
-    "{caption}"
+    Given the following description:
 
-    Object Set: [{object_set}]
+    "{description}"
 
     Extract the structured information and return it as JSON using this format:
 
     {{
-    {schema}
+    {json_schema}
     }}
 
     Only include fields that can be reasonably inferred. Leave out objects that are not mentioned. Use null for missing but relevant fields.

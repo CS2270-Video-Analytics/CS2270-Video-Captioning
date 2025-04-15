@@ -20,7 +20,7 @@ import sqlite3
 class Text2TablePipeline():
     def __init__(self, all_objects:List[str]):
         self.text2table_frame_prompt = Config.text2table_frame_prompt
-        self.text2table_frame_context = Config.text2table_frame_context
+        # self.text2table_frame_context = Config.text2table_frame_context
 
         #store all prompts for text2table
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
@@ -38,6 +38,7 @@ class Text2TablePipeline():
 
         #store a list of unique objects to extract data for
         self.all_objects = all_objects
+        self.scene_descriptor = ""
     
     def clear_pipeline(self):
         #clear the cache that remains for previous runs of text2table
@@ -59,8 +60,10 @@ class Text2TablePipeline():
         Scene Summary:
         """
 
-        return self.text2table_model.run_inference(data_stream= prompt)[0]
-
+        scene_descriptor =  self.text2table_model.run_inference(data_stream= prompt, )[0]
+        print("Scene descriptor: ", scene_descriptor)
+        self.scene_descriptor = scene_descriptor.strip()
+        return scene_descriptor.strip()
 
     def extract_table_attributes(self, all_captions:str):
         scene_descriptor = self.get_scene_description(all_captions)
@@ -123,6 +126,7 @@ class Text2TablePipeline():
                     table_defs[current_table].append(column_name)
 
         return table_defs
+    
     def extract_complete_json(self, s: str) -> dict:
         """
         Extracts all complete top-level JSON key-value entries from a raw string.
@@ -193,7 +197,6 @@ class Text2TablePipeline():
         return valid_json
     
     def run_pipeline_video(self, video_data:List[tuple], database_schema:str):
-        
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
         
@@ -211,11 +214,11 @@ class Text2TablePipeline():
                 frame_data = [] #empty the batch
                 
     def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
-        
-
         json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
-            
-        raw_response, _ = self.text2table_model.run_inference(self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}")), **dict(system_content= self.text2table_frame_context))
+        # prompt = self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
+        prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
+        # raw_response, _ = self.text2table_model.run_inference(data_stream=prompt, **dict(system_content= self.text2table_frame_context))
+        raw_response, _ = self.text2table_model.run_inference(data_stream=prompt)
         # pdb.set_trace()
         json_response = self.extract_json_from_response(raw_response)
 
