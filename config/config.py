@@ -111,21 +111,24 @@ class Config:
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
     text2table_model_name = 'OpenAI;gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
+    # text2table_params = {
+    #     'temperature': 1,
+    #     'top_k': 3,
+    #     'top_p': 1,
+    #     'num_ctx': 2048,
+    #     'repeat_penalty': 0.5,
+    #     'presence_penalty': 0.0,
+    #     'frequency_penalty':0.0,
+    #     'max_tokens': 300,
+    #     'stop_tokens': None,
+    #     'keep_alive': 30000,
+    #     'batch_size': 4,
+    #     'num_threads': 8,
+    #     'model_precision': torch.float16,
+    #     'system_eval': False,
+    # }
     text2table_params = {
-        'temperature': 1,
-        'top_k': 3,
-        'top_p': 1,
-        'num_ctx': 2048,
-        'repeat_penalty': 0.5,
-        'presence_penalty': 0.0,
-        'frequency_penalty':0.0,
-        'max_tokens': 300,
-        'stop_tokens': None,
-        'keep_alive': 30000,
-        'batch_size': 4,
-        'num_threads': 8,
-        'model_precision': torch.float16,
-        'system_eval': False,
+        'temperature': 0.2,
     }
 
     #Text2Table SQL queries
@@ -171,7 +174,7 @@ class Config:
     <li > Nunavut </ li >
     <li > Northwest Territories </ li >
     </ ul >
-    Question : List all relevant attributes that are exactly mentioned in this sample text if
+    Question : List all relevant attributes about 'Canada ' that are exactly mentioned in this sample text if
     any .
     Answer :
     - Monarch : Charles III
@@ -189,7 +192,7 @@ class Config:
     Doctor 's name : Dr . Burns
     Date of discharge : 2020 -01 -01
     Hospital address : 123 Main Street , New York , NY 10001
-    Question : List all relevant attributes that are exactly mentioned in this sample text if any .
+    Question : List all relevant attributes about 'medications ' that are exactly mentioned in this sample text if any .
     Answer :
     - Prescribed medication : aspirin , ibuprofen , acetaminophen
     - Prescribed dosage : 1 tablet , 2 tablets , 3 tablets
@@ -201,7 +204,7 @@ class Config:
     ----
     Sample text :
     {all_joined_captions}
-    Question : List all relevant attributes that are exactly mentioned in this sample
+    Question : List all relevant attributes about 'general street scene ' that are exactly mentioned in this sample
     text if any .
     Answer :
     """

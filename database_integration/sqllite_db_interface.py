@@ -109,13 +109,14 @@ class SQLLiteDBInterface():
     
     def extract_all_rows(self, table_name:str):
         return  self.execute_query(query=f"SELECT * FROM {table_name};")
-
-    def extract_concatenated_captions(self, table_name:str, attribute:str):
-
+    
+    def get_total_num_rows(self, table_name):
         #get total number of rows in table
         self.cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
         num_rows = int(self.cursor.fetchone()[0])
+        return num_rows
 
+    def extract_concatenated_captions(self, table_name:str, attribute:str, num_rows:int = 40):
         # SQL query to get combined description
         query = f"""
             SELECT GROUP_CONCAT({attribute}, ' ') AS combined_{attribute}
@@ -129,21 +130,22 @@ class SQLLiteDBInterface():
         combined_description = result[0] if result[0] else ''
 
         return combined_description
+
+    # Unused function
+    # def insert_many_rows_dict(self, rows_data: dict):
+
+    #     table_schema = self.table_name_caption_dict[table_name]
+    #     schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
+    #     schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
         
-    def insert_many_rows_dict(self, rows_data: dict):
-
-        table_schema = self.table_name_caption_dict[table_name]
-        schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
-        schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
-        
-        query = self.insertion_query.format(table_name = table_name, table_schema = schema_prompt, table_schema_value = schema_value_prompt)
+    #     query = self.insertion_query.format(table_name = table_name, table_schema = schema_prompt, table_schema_value = schema_value_prompt)
 
 
-        # Execute query with extracted values
-        self.cursor.executemany(query, [tuple(d.values()) for d in rows_data])
+    #     # Execute query with extracted values
+    #     self.cursor.executemany(query, [tuple(d.values()) for d in rows_data])
 
-        # Commit changes and close connection
-        self.connection.commit()
+    #     # Commit changes and close connection
+    #     self.connection.commit()
 
     def close_conn(self):
 

@@ -48,16 +48,15 @@ class Text2TablePipeline():
         self.all_objects = all_objects
 
     def extract_table_attributes(self, all_captions:str):
-
         frame_extraction_prompt = self.attribute_extraction_prompt.format(incontext_examples = Config.text2table_incontext_prompt, all_joined_captions = all_captions)
         extracted_attributes, __ = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
 
         return extracted_attributes.strip()
     
     def extract_table_schemas(self, all_captions:str):
-
         extracted_attributes = self.extract_table_attributes(all_captions)
-
+        print("Extracted attributes:", extracted_attributes)
+    
         schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
         generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)
         generated_schemas = self.clean_schema(generated_schemas)

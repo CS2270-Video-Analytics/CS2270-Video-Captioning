@@ -31,15 +31,20 @@ class OpenAIText(LanguageModel):
             messages.append({"role": "system", "content": kwargs['system_content']})
         
         try:
-            request_params = dict(model=self.model_name,
-                messages=messages,
-                temperature=self.model_params['temperature'],
-                top_p = self.model_params['top_p'],
-                max_tokens=self.model_params['max_tokens'],
-                frequency_penalty=self.model_params['frequency_penalty'],
-                presence_penalty=self.model_params['presence_penalty'])
-            if self.model_params['stop_tokens'] and type(self.model_params['stop_tokens']) is list:
-                request_params['stop'] = self.model_params['stop_tokens']
+            request_params = {
+                "model": self.model_name,
+                "messages": messages,
+                "temperature": self.model_params.get("temperature"),
+                "top_p": self.model_params.get("top_p"),
+                "max_tokens": self.model_params.get("max_tokens"),
+                "frequency_penalty": self.model_params.get("frequency_penalty"),
+                "presence_penalty": self.model_params.get("presence_penalty")
+            }
+
+            request_params = {k: v for k, v in request_params.items() if v is not None}
+            stop_tokens = self.model_params.get("stop_tokens")
+            if isinstance(stop_tokens, list) and stop_tokens:
+                request_params["stop"] = stop_tokens
             
             response = self.model_client.chat.completions.create(**request_params)
 

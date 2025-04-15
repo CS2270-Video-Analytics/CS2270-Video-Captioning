@@ -57,10 +57,12 @@ class VideoQueryPipeline():
     
     def run_text2table(self):
         #extract a combined caption from the raw table and create new tables from the schema the LLM generates
-        combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description')
-        
+        total_num_rows = self.sql_dbs.get_total_num_rows(table_name=Config.caption_table_name)
+        combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
+
         structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
         print("Schema", structured_table_schemas)
+        return
         self.sql_dbs.execute_many_queries(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db
@@ -68,13 +70,19 @@ class VideoQueryPipeline():
         db_schema = self.sql_dbs.get_schema()
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
         #insert a batch of rows into the SQL object db
+        batch_count = 0
+        row_count = 0
         while True:
             try:
                 data_batch = next(obj_iterator)
+                batch_count += 1
                 for data_dict in data_batch:
                     for (table_name, rows_data) in data_dict.items():
                         self.sql_dbs.insert_many_rows_list(table_name = table_name, rows_data = rows_data)
+                        row_count += len(rows_data)
+                print(f"[Progress] Processed batch {batch_count} — total rows inserted: {row_count}")
             except StopIteration:
+                print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
                 break
 
     def process_video(self, video_path:str, video_filename:str):
