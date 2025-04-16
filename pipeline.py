@@ -95,16 +95,27 @@ class VideoQueryPipeline():
         self.text2sql_pipeline.clear_pipeline()
         self.text2table_pipeline.clear_pipeline()
     
+    # def process_query(self, language_query:str):
+    #     #extract the schema for the processed object table
+    #     table_schema = self.sql_dbs.get_schema(table_name = [Config.processed_table_name])
+
+    #     #parse the language query into a SQL query
+    #     user_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
+
+    #     #execute query on the sql db
+    #     #TODO: hwo to parse arguments to SQL query
+    #     self.sql_dbs.execute_query(query = user_query)
+
     def process_query(self, language_query:str):
-        #extract the schema for the processed object table
-        table_schema = self.sql_dbs.get_schema(table_name = [Config.processed_table_name])
-
+        table_schema = self.sql_dbs.get_schema()
         #parse the language query into a SQL query
-        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
-
+        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
+        print(user_query)
         #execute query on the sql db
-        #TODO: hwo to parse arguments to SQL query
-        self.sql_dbs.execute_query(query = user_query)
+        print(self.sql_dbs.execute_query(query = user_query))
+        # #execute query on the sql db
+        # #TODO: hwo to parse arguments to SQL query
+        # self.sql_dbs.execute_query(query = user_query)
 
 
 if __name__ == '__main__':
@@ -116,6 +127,7 @@ if __name__ == '__main__':
     video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
     filename = 'BDD.mp4'
 
-    dummy.process_video(video_path = video_path, video_filename = filename)
+    # dummy.process_video(video_path = video_path, video_filename = filename)
     # dummy.run_text2table()
-        
+    question = input("Enter your question: ").strip()
+    dummy.process_query(language_query = question)

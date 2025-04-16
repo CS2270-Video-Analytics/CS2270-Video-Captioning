@@ -282,24 +282,22 @@ class Config:
     #-------------------------------------------------------------------------
     text2sql_model_name = 'OpenAI;gpt-4o-mini' # options: [OpenAI;, DeepSeek;deepseek-chat, HuggingFace;, Anthropic;claude-3-5-haiku-latest]
     text2sql_params = {
-        'temperature': 1,
-        'top_k': 3,
-        'top_p': 1,
-        'num_ctx': 2048,
-        'repeat_penalty': 0.5,
-        'presence_penalty': 0.0,
-        'frequency_penalty':0.0,
-        'max_tokens': 200,
+        'temperature': 0,
+        'top_k': None,
+        'top_p': None,
+        'num_ctx': None,
+        'repeat_penalty': None,
+        'presence_penalty': None,
+        'frequency_penalty': None,
+        'max_tokens': None,
         'stop_tokens': None,
-        'keep_alive': 30000
+        'keep_alive': None
     }
 
     @staticmethod
     def get_text2sql_prompt(schema_info: str, question: str) -> str:
         """Generate the prompt for text2sql model with given schema and question."""
-        return f"""You are an AI that converts natural language questions into SQL queries 
-            specifically for an **SQLite3** database.""" 
-    text2sql_prompt = """
+        return f"""
         You are an AI that converts natural language questions into SQL queries
         specifically for an **SQLite3** database.
 

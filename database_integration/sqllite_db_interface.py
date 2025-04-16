@@ -1,7 +1,7 @@
 import sqlite3
 import os
 from config import Config
-from typing import List, Dict,Set
+from typing import List, Dict, Set, Optional
 import pdb
 
 class SQLLiteDBInterface():
@@ -148,13 +148,14 @@ class SQLLiteDBInterface():
 
         self.cursor.close()
     
-    def get_schema(self, tables_to_include:Set[str]=None):
+    def get_schema(self, tables_to_include: Optional[Set[str]]=None):
         """
         Extracts the schema information from specific tables in an SQLite database.
 
         Parameters:
             db_file (str): Path to the SQLite database file.
             tables_to_include (list of str): List of table names to include in the schema.
+                                             If None, includes all tables except caption table.
 
         Returns:
             str: The schema of specified tables, including column details.

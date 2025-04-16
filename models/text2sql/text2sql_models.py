@@ -73,19 +73,22 @@ class Text2SQLModelFactory:
                 params = Config.text2sql_params
                 
                 # Call the OpenAI API with all parameters from config
-                response = openai.chat.completions.create(
+                request_params = dict(
                     model=model_name,
-                    messages=[
-                        {"role": "system", "content": "You are a SQL expert that converts natural language to SQL queries."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=params.get('temperature', 0.7),
-                    max_tokens=params.get('max_tokens', 200),
-                    top_p=params.get('top_p', 0.9),
-                    frequency_penalty=params.get('frequency_penalty', 0.0),
-                    presence_penalty=params.get('presence_penalty', 0.0),
-                    stop=params.get('stop_tokens', None),
+                    messages = [{"role": "user", "content": prompt}],
+                    temperature=params['temperature'],
+                    max_tokens=params['max_tokens'],
+                    top_p=params['top_p'],
+                    frequency_penalty=params['frequency_penalty'],
+                    presence_penalty=params['presence_penalty'],
+                    stop=params['stop_tokens']  # optional
                 )
+
+                # Filter out any that are None
+                request_params = {k: v for k, v in request_params.items() if v is not None}
+
+                # Send the request
+                response = openai.chat.completions.create(**request_params)
                 
                 # Extract the SQL query from the response
                 sql_query = response.choices[0].message.content.strip()
