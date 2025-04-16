@@ -26,6 +26,10 @@ class Text2SQLPipeline():
         except Exception as e:
             logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
             raise
+    
+    def check_schema_sufficiency(self, question: str, table_schema: str):
+        prompt = Config.schema_sufficiency_prompt.format(question=question, schema_info=table_schema)
+        return self.model(prompt)
 
     def run_pipeline(self, question: str, table_schema: str):
         """
@@ -39,13 +43,14 @@ class Text2SQLPipeline():
             str: The generated SQL query.
         """
         try:
-            sql_query = self.normalize_sql(self.model(question, table_schema))
+            prompt = Config.get_text2sql_prompt(table_schema, question)
+            sql_query = self.normalize_sql(self.model(prompt))
             logger.debug(f"Generated SQL query: {sql_query}")
             return sql_query
         except Exception as e:
             logger.error(f"Error in run_pipeline: {str(e)}")
             raise
-    
+
     def clear_pipeline(self):
         #clear the cache that remains for previous runs of text2table
         self.table_attributes = []

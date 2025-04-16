@@ -51,13 +51,12 @@ class Text2SQLModelFactory:
         
         openai.api_key = api_key
         
-        def text2sql_func(question, schema_info):
+        def text2sql_func(prompt):
             """
             Convert natural language question to SQL using OpenAI model
             
             Args:
-                question (str): The natural language question to convert
-                schema_info (str): Information about the database schema
+                prompt (str): The prompt to use for the OpenAI model
                 
             Returns:
                 str: The generated SQL query
@@ -65,10 +64,7 @@ class Text2SQLModelFactory:
             Raises:
                 Exception: If there's an error with the API call
             """
-            try:
-                # Generate the prompt using the config
-                prompt = Config.get_text2sql_prompt(schema_info, question)
-                
+            try:                
                 # Get parameters from config
                 params = Config.text2sql_params
                 
@@ -104,7 +100,7 @@ class Text2SQLModelFactory:
     def _create_deepseek_model(model_name=None):
         """Create a function that uses DeepSeek models for text-to-SQL conversion"""
         # This is a placeholder - implement with actual DeepSeek API when available
-        def text2sql_func(question, schema_info):
+        def text2sql_func(prompt):
             raise NotImplementedError("DeepSeek model implementation not available yet")
         return text2sql_func
     
@@ -112,7 +108,7 @@ class Text2SQLModelFactory:
     def _create_anthropic_model(model_name=None):
         """Create a function that uses Anthropic models for text-to-SQL conversion"""
         # This is a placeholder - implement with actual Anthropic API when available
-        def text2sql_func(question, schema_info):
+        def text2sql_func(prompt):
             raise NotImplementedError("Anthropic model implementation not available yet")
         return text2sql_func
     
@@ -120,7 +116,7 @@ class Text2SQLModelFactory:
     def _create_huggingface_model(model_name=None):
         """Create a function that uses HuggingFace models for text-to-SQL conversion"""
         # This is a placeholder - implement with actual HuggingFace API when available
-        def text2sql_func(question, schema_info):
+        def text2sql_func(prompt):
             raise NotImplementedError("HuggingFace model implementation not available yet")
         return text2sql_func
 

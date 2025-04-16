@@ -108,11 +108,12 @@ class VideoQueryPipeline():
 
     def process_query(self, language_query:str):
         table_schema = self.sql_dbs.get_schema()
+        print(self.text2sql_pipeline.check_schema_sufficiency(question = language_query, table_schema = table_schema))
         #parse the language query into a SQL query
-        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
-        print(user_query)
+        # user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
+        # print(user_query)
         #execute query on the sql db
-        print(self.sql_dbs.execute_query(query = user_query))
+        # print(self.sql_dbs.execute_query(query = user_query))
         # #execute query on the sql db
         # #TODO: hwo to parse arguments to SQL query
         # self.sql_dbs.execute_query(query = user_query)

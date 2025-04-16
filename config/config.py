@@ -322,6 +322,50 @@ class Config:
         """
 
     #-------------------------------------------------------------------------
+    # LLM-Judge settings
+    #-------------------------------------------------------------------------
+
+    schema_sufficiency_prompt = """
+    You are a careful and knowledgeable database assistant.
+
+    Your task is to determine whether the given SQLite3 database schema contains enough information to answer a user's question.
+
+    ---
+
+    ### Guidelines:
+
+    1. **Read the question carefully.** Identify the entities, filters, or relationships needed to answer it.
+    2. **Examine the schema.** Check whether the required columns, tables, and relationships are present.
+    3. **Decide:**
+    - If all necessary information exists in the schema, respond with:
+        ```
+        Sufficient: Yes
+        ```
+    - If anything is missing — e.g., a column, table, or relationship — respond with:
+        ```
+        Sufficient: No
+        Missing Information:
+        - <Clearly list each missing element>
+        ```
+
+    Only return the required structured response. Do **not** explain or generate SQL.
+
+    ---
+
+    ### User Question:
+    {question}
+
+    ---
+
+    ### Database Schema:
+    {schema_info}
+
+    ---
+
+    ### Your Response:
+    """
+
+    #-------------------------------------------------------------------------
     # Database settings
     #-------------------------------------------------------------------------
     # sql_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
