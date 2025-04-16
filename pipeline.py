@@ -111,9 +111,7 @@ class VideoQueryPipeline():
         self.sql_dbs.rename_column_in_all_tables(old_column_name = 'frame_id', new_column_name = 'timestamp')
         table_schema = self.sql_dbs.get_schema()
         #print(f"Table Schema: {table_schema}")
-        sufficiency_response = self.text2sql_pipeline.check_schema_sufficiency(question = language_query, table_schema = table_schema)
-        #print(sufficiency_response)
-        sufficiency, required_attributes = self.text2sql_pipeline.parse_schema_sufficiency_response(sufficiency_response)
+        sufficiency, required_attributes = self.text2sql_pipeline.check_schema_sufficiency(question = language_query, table_schema = table_schema)
         print(f"Sufficiency: {sufficiency}")
         print(f"Required Attributes: {required_attributes}")
         if sufficiency == "Yes":

@@ -28,8 +28,18 @@ class Text2SQLPipeline():
             raise
     
     def check_schema_sufficiency(self, question: str, table_schema: str):
+        last_result = None
         prompt = Config.schema_sufficiency_prompt.format(question=question, schema_info=table_schema)
-        return self.model(prompt)
+        for _ in range(Config.max_schema_sufficiency_retries):
+            sufficiency_response = self.model(prompt)
+            sufficiency, required_attributes = self.parse_schema_sufficiency_response(sufficiency_response)
+            last_result = (sufficiency, required_attributes)
+            if sufficiency == "Yes":
+                return sufficiency, required_attributes
+            elif sufficiency == "No":
+                return sufficiency, required_attributes
+        # Return the result from the last run
+        return last_result
 
     def parse_schema_sufficiency_response(self, response: str) -> tuple[str, list[str]]:
         """
