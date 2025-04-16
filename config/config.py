@@ -41,14 +41,14 @@ class Config:
     "You are a system designed to provide detailed captions for images (frames) in a video"
     question_prompt_format = "Question: {question} Answer:"
     sliding_window_caption_prompt_format = \
-        "Task: given the current driving scene frame recorded from a dash cam angle, output a chunk of descriptions per key distinct object in the format of the general template below. " \
+        "Task: given the current scene frame recorded from a camera angle, output a chunk of descriptions per key distinct object in the format of the general template below. " \
         "object id: the object's id (start from 1, auto increment by object) " \
         "(1) category: a high level category the object belongs to, which doesn't contain any attribute level details " \
         "(2) attributes: object's key identifying attributes, formatted as a string separated by comma " \
         "(3) action: object's state or action inferred " \
         "(4) location: object's relative location to other key objects in the frame " \
         "Note: " \
-        "- object's category should only consider the typical categories seen in traffic scene, such as vehicle, pedestrian, traffic light, building, road, etc " \
+        "- object's category should only consider the typical categories seen in the current scene" \
         "- for object's category, try to reuse category name from previously seen object categories in {object_set} " \
         "- put same category object's chunk next to each other " \
         "- keep description concise " \
@@ -110,9 +110,10 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
+    db_path = './database_integration/video_frames.db'
     text2table_model_name = 'OpenAI;gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
     text2table_params = {
-        'temperature': 0.2,
+        'temperature': 1,
         'top_k': None,
         'top_p': None,
         'num_ctx': None,
@@ -201,24 +202,30 @@ class Config:
     ----
     Sample text :
     {all_joined_captions}
-    Question : List all relevant attributes about '{scene_descriptor} ' that are exactly mentioned in this sample
-    text if any .
+    Question : List all unique categories and category associated attributes that are exactly mentioned in this sample
+    text in the format of category: attributes for each category
     Answer :
     """
 
     text2table_schema_generation_prompt =\
     """
-    Based on the following attributes, design a Database schema for a Sqlite3 Database with the
-    attribute names as column headers.
+    Given the extracted categories and attributes for each object in the current video, generate SQL CREATE TABLE statements for each unique category that does not already have a table. Each table should include the following columns:
+    - "video_id" (TEXT, not null)
+    - "frame_id" (REAL, not null)
+    - "object_id" (INTEGER, unique for each frame)
+    - "location" (TEXT)
+    
+    For categories that can perform actions (e.g., person, animal, etc), include an "action" column in the corresponding table.
+    Include any relevant attributes for the category as TEXT columns.
+    Ensure that table names do not use reserved SQL keywords. If a category name is a reserved keyword, append '_data' to the category name to form the table name.
 
-    Each table you create MUST have a column named "frame_id" which is SHOULD NOT be the PRIMARY KEY and SHOULD BE of TYPE REAL.
-
-    ONLY RETURN THE SQLITE3 TABLE CREATION STATEMENT FOR ALL THE TABLES
-    DO NOT RETURN ANY OTHER TEXT
-
-    Attributes:
+    Extracted category-attribute pairs:
     {attributes}
-    Database schema:
+
+    Existing tables for previously seen categories:
+    {existing_tables}
+
+    Generate only the SQL CREATE TABLE statements for all new tables:
     """
 
     text2table_frame_prompt = """
@@ -283,44 +290,45 @@ class Config:
         'keep_alive': 30000
     }
 
+    # Important SQLite Constraints
+    #     - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
+    #     - **No native JSON functions** (assume basic text handling).
+    #     - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
+    #     - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
+    #     - Use **LOWER()** for case-insensitive string matching.
+    #     - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
+    #     - Always assume **foreign key constraints are disabled unless explicitly turned on**.
+
     @staticmethod
     def get_text2sql_prompt(schema_info: str, question: str) -> str:
-        """Generate the prompt for text2sql model with given schema and question."""
-        return f"""You are an AI that converts natural language questions into SQL queries 
-            specifically for an **SQLite3** database.""" 
-    text2sql_prompt = """
-        You are an AI that converts natural language questions into SQL queries
-        specifically for an **SQLite3** database.
+        return f"""
+        You are an AI thay converts user's natural language question into a SQL query with the context of 
+        existing table schemas below from a sqlite database. Based on user's question and existing tables' schemas
+        below, select all possible relevant tables and relevant attributes to the query to construct the SQL query. 
+        
+        Note that:
+        1. for the SQL query, only output a valid query that's executable without any additional text like prefix, suffix or formatting like ```sql, ```.
+        2. for each table selected, only use existing columns and the column to use should make sense
+        3. can join relevant tables when necessary since video_id and frame_id are unique
+        4. if possible duplicate, deduplicate
+        5. try using like instead of =
 
-        ### **Important SQLite Constraints:**
-        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        - **No native JSON functions** (assume basic text handling).
-        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-        - Use **LOWER()** for case-insensitive string matching.
-        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        - Always assume **foreign key constraints are disabled unless explicitly turned on**.
-
-        ### **Database Schema:**
+        Database table schemas:
         {schema_info}
 
-        ### **User Question:**
+        User question:
         {question}
 
-        ### **Expected Output:**
-        Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        SQL Query:
+        SQL query:
         """
 
     #-------------------------------------------------------------------------
     # Database settings
     #-------------------------------------------------------------------------
-    # sql_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
-    sql_db_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/database_integration'
+    sql_db_path = './database_integration'
     sql_db_name = "video_frames.db"
     batch_size = 4
-    # vec_db_path = '/users/ssunda11/git/CS2270-Video-Captioning/database_integration'
-    vec_db_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/database_integration'
+    vec_db_path = './database_integration'
     vec_db_name = 'video_frames.index'
     
     # Table definitions

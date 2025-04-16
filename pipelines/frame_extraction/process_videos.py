@@ -55,8 +55,8 @@ class VideoProcessor:
             
             # Get caption
             [video_id, frame_id, description, object_list, image_embedding] = captioning_pipeline.run_pipeline(
-                data_stream=image_tensor, 
-                video_id=video_id, 
+                data_stream=image_tensor,
+                video_id=video_id,
                 frame_id=timestamp
             )
             

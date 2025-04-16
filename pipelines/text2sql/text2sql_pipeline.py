@@ -5,6 +5,7 @@ from config.config import Config
 if Config.debug:
     import pdb
 from models.text2sql import Text2SQLModelFactory
+from models.language_models.OpenAIText import OpenAIText
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -16,30 +17,35 @@ class Text2SQLPipeline():
         Initialize the Text2SQL pipeline with the model specified in the config
         """
         try:
-            # Parse model type and name from config
-            [text2sql_model, text2sql_model_name] = Config.text2sql_model_name.split(';')
-            
-            # Create the model using the factory
-            self.model = Text2SQLModelFactory.create_model(text2sql_model, text2sql_model_name)
-            logger.info(f"Initialized Text2SQL pipeline with model: {text2sql_model}:{text2sql_model_name}")
-            
+            # Initialize the OpenAIText model with parameters from config
+            self.model = OpenAIText(
+                model_params=Config.text2sql_params,
+                model_name=Config.text2sql_model_name.split(';')[1],
+                model_precision=Config.model_precision,
+                system_eval=Config.system_eval
+            )
+            logger.info(f"Initialized Text2SQL pipeline with OpenAIText model: {self.model.model_name}")
         except Exception as e:
             logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
             raise
 
-    def run_pipeline(self, question: str, table_schema: str):
+    def run_pipeline(self, question: str, db_file: str):
         """
-        Converts a natural language question into an SQL query.
+        Converts a natural language question into an SQL query using the existing database schema.
 
         Parameters:
             question (str): The natural language question to convert to SQL.
-            table_schema (str): The database schema information.
+            db_file (str): Path to the SQLite database file.
 
         Returns:
             str: The generated SQL query.
         """
         try:
-            sql_query = self.normalize_sql(self.model(question, table_schema))
+            table_schema = self.get_existing_schema(db_file)
+            prompt = Config.get_text2sql_prompt(table_schema, question)
+            sql_query, info = self.model.run_inference(prompt)
+            if info['error']:
+                raise Exception(info['error'])
             logger.debug(f"Generated SQL query: {sql_query}")
             return sql_query
         except Exception as e:
@@ -92,61 +98,49 @@ class Text2SQLPipeline():
         sql = sql.strip().replace("```sql", "").replace("```", "").strip()  # Remove markdown SQL blocks
         return sqlparse.format(sql, reindent=True, keyword_case='upper').strip()  # Standardize format
 
+    def get_existing_schema(self, db_file):
+        """
+        Retrieve the schema of existing tables in the database.
+
+        Parameters:
+            db_file (str): Path to the SQLite database file.
+
+        Returns:
+            dict: A dictionary with table names as keys and column information as values.
+        """
+        schema = {}
+        try:
+            conn = sqlite3.connect(db_file)
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+            tables = cursor.fetchall()
+            for table in tables:
+                table_name = table[0]
+                cursor.execute(f"PRAGMA table_info({table_name});")
+                columns = cursor.fetchall()
+                schema[table_name] = [(col[1], col[2]) for col in columns]  # (column_name, data_type)
+        except Exception as e:
+            logger.error(f"Error retrieving schema: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
+        return schema
+
 if __name__ == "__main__":
-    # Simple test setup
-    test_schema = """
-    CREATE TABLE cars (
-        id INTEGER PRIMARY KEY,
-        make TEXT,
-        model TEXT,
-        year INTEGER,
-        color TEXT,
-        price REAL
-    );
-    """
-    
-    # Initialize pipeline
     pipeline = Text2SQLPipeline()
-    
-    # Test questions
     test_questions = [
-        "Show me all red cars",
-        "What is the average price of cars?",
-        "Find cars made after 2020",
-        "List all Toyota models sorted by price"
+        "Find all video_id and frame_id where someone is standing",
+        "Find all video_id and frame_id where someone is in the kitchen"
     ]
     
     print("\n=== Testing Text2SQL Pipeline ===")
     for question in test_questions:
         print(f"\nQuestion: {question}")
         try:
-            sql_query = pipeline.run_pipeline(question, test_schema)
+            sql_query = pipeline.run_pipeline(question, Config.db_path)
             print(f"Generated SQL: {sql_query}")
-            
-            # Optional: Test execution with a sample database
-            conn = sqlite3.connect(':memory:')
-            cursor = conn.cursor()
-            
-            # Create test table and insert sample data
-            cursor.execute(test_schema)
-            sample_data = [
-                (1, 'Toyota', 'Corolla', 2020, 'Blue', 25000),
-                (2, 'Honda', 'Civic', 2021, 'Red', 27000),
-                (3, 'Toyota', 'Camry', 2019, 'Red', 30000)
-            ]
-            cursor.executemany(
-                'INSERT INTO cars VALUES (?, ?, ?, ?, ?, ?)',
-                sample_data
-            )
-            
-            # Execute generated query
-            print("Executing query...")
-            cursor.execute(sql_query)
-            results = cursor.fetchall()
-            print(f"Results: {results}")
-            
-            conn.close()
-            
+            results = pipeline.execute_sql(Config.db_path, sql_query)
+            print(results)
         except Exception as e:
             print(f"Error: {e}")
         print("-" * 50)

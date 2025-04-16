@@ -22,20 +22,20 @@ class VideoQueryPipeline():
 
         #vector db containing image embeddings
         # Since we are no longer doing VectorDB, we can comment this out
-        self.vector_db = VectorDBInterface(vector_dim = self.captioning_pipeline.clip_model.clip_model.visual.output_dim)
+        # self.vector_db = VectorDBInterface(vector_dim = self.captioning_pipeline.clip_model.clip_model.visual.output_dim)
 
         #natural language 2 sql generation pipeline
         self.text2sql_pipeline = Text2SQLPipeline()
 
         #raw caption 2 formatted table pipeline
-        self.text2table_pipeline = Text2TablePipeline(all_objects = [])
+        self.text2table_pipeline = Text2TablePipeline(all_objects = [], db_path=Config.db_path)
 
     def generate_captions(self, video_path:str, video_filename:str):
         #first check for valid video path
         assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {video_filename} does not exist"
 
         #process the video to get a frame extractor
-        frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = self.vector_db.get_num_vecs())
+        frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = -1)
 
         #iterate all frame batches and add to both sql and vector DBs
         while True:
@@ -46,8 +46,8 @@ class VideoQueryPipeline():
                 self.sql_dbs.insert_many_rows_list(table_name = Config.caption_table_name, rows_data = sql_batch)
 
                 #insert vectors into the vector db
-                vector_batch = torch.cat(vector_batch, dim=0)
-                self.vector_db.insert_many_vectors(vectors = vector_batch)
+                # vector_batch = torch.cat(vector_batch, dim=0)
+                # self.vector_db.insert_many_vectors(vectors = vector_batch)
                                 
             except StopIteration:
                 break
@@ -86,7 +86,7 @@ class VideoQueryPipeline():
                 print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
                 break
 
-    def process_video(self, video_path:str, video_filename:str):
+    def process_single_video(self, video_path:str, video_filename:str):
         self.generate_captions(video_path = video_path, video_filename = video_filename)
         self.run_text2table()
         
@@ -98,39 +98,34 @@ class VideoQueryPipeline():
     def process_query(self, language_query:str):
 
         #extract the schema for the processed object table
-        table_schema = self.sql_dbs.get_schema(table_name = [Config.processed_table_name])
+        table_schema = self.sql_dbs.get_schema(tables_to_include = {Config.processed_table_name})
 
         #parse the language query into a SQL query
-        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, db_schema = table_schema)
+        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
 
         #execute query on the sql db
         #TODO: hwo to parse arguments to SQL query
         self.sql_dbs.execute_query(query = user_query)
 
+    def process_all_videos(self, video_path: str):
+        # List all files in the directory
+        all_files = os.listdir(video_path)
+        
+        # Filter to include only video files (e.g., .mp4, .mov)
+        video_files = [f for f in all_files if f.endswith(('.mp4', '.mov'))]
+
+        # Process each video file
+        for video_filename in video_files:
+            print(f"Processing video: {video_filename}")
+            self.process_single_video(video_path=video_path, video_filename=video_filename)
+
 
 if __name__ == '__main__':
-    # pdb.set_trace()
     dummy = VideoQueryPipeline()
 
-    # video_path = '/users/ssunda11/git/CS2270-Video-Captioning/datasets/BDD_test'
-    # filename = 'test2.mov'
-    video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
-    filename = 'BDD.mp4'
+    # video_path = 'datasets/bdd_videos/bdd100k/videos/test'
+    video_path = 'datasets/charades/test'
 
-    # dummy.process_video(video_path = video_path, video_filename = filename)
-    dummy.run_text2table()
+    # Process all videos in the directory
+    dummy.process_all_videos(video_path=video_path)
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-

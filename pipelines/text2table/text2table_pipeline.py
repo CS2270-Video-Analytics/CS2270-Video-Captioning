@@ -18,13 +18,18 @@ import torch
 import sqlite3
 
 class Text2TablePipeline():
-    def __init__(self, all_objects:List[str]):
+    def __init__(self, all_objects:List[str], db_path: str):
         self.text2table_frame_prompt = Config.text2table_frame_prompt
         # self.text2table_frame_context = Config.text2table_frame_context
 
         #store all prompts for text2table
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         self.schema_extraction_prompt_format = Config.text2table_schema_generation_prompt
+
+        self.db_path = db_path
+        self.conn = sqlite3.connect(self.db_path)
+        self.cursor = self.conn.cursor()
+        self.table_context = self.update_table_context()
 
         #initialize the model that needs to be used for captioning
         model_options = {'Ollama': OllamaText, 'OpenAI': OpenAIText, 'Anthropic': Anthropic, 'DeepSeek':DeepSeek}
@@ -47,6 +52,12 @@ class Text2TablePipeline():
 
     def update_objects(self, all_objects:List[str]):
         self.all_objects = all_objects
+
+    def update_table_context(self):
+        # Retrieve and return the list of table names
+        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [row[0] for row in self.cursor.fetchall()]
+        return tables
     
     def get_scene_description(self, all_captions: str):
         prompt = f"""
@@ -69,8 +80,7 @@ class Text2TablePipeline():
         scene_descriptor = self.get_scene_description(all_captions)
         frame_extraction_prompt = self.attribute_extraction_prompt.format(
             incontext_examples = Config.text2table_incontext_prompt, 
-            all_joined_captions = all_captions,
-            scene_descriptor = scene_descriptor)
+            all_joined_captions = all_captions)
         extracted_attributes, __ = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
 
         return extracted_attributes.strip()
@@ -79,14 +89,21 @@ class Text2TablePipeline():
         extracted_attributes = self.extract_table_attributes(all_captions)
         print("Extracted attributes:")
         print(extracted_attributes), extracted_attributes
+
+        # Update table context
+        self.table_context = self.update_table_context()
     
-        schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
-        generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)
+        # Use the table context in the prompt
+        schema_extraction_prompt = self.schema_extraction_prompt_format.format(
+            existing_tables=", ".join(self.table_context),
+            attributes=extracted_attributes
+        )
+        generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
         generated_schemas = self.clean_schema(generated_schemas)
 
         return generated_schemas
     
-    def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}"):
+    def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}", video_id_placeholder="{video_id}"):
         lines = []
         for table, cols in schema_dict.items():
             lines.append(f'  "{table}": [')
@@ -94,6 +111,8 @@ class Text2TablePipeline():
             for col in cols:
                 if col == "frame_id":
                     value = f'"{frame_id_placeholder}"'
+                elif col == "video_id":
+                    value = f'"{video_id_placeholder}"'
                 else:
                     value = '...'
                 lines.append(f'      "{col}": {value},')
@@ -206,7 +225,12 @@ class Text2TablePipeline():
         #iterate all rows from the video data raw captions and run the pipeline per batch
         for i, (video_id, frame_id, caption, __) in enumerate(video_data):
 
-            frame_obj_data = self.run_pipeline(parsed_db_schema=parsed_db_schema, caption = caption, video_id = video_id, frame_id = frame_id)
+            frame_obj_data = self.run_pipeline(
+                parsed_db_schema=parsed_db_schema,
+                caption = caption,
+                video_id = video_id,
+                frame_id = frame_id
+            )
             frame_data += frame_obj_data
 
             if len(frame_data) >= Config.batch_size or i == len(video_data) - 1: 
@@ -216,12 +240,11 @@ class Text2TablePipeline():
     def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
         json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
         # prompt = self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
-        prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
+        prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema = json_schema_template.replace("{frame_id}", f"{frame_id}").replace("{video_id}", f"{video_id}"))
         # raw_response, _ = self.text2table_model.run_inference(data_stream=prompt, **dict(system_content= self.text2table_frame_context))
         raw_response, _ = self.text2table_model.run_inference(data_stream=prompt)
-        # pdb.set_trace()
         json_response = self.extract_json_from_response(raw_response)
-
+        
         db_data_rows = {}
         for table, columns in parsed_db_schema.items():
             try:
@@ -239,6 +262,9 @@ class Text2TablePipeline():
 
         return [db_data_rows]
     
+    def close_connection(self):
+        # Close the database connection
+        self.conn.close()
     
     def parse_table_output_t2t(self, structured_caption:str, video_id:int, frame_id:int):
         #NOTE: currently this is unused, but if we need text2table we can use this
@@ -258,7 +284,6 @@ class Text2TablePipeline():
 
 
 if __name__ == '__main__':
-    # pdb.set_trace()
 
     test_caption = "The image shows a city street with cars and buildings.\
 The foreground features a white car with a yellow license plate, facing away from the camera. The license plate reads \"54-628-74\" and has a yellow background with black text.\

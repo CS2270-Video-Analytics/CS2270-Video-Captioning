@@ -96,8 +96,6 @@ tensorboard==2.18.0
 tensorboard-data-server==0.7.2
 tifffile==2024.8.30
 tokenizers==0.21.1
-torch==2.6.0
-torchvision==0.21.0
 tqdm==4.67.1
 transformers==4.49.0
 triton==3.2.0
@@ -126,4 +124,4 @@ xxhash
 
 # Additional packages from pipelines/text2sql/requirements.txt
 accelerate==1.4.0
-psutil==7.0.0 
+psutil==7.0.0
