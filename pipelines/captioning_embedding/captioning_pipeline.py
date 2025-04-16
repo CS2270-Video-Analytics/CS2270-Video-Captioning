@@ -26,10 +26,16 @@ import torch
 
 class CaptioningPipeline():
 
-    def __init__(self):
+    def __init__(self, is_reboot=False, required_attributes=None):
+        self.is_reboot = is_reboot
+        # This is only relevant is it is a reboot – in that case, we need the prompts to explicitly ask for the required attributes
+        self.required_attributes = required_attributes
         #construct prompts to be used in captioning pipeline
         if Config.previous_frames:
-            self.description_prompt = Config.sliding_window_caption_prompt_format
+            if self.is_reboot:
+                self.description_prompt = Config.sliding_window_caption_prompt_format_reboot
+            else:
+                self.description_prompt = Config.sliding_window_caption_prompt_format
         else:
             self.description_prompt = Config.question_prompt_format.format(question = Config.generic_caption_prompt_format)
 
@@ -69,7 +75,13 @@ class CaptioningPipeline():
         #(1) add the previous frame description to the prompt
         if Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
-            description_prompt = self.description_prompt.format(object_set = ','.join(self.object_set))
+            if self.is_reboot:
+                description_prompt = self.description_prompt.format(
+                    required_attributes=", ".join(self.required_attributes), 
+                    object_set = ','.join(self.object_set)
+                    )
+            else:
+                description_prompt = self.description_prompt.format(object_set = ','.join(self.object_set))
         else:
             description_prompt = self.description_prompt
 

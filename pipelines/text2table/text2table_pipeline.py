@@ -18,12 +18,17 @@ import torch
 import sqlite3
 
 class Text2TablePipeline():
-    def __init__(self, all_objects:List[str]):
+    def __init__(self, all_objects:List[str], is_reboot=False, required_attributes=None):
+        self.is_reboot = is_reboot
+        self.required_attributes = required_attributes
         self.text2table_frame_prompt = Config.text2table_frame_prompt
         # self.text2table_frame_context = Config.text2table_frame_context
 
         #store all prompts for text2table
-        self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
+        if self.is_reboot:
+            self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt_reboot
+        else:
+            self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         self.schema_extraction_prompt_format = Config.text2table_schema_generation_prompt
         self.scene_description_prompt = Config.text2table_scene_description_prompt
 
@@ -57,23 +62,33 @@ class Text2TablePipeline():
 
     def extract_table_attributes(self, all_captions:str):
         scene_descriptor = self.get_scene_description(all_captions)
-        frame_extraction_prompt = self.attribute_extraction_prompt.format(
-            incontext_examples = Config.text2table_incontext_prompt, 
-            all_joined_captions = all_captions,
-            scene_descriptor = scene_descriptor)
+        if self.is_reboot:
+            frame_extraction_prompt = self.attribute_extraction_prompt.format(
+                incontext_examples = Config.text2table_incontext_prompt, 
+                all_joined_captions = all_captions,
+                required_attributes = ','.join(self.required_attributes),
+                scene_descriptor = scene_descriptor)
+        else:
+            frame_extraction_prompt = self.attribute_extraction_prompt.format(
+                incontext_examples = Config.text2table_incontext_prompt, 
+                all_joined_captions = all_captions,
+                scene_descriptor = scene_descriptor)
+        # print("Frame extraction prompt:")
+        # print(frame_extraction_prompt)
         extracted_attributes, __ = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
-
+        # print("Extracted attributes:")
+        # print(extracted_attributes)
         return extracted_attributes.strip()
     
     def extract_table_schemas(self, all_captions:str):
         extracted_attributes = self.extract_table_attributes(all_captions)
-        # print("Extracted attributes:")
-        # print(extracted_attributes)
-    
+        if self.is_reboot:
+            extracted_attributes = extracted_attributes + ','.join(self.required_attributes)
         schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
         generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)
         generated_schemas = self.clean_schema(generated_schemas)
-
+        print("Generated schemas:")
+        print(generated_schemas)
         return generated_schemas
     
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}"):

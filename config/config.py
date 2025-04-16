@@ -66,6 +66,35 @@ class Config:
         "... " \
         "Task (for the current frame): " \
         "object id:"
+    
+    sliding_window_caption_prompt_format_reboot = \
+        "Task: given the current driving scene frame recorded from a dash cam angle, output a chunk of descriptions per key distinct object in the format of the general template below. " \
+        "object id: the object's id (start from 1, auto increment by object) " \
+        "(1) category: a high level category the object belongs to, which doesn't contain any attribute level details " \
+        "(2) attributes: object's key identifying attributes, formatted as a string separated by comma " \
+        "(3) action: object's state or action inferred " \
+        "(4) location: object's relative location to other key objects in the frame " \
+        "Note: " \
+        "- object's category should only consider the typical categories seen in traffic scene, such as vehicle, pedestrian, traffic light, building, road, etc " \
+        "- if any of the following attributes are visible in the current frame, they **must be explicitly extracted** in the '(2) attributes' section: {required_attributes} "\
+        "- for object's category, try to reuse category name from previously seen object categories in {object_set} " \
+        "- put same category object's chunk next to each other " \
+        "- keep description concise " \
+        "Example: " \
+        "object id: 1 " \
+        "(1) category " \
+        "(2) attributes " \
+        "(3) action " \
+        "(4) location " \
+        "object id: 2 " \
+        "(1) category " \
+        "(2) attributes " \
+        "(3) action " \
+        "(4) location " \
+        "... " \
+        "Task (for the current frame): " \
+        "object id:"
+
     prior_object_extraction_prompt = "Task: given the current frame, extract a list of object categories visible in the frame\nobjects:["
     object_extraction_prompt_format = \
         "Task: given current frame description and seen object categories so far, output a list of unique unseen new object categories from the current frame's description that are not seen before. Don't return me the code as I want the actual the output. " \
@@ -201,6 +230,22 @@ class Config:
     ----
     Sample text :
     {all_joined_captions}
+    Question : List all relevant attributes about '{scene_descriptor} ' that are exactly mentioned in this sample
+    text if any .
+    Answer :
+    """
+
+    text2table_attribute_extraction_prompt_reboot =\
+    """
+    {incontext_examples}
+    ----
+    Sample text :
+    {all_joined_captions}
+
+    Important:
+    If any of the following attributes are present in the sample text, they **must be included** in the answer:
+    **{required_attributes}**
+
     Question : List all relevant attributes about '{scene_descriptor} ' that are exactly mentioned in this sample
     text if any .
     Answer :

@@ -10,12 +10,12 @@ import torch
 
 class VideoQueryPipeline():
 
-    def __init__(self):
+    def __init__(self, is_reboot=False, required_attributes=None):
         #video sampling module to sample videos
         self.video_processor = VideoProcessor()
 
         #create pipeline component for captioning
-        self.captioning_pipeline = CaptioningPipeline()
+        self.captioning_pipeline = CaptioningPipeline(is_reboot=is_reboot, required_attributes=required_attributes)
 
         #SQL db containing raw and processed SQL table
         self.sql_dbs = SQLLiteDBInterface()
@@ -28,7 +28,8 @@ class VideoQueryPipeline():
         self.text2sql_pipeline = Text2SQLPipeline()
 
         #raw caption 2 formatted table pipeline
-        self.text2table_pipeline = Text2TablePipeline(all_objects = [])
+        # TODO: Experiment with the is_reboot flag (do we want the prompts to have the required_attributes?)
+        self.text2table_pipeline = Text2TablePipeline(all_objects = [], is_reboot=False, required_attributes=required_attributes)
 
     def generate_captions(self, video_path:str, video_filename:str):
         #first check for valid video path
@@ -112,8 +113,8 @@ class VideoQueryPipeline():
         table_schema = self.sql_dbs.get_schema()
         #print(f"Table Schema: {table_schema}")
         sufficiency, required_attributes = self.text2sql_pipeline.check_schema_sufficiency(question = language_query, table_schema = table_schema)
-        print(f"Sufficiency: {sufficiency}")
-        print(f"Required Attributes: {required_attributes}")
+        # print(f"Sufficiency: {sufficiency}")
+        # print(f"Required Attributes: {required_attributes}")
         if sufficiency == "Yes":
             # parse the language query into a SQL query
             user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
@@ -123,14 +124,22 @@ class VideoQueryPipeline():
             return self
         else:
             self.sql_dbs.delete_database()
-            rebooted_pipeline = VideoQueryPipeline()
+            rebooted_pipeline = VideoQueryPipeline(is_reboot=True, required_attributes=required_attributes)
             rebooted_pipeline.process_video(video_path = Config.video_path, video_filename = Config.video_filename)
-            return rebooted_pipeline
 
-        # #execute query on the sql db
-        # #TODO: hwo to parse arguments to SQL query
-        # self.sql_dbs.execute_query(query = user_query)
-
+            rebooted_pipeline.sql_dbs.rename_column_in_all_tables(old_column_name = 'frame_id', new_column_name = 'timestamp')
+            table_schema = rebooted_pipeline.sql_dbs.get_schema()
+            sufficiency, required_attributes = rebooted_pipeline.text2sql_pipeline.check_schema_sufficiency(question = language_query, table_schema = table_schema)
+            if sufficiency == "Yes":
+                # parse the language query into a SQL query
+                user_query = rebooted_pipeline.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
+                print(user_query)
+                # execute query on the sql db
+                print(rebooted_pipeline.sql_dbs.execute_query(query = user_query))
+                return rebooted_pipeline
+            else:
+                print("This question cannot be answered with the current video.") 
+                return rebooted_pipeline
 
 if __name__ == '__main__':
     # pdb.set_trace()
