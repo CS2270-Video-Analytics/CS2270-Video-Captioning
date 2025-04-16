@@ -57,7 +57,7 @@ class CaptioningPipeline():
         self.caption_model = model_options[caption_model](model_name = caption_model_name, model_params = Config.caption_model_params, model_precision=Config.model_precision, system_eval=Config.system_eval)
 
         #create models for clip vector embeddings
-        self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
+        # self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
     
     def clear_pipeline(self):
         #clear the cache that remains for previous runs of captioning
@@ -65,7 +65,6 @@ class CaptioningPipeline():
         self.object_set = set(Config.init_object_set)
 
     def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
-        
         #(1) add the previous frame description to the prompt
         if Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
@@ -91,15 +90,13 @@ class CaptioningPipeline():
             self.object_set.update(new_objs)
 
         #(5) generate clip embedding
-        image_embedding, info = self.clip_model.run_inference(data_stream)
-        image_embedding = image_embedding.detach().cpu()
+        # image_embedding, info = self.clip_model.run_inference(data_stream)
+        # image_embedding = image_embedding.detach().cpu()
 
-        return [video_id, frame_id, description, self.object_set, image_embedding]
+        return [video_id, frame_id, description, self.object_set, None]
         
 
 if __name__ == '__main__':
-
-    pdb.set_trace()
     captioner = CaptioningPipeline()
 
     image_base_path = os.path.relpath('./datasets/mock_caption_data/bdd')

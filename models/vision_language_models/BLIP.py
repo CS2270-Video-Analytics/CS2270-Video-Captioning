@@ -105,7 +105,6 @@ if __name__ == '__main__':
         image = Image.open(os.path.join(base_path, img))
         tensor_image = transform(image).unsqueeze(0)
         
-        pdb.set_trace()
         captions, info = model.run_inference(data_stream = tensor_image, prev_frame_context=kwargs['prev_frame_context'], objs=kwargs['objs'], obj_focus=kwargs['obj_focus'], text_input=kwargs['text_input'], prev_frames=kwargs['prev_frames'])
 
         #update the kwargs assuming that video processed frame by frame
