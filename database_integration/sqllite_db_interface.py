@@ -192,6 +192,51 @@ class SQLLiteDBInterface():
             self.connection.close()
             return f"Error retrieving schema: {str(e)}"
 
+    def rename_column_in_all_tables(self, old_column_name: str, new_column_name: str):
+        # Get all user-defined tables
+        cursor = self.cursor
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        table_names = [row[0] for row in cursor.fetchall()]
+
+        for table in table_names:
+            # Get column info for this table
+            cursor.execute(f"PRAGMA table_info({table});")
+            columns_info = cursor.fetchall()
+
+            has_target_column = any(col[1] == old_column_name for col in columns_info)
+            if not has_target_column:
+                continue
+
+            # Construct new schema with the renamed column
+            new_columns_def = []
+            old_column_names = []
+            for col in columns_info:
+                col_name = col[1]
+                col_type = col[2]
+                renamed_col = new_column_name if col_name == old_column_name else col_name
+                new_columns_def.append(f'"{renamed_col}" {col_type}')
+                old_column_names.append(f'"{col_name}"')
+
+            temp_table = f"{table}_new"
+
+            # Create new table with updated column name
+            create_stmt = f"CREATE TABLE {temp_table} ({', '.join(new_columns_def)});"
+            cursor.execute(create_stmt)
+
+            # Copy data from old table
+            insert_stmt = f"""
+                INSERT INTO {temp_table}
+                SELECT {', '.join(old_column_names)}
+                FROM {table};
+            """
+            cursor.execute(insert_stmt)
+
+            # Replace old table with the new one
+            cursor.execute(f"DROP TABLE {table};")
+            cursor.execute(f"ALTER TABLE {temp_table} RENAME TO {table};")
+            print(f"Renamed column '{old_column_name}' to '{new_column_name}' in table: {table}")
+
+        self.connection.commit()
 
 
 

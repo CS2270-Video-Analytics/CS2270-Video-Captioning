@@ -107,9 +107,12 @@ class VideoQueryPipeline():
     #     self.sql_dbs.execute_query(query = user_query)
 
     def process_query(self, language_query:str):
+        # TODO: See if we can change this throughout the code
+        self.sql_dbs.rename_column_in_all_tables(old_column_name = 'frame_id', new_column_name = 'timestamp')
         table_schema = self.sql_dbs.get_schema()
+        #print(f"Table Schema: {table_schema}")
         sufficiency_response = self.text2sql_pipeline.check_schema_sufficiency(question = language_query, table_schema = table_schema)
-        print(sufficiency_response)
+        #print(sufficiency_response)
         sufficiency, required_attributes = self.text2sql_pipeline.parse_schema_sufficiency_response(sufficiency_response)
         print(f"Sufficiency: {sufficiency}")
         print(f"Required Attributes: {required_attributes}")
@@ -119,7 +122,8 @@ class VideoQueryPipeline():
             print(user_query)
             # execute query on the sql db
             print(self.sql_dbs.execute_query(query = user_query))
-
+            
+        return self
 
         # #execute query on the sql db
         # #TODO: hwo to parse arguments to SQL query
@@ -137,5 +141,10 @@ if __name__ == '__main__':
 
     # dummy.process_video(video_path = video_path, video_filename = filename)
     # dummy.run_text2table()
-    question = input("Enter your question: ").strip()
-    dummy.process_query(language_query = question)
+    while True:
+        question = input("Enter your question (or 'q' to quit): ").strip()
+        if question.lower() == 'q':
+            print("Exiting.")
+            break
+        # If we reboot, we will have a new VideoQueryPipeline
+        dummy = dummy.process_query(language_query=question)
