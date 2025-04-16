@@ -87,8 +87,8 @@ class Text2TablePipeline():
         schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
         generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)
         generated_schemas = self.clean_schema(generated_schemas)
-        print("Generated schemas:")
-        print(generated_schemas)
+        # print("Generated schemas:")
+        # print(generated_schemas)
         return generated_schemas
     
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}"):
