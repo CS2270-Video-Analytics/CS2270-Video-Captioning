@@ -111,24 +111,21 @@ class Config:
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
     text2table_model_name = 'OpenAI;gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
-    # text2table_params = {
-    #     'temperature': 1,
-    #     'top_k': 3,
-    #     'top_p': 1,
-    #     'num_ctx': 2048,
-    #     'repeat_penalty': 0.5,
-    #     'presence_penalty': 0.0,
-    #     'frequency_penalty':0.0,
-    #     'max_tokens': 300,
-    #     'stop_tokens': None,
-    #     'keep_alive': 30000,
-    #     'batch_size': 4,
-    #     'num_threads': 8,
-    #     'model_precision': torch.float16,
-    #     'system_eval': False,
-    # }
     text2table_params = {
         'temperature': 0.2,
+        'top_k': None,
+        'top_p': None,
+        'num_ctx': None,
+        'repeat_penalty': None,
+        'presence_penalty': None,
+        'frequency_penalty':None,
+        'max_tokens': None,
+        'stop_tokens': None,
+        'keep_alive': None,
+        'batch_size': None,
+        'num_threads': None,
+        'model_precision': None,
+        'system_eval': False,
     }
 
     #Text2Table SQL queries

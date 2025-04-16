@@ -53,8 +53,10 @@ class OpenAIVision(VisionLanguageModel):
                 max_tokens=self.model_params['max_tokens'],
                 frequency_penalty=self.model_params['frequency_penalty'],
                 presence_penalty=self.model_params['presence_penalty'])
-            if self.model_params['stop_tokens'] and type(self.model_params['stop_tokens']) is list:
-                request_params['stop'] = self.model_params['stop_tokens']
+            request_params = {k: v for k, v in request_params.items() if v is not None}
+            stop_tokens = self.model_params.get("stop_tokens")
+            if isinstance(stop_tokens, list) and stop_tokens:
+                request_params["stop"] = stop_tokens
             
             response = self.model_client.chat.completions.create(**request_params)
             info['error'] = None
