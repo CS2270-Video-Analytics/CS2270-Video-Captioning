@@ -24,7 +24,7 @@ class Config:
         'repeat_penalty': 0.5,
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
-        'max_tokens': 200,
+        'max_tokens': 2048,
         'stop_tokens': None,
         'keep_alive': 30000
     }
@@ -66,7 +66,6 @@ class Config:
         "... " \
         "Task (for the current frame): " \
         "object id:"
-
     prior_object_extraction_prompt = "Task: given the current frame, extract a list of object categories visible in the frame\nobjects:["
     object_extraction_prompt_format = \
         "Task: given current frame description and seen object categories so far, output a list of unique unseen new object categories from the current frame's description that are not seen before. Don't return me the code as I want the actual the output. " \
@@ -198,6 +197,7 @@ class Config:
     - Prescribed dosage : 1 tablet , 2 tablets , 3 tablets
     ----
     """
+
     text2table_attribute_extraction_prompt =\
     """
     {incontext_examples}
@@ -238,6 +238,17 @@ class Config:
     }}
 
     Only include fields that can be reasonably inferred. Leave out objects that are not mentioned. Use null for missing but relevant fields.
+    """
+
+    text2table_scene_description_prompt = """
+    You are given a list of object-level captions describing elements detected in a video frame. 
+    Based on these descriptions, summarize the overall scene depicted in the video using a short phrase of 1–3 words. 
+    The summary should capture the general setting or type of scene shown (e.g., "general street scene", "kitchen interior", "sports match", "forest trail", "battlefield", "concert stage").
+
+    Captions:
+    {all_captions}
+
+    Scene Summary:
     """
 
     # Text2Table pipeline prompts

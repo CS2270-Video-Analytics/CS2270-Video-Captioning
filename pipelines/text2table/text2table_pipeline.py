@@ -25,6 +25,7 @@ class Text2TablePipeline():
         #store all prompts for text2table
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         self.schema_extraction_prompt_format = Config.text2table_schema_generation_prompt
+        self.scene_description_prompt = Config.text2table_scene_description_prompt
 
         #initialize the model that needs to be used for captioning
         model_options = {'Ollama': OllamaText, 'OpenAI': OpenAIText, 'Anthropic': Anthropic, 'DeepSeek':DeepSeek}
@@ -49,18 +50,7 @@ class Text2TablePipeline():
         self.all_objects = all_objects
     
     def get_scene_description(self, all_captions: str):
-        prompt = f"""
-        You are given a list of object-level captions describing elements detected in a video frame. 
-        Based on these descriptions, summarize the overall scene depicted in the video using a short phrase of 1–3 words. 
-        The summary should capture the general setting or type of scene shown (e.g., "general street scene", "kitchen interior", "sports match", "forest trail", "battlefield", "concert stage").
-
-        Captions:
-        {all_captions}
-
-        Scene Summary:
-        """
-
-        scene_descriptor =  self.text2table_model.run_inference(data_stream= prompt, )[0]
+        scene_descriptor =  self.text2table_model.run_inference(data_stream=self.scene_description_prompt.format(all_captions=all_captions))[0]
         print("Scene descriptor: ", scene_descriptor)
         self.scene_descriptor = scene_descriptor.strip()
         return scene_descriptor.strip()

@@ -96,7 +96,6 @@ class VideoQueryPipeline():
         self.text2table_pipeline.clear_pipeline()
     
     def process_query(self, language_query:str):
-
         #extract the schema for the processed object table
         table_schema = self.sql_dbs.get_schema(table_name = [Config.processed_table_name])
 
@@ -117,20 +116,6 @@ if __name__ == '__main__':
     video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
     filename = 'BDD.mp4'
 
-    # dummy.process_video(video_path = video_path, video_filename = filename)
+    #dummy.process_video(video_path = video_path, video_filename = filename)
     dummy.run_text2table()
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
