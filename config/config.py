@@ -405,3 +405,8 @@ class Config:
         'action': "TEXT"
     }
     
+    #-------------------------------------------------------------------------
+    # Video file path (this should be dynamically updated with frontend)
+    #-------------------------------------------------------------------------
+    video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
+    video_filename = 'BDD.mp4'

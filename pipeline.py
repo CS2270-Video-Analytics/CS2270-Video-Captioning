@@ -59,7 +59,7 @@ class VideoQueryPipeline():
         #extract a combined caption from the raw table and create new tables from the schema the LLM generates
         total_num_rows = self.sql_dbs.get_total_num_rows(table_name=Config.caption_table_name)
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
-
+        # print("Got combined description")
         structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
         # print("Schema")
         # print(structured_table_schemas)
@@ -122,8 +122,12 @@ class VideoQueryPipeline():
             print(user_query)
             # execute query on the sql db
             print(self.sql_dbs.execute_query(query = user_query))
-            
-        return self
+            return self
+        else:
+            self.sql_dbs.delete_database()
+            rebooted_pipeline = VideoQueryPipeline()
+            rebooted_pipeline.process_video(video_path = Config.video_path, video_filename = Config.video_filename)
+            return rebooted_pipeline
 
         # #execute query on the sql db
         # #TODO: hwo to parse arguments to SQL query

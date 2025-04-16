@@ -7,8 +7,9 @@ import pdb
 class SQLLiteDBInterface():
 
     def __init__(self, db_name:str = None, table_name_schema_dict:Dict = None):
+        self.db_path = os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name)
         # Connect to SQLite database (or create it if it doesn't exist)
-        self.connection = sqlite3.connect(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name))
+        self.connection = sqlite3.connect(self.db_path)
         self.cursor = self.connection.cursor()
 
         if table_name_schema_dict is None:
@@ -234,9 +235,24 @@ class SQLLiteDBInterface():
             # Replace old table with the new one
             cursor.execute(f"DROP TABLE {table};")
             cursor.execute(f"ALTER TABLE {temp_table} RENAME TO {table};")
-            print(f"Renamed column '{old_column_name}' to '{new_column_name}' in table: {table}")
+            # print(f"Renamed column '{old_column_name}' to '{new_column_name}' in table: {table}")
 
         self.connection.commit()
+    
+    def delete_database(self):
+        """
+        Closes the connection and deletes the SQLite database file from disk.
+        """
+        try:
+            self.connection.close()
+        except Exception:
+            pass
+
+        if os.path.exists(self.db_path):
+            os.remove(self.db_path)
+            print(f"Database deleted: {self.db_path}")
+        else:
+            print(f"No database found at: {self.db_path}")
 
 
 
