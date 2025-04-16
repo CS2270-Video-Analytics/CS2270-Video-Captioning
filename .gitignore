@@ -8,3 +8,5 @@ captions.db
 .env
 *.db
 *.index
+.DS_Store
+.gitkeep
