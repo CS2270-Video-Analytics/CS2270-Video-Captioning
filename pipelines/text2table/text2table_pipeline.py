@@ -51,7 +51,7 @@ class Text2TablePipeline():
     
     def get_scene_description(self, all_captions: str):
         scene_descriptor =  self.text2table_model.run_inference(data_stream=self.scene_description_prompt.format(all_captions=all_captions))[0]
-        print("Scene descriptor: ", scene_descriptor)
+        # print("Scene descriptor: ", scene_descriptor)
         self.scene_descriptor = scene_descriptor.strip()
         return scene_descriptor.strip()
 
@@ -67,8 +67,8 @@ class Text2TablePipeline():
     
     def extract_table_schemas(self, all_captions:str):
         extracted_attributes = self.extract_table_attributes(all_captions)
-        print("Extracted attributes:")
-        print(extracted_attributes), extracted_attributes
+        # print("Extracted attributes:")
+        # print(extracted_attributes)
     
         schema_extraction_prompt_format = self.schema_extraction_prompt_format.format(attributes=extracted_attributes)
         generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt_format)

@@ -61,8 +61,8 @@ class VideoQueryPipeline():
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
 
         structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
-        print("Schema")
-        print(structured_table_schemas)
+        # print("Schema")
+        # print(structured_table_schemas)
 
         self.sql_dbs.execute_many_queries(structured_table_schemas)
         
@@ -116,6 +116,6 @@ if __name__ == '__main__':
     video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
     filename = 'BDD.mp4'
 
-    #dummy.process_video(video_path = video_path, video_filename = filename)
-    dummy.run_text2table()
+    dummy.process_video(video_path = video_path, video_filename = filename)
+    # dummy.run_text2table()
         
