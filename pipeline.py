@@ -150,7 +150,7 @@ if __name__ == '__main__':
     video_path = '/Users/pradyut/CS2270/CS2270-Video-Captioning/datasets/Spider_test'
     filename = 'BDD.mp4'
 
-    # dummy.process_video(video_path = video_path, video_filename = filename)
+    dummy.process_video(video_path = video_path, video_filename = filename)
     # dummy.run_text2table()
     while True:
         question = input("Enter your question (or 'q' to quit): ").strip()
