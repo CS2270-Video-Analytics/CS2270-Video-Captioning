@@ -17,13 +17,10 @@ class SQLLiteDBInterface():
             self.table_name_schema_dict = table_name_schema_dict
         
         #create the table during the init
-        # sqlite3.connect ALWAYS creates the table – this IF condition is meaningless
         self.create_table()
-        # if not os.path.exists(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name)):
-        #     self.create_table()
-        # #otherwiese populate the table schema dictionary from before
-        # else:
-        #     self.table_name_schema_dict = self.extract_schema_dict()
+        #otherwiese populate the table schema dictionary from before
+        if os.path.exists(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name)):
+            self.table_name_schema_dict = self.extract_schema_dict()
 
         # self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
         self.insertion_query = "INSERT OR IGNORE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
@@ -110,7 +107,7 @@ class SQLLiteDBInterface():
     def extract_all_rows(self, table_name:str):
         return  self.execute_query(query=f"SELECT * FROM {table_name};")
     
-    def get_total_num_rows(self, table_name):
+    def get_total_num_rows(self, table_name:str):
         #get total number of rows in table
         self.cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
         num_rows = int(self.cursor.fetchone()[0])

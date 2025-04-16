@@ -52,6 +52,20 @@ class OllamaText(LanguageModel):
         info = {}
         outputs = None
 
+        options = {
+                    'top_k': self.model_params['top_k'],
+                    'top_p': self.model_params['top_p'],
+                    'temperature': self.model_params['temperature'],
+                    'repeat_penalty': self.model_params['repeat_penalty'],
+                    'presence_penalty': self.model_params['presence_penalty'],
+                    'frequency_penalty': self.model_params['frequency_penalty'],
+                    'stop': self.model_params['stop_token'],
+                    'max_tokens': self.model_params['max_tokens'],
+                    'batch_size': self.model_params['batch_size'],
+                    'num_threads': self.model_params['num_threads'],
+                }
+        options = {k: v for k, v in options.items() if v is not None}
+
         if self.system_eval:
             start_time = time.now()
 
@@ -64,18 +78,7 @@ class OllamaText(LanguageModel):
                         'role': 'user',
                         'content': query,
                     }],
-                    options = {
-                        'top_k': self.model_params['top_k'],
-                        'top_p': self.model_params['top_p'],
-                        'temperature': self.model_params['temperature'],
-                        'repeat_penalty': self.model_params['repeat_penalty'],
-                        'presence_penalty': self.model_params['presence_penalty'],
-                        'frequency_penalty': self.model_params['frequency_penalty'],
-                        'stop': self.model_params['stop_token'],
-                        'max_tokens': self.model_params['max_tokens'],
-                        'batch_size': self.model_params['batch_size'],
-                        'num_threads': self.model_params['num_threads'],
-                    })
+                    options = options)
                 print(f"Received response from Ollama")
                 outputs = outputs.message.content
             except Exception as e:

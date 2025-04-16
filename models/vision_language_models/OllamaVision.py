@@ -67,6 +67,19 @@ class OllamaVision(VisionLanguageModel):
         info = {}
         outputs = None
 
+        options = {
+                    'top_k': self.model_params['top_k'],
+                    'top_p': self.model_params['top_p'],
+                    'temperature': self.model_params['temperature'],
+                    'repeat_penalty': self.model_params['repeat_penalty'],
+                    'presence_penalty': self.model_params['presence_penalty'],
+                    'frequency_penalty': self.model_params['frequency_penalty'],
+                    'stop': self.model_params['stop_token'],
+                    'max_tokens': self.model_params['max_tokens'],
+                    'num_threads': self.model_params['num_threads'],
+                }
+        options = {k: v for k, v in options.items() if v is not None}
+
         if self.system_eval:
             start_time = time.time()
 
@@ -84,17 +97,7 @@ class OllamaVision(VisionLanguageModel):
                         'images': [processed_inputs]
                     }],
                     keep_alive = self.model_params['keep_alive'],
-                    options={
-                        'temperature': self.model_params['temperature'],
-                        'top_k': self.model_params['top_k'],
-                        'top_p': self.model_params['top_p'],
-                        'num_ctx': self.model_params['num_ctx'],
-                        'repeat_penalty': self.model_params['repeat_penalty'],
-                        'presence_penalty': self.model_params['presence_penalty'],
-                        'frequency_penalty': self.model_params['frequency_penalty'],
-                        'num_predict': self.model_params['max_tokens'],
-                        'stop': self.model_params['stop_tokens']
-                    }
+                    options= options
                     )
                 print(f"Received response from Ollama")
                 outputs = outputs.message.content
