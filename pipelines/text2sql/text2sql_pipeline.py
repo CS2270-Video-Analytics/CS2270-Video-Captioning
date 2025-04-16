@@ -31,6 +31,35 @@ class Text2SQLPipeline():
         prompt = Config.schema_sufficiency_prompt.format(question=question, schema_info=table_schema)
         return self.model(prompt)
 
+    def parse_schema_sufficiency_response(self, response: str) -> tuple[str, list[str]]:
+        """
+        Parses the LLM schema sufficiency response.
+
+        Args:
+            response (str): The raw response string from the LLM.
+
+        Returns:
+            Tuple[str, List[str]]: ("Yes" or "No", list of required attribute strings)
+        """
+        lines = [line.strip() for line in response.strip().splitlines() if line.strip()]
+        
+        # First line: Sufficient: Yes/No
+        sufficiency_line = next((line for line in lines if line.lower().startswith("sufficient:")), None)
+        if not sufficiency_line:
+            raise ValueError("Missing 'Sufficient:' line in response.")
+        
+        sufficiency = sufficiency_line.split(":")[1].strip()
+
+        # Find start of 'Required Attributes' section
+        try:
+            start_index = lines.index("Required Attributes:") + 1
+        except ValueError:
+            raise ValueError("Missing 'Required Attributes:' section in response.")
+        
+        required_attributes = lines[start_index:]
+
+        return sufficiency, required_attributes
+
     def run_pipeline(self, question: str, table_schema: str):
         """
         Converts a natural language question into an SQL query.
