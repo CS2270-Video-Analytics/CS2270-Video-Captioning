@@ -92,7 +92,8 @@ class Text2TablePipeline():
 
         # Update table context
         self.table_context = self.update_table_context()
-    
+        print("Existing tables: ")
+        print(", ".join(self.table_context))
         # Use the table context in the prompt
         schema_extraction_prompt = self.schema_extraction_prompt_format.format(
             existing_tables=", ".join(self.table_context),
@@ -101,6 +102,8 @@ class Text2TablePipeline():
         generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
         generated_schemas = self.clean_schema(generated_schemas)
 
+        print("generated_schemas: ")
+        print(generated_schemas)
         return generated_schemas
     
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}", video_id_placeholder="{video_id}"):

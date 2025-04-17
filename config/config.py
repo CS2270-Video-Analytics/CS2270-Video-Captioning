@@ -51,6 +51,8 @@ class Config:
         "- object's category should only consider the typical categories seen in the current scene" \
         "- for object's category, try to reuse category name from previously seen object categories in {object_set} " \
         "- put same category object's chunk next to each other " \
+        "- capture key identifying attributes per object so we can differentiate between objects of the same category. For example for person, capture gender, height, clothing, race etc. For vehicle it can be brand, model, color, license, etc." \
+        "- for attributes, only include those that we can identify. " \
         "- keep description concise " \
         "Example: " \
         "object id: 1 " \
@@ -209,15 +211,17 @@ class Config:
 
     text2table_schema_generation_prompt =\
     """
-    Given the extracted categories and attributes for each object in the current video, generate SQL CREATE TABLE statements for each unique category that does not already have a table. Each table should include the following columns:
+    Given the extracted categories and attributes for each object in the current video, generate SQL CREATE TABLE statements for each unique category that does not already have a table. Each table must include the following columns:
     - "video_id" (TEXT, not null)
     - "frame_id" (REAL, not null)
     - "object_id" (INTEGER, unique for each frame)
     - "location" (TEXT)
     
-    For categories that can perform actions (e.g., person, animal, etc), include an "action" column in the corresponding table.
-    Include any relevant attributes for the category as TEXT columns.
-    Ensure that table names do not use reserved SQL keywords. If a category name is a reserved keyword, append '_data' to the category name to form the table name.
+    Addtionally, 
+    (1) for living categories that can perform actions (e.g., person, animal, etc), include another "action" column in the corresponding table. Otherwise don't.
+    (2) for each category's attributes we should create meaningful columns that are representatitve and extractable. For example, for a person with attribute description "male wearing black shirt, holding papers", creating attribute columns like gender, clothing, attachment, action would make sense. For objects like furniture, type, color, design, material, etc would make sense.
+    (3) avoid using reserved SQL keywords as table name and if necessary, append '_data' to the category name to form the table name to avoid error.
+    (4) consider carefully if an attribute can be part of table's column or a new table, pick one that's most relevant to the object.
 
     Extracted category-attribute pairs:
     {attributes}
@@ -311,7 +315,8 @@ class Config:
         2. for each table selected, only use existing columns and the column to use should make sense
         3. can join relevant tables when necessary since video_id and frame_id are unique
         4. if possible duplicate, deduplicate
-        5. try using like instead of =
+        5. try using like instead of = for filtering
+        6. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
 
         Database table schemas:
         {schema_info}

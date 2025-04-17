@@ -8,3 +8,8 @@
 * `frontend': contains code to setup and run front-end for video uploading
 * `main.py': the initial entrypoint for code backend containing logic to select models and run pipeline
 * `baselines': contains all submodules and code for baseline models e.g. VIVA and ZELDA
+
+# Request GPU from OSCAR
+```
+srun --partition=gpu --gres=gpu:2 --cpus-per-task=4 --mem=16G --time=02:00:00 --pty bash
+```

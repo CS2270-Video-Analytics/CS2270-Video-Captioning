@@ -129,8 +129,12 @@ class Text2SQLPipeline():
 if __name__ == "__main__":
     pipeline = Text2SQLPipeline()
     test_questions = [
-        "Find all video_id and frame_id where someone is standing",
-        "Find all video_id and frame_id where someone is in the kitchen"
+        # "Find all video_id and frame_id where someone is standing",
+        # "How many males are there wearing a black shirt in the video?",
+        # "Are there any cabinet in the video?",
+        # "What color is the cabinet in the video?"
+        "Find all cars appeared in the video with clear enough license plates"
+        "Find the frame traffic light turned green"
     ]
     
     print("\n=== Testing Text2SQL Pipeline ===")

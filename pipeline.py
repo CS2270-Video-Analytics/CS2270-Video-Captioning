@@ -124,8 +124,9 @@ if __name__ == '__main__':
     dummy = VideoQueryPipeline()
 
     # video_path = 'datasets/bdd_videos/bdd100k/videos/test'
-    video_path = 'datasets/charades/test'
+    video_path = 'datasets/bdd/'
+    filename = 'cd31bcc0-07b8e93f.mov'
 
     # Process all videos in the directory
-    dummy.process_all_videos(video_path=video_path)
+    dummy.process_single_video(video_path=video_path, video_filename = filename)
         

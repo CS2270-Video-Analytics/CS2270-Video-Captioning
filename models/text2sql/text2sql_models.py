@@ -79,7 +79,7 @@ class Text2SQLModelFactory:
                         {"role": "system", "content": "You are a SQL expert that converts natural language to SQL queries."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=params.get('temperature', 0.7),
+                    temperature=params.get('temperature', 1.0),
                     max_tokens=params.get('max_tokens', 200),
                     top_p=params.get('top_p', 0.9),
                     frequency_penalty=params.get('frequency_penalty', 0.0),
