@@ -122,7 +122,7 @@ class Config:
         'num_ctx': None,
         'repeat_penalty': None,
         'presence_penalty': None,
-        'frequency_penalty':None,
+        'frequency_penalty': 0.2,
         'max_tokens': None,
         'stop_tokens': None,
         'keep_alive': None,
