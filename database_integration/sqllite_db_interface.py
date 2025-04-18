@@ -22,7 +22,6 @@ class SQLLiteDBInterface():
         if os.path.exists(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name)):
             self.table_name_schema_dict = self.extract_schema_dict()
 
-        # self.insertion_query = f"INSERT INTO {self.table_name} {tuple(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())} VALUES ({','.join(['?' for _ in range(Config.caption_schema.keys() if caption_schema is None else caption_schema.keys())])})"
         self.insertion_query = "INSERT OR IGNORE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
 
     def add_new_table(self, table_name:str, table_schema:str, table_prim_key:str):
@@ -77,7 +76,7 @@ class SQLLiteDBInterface():
 
         self.connection.commit()
 
-        return self.cursor.fetchall()  # return all rows relevant to query
+        return self.cursor.fetchall()
     
     def execute_many_queries(self, queries: str, args:tuple = None):
         '''
@@ -129,22 +128,6 @@ class SQLLiteDBInterface():
         combined_description = result[0] if result[0] else ''
 
         return combined_description
-
-    # Unused function
-    # def insert_many_rows_dict(self, rows_data: dict):
-
-    #     table_schema = self.table_name_caption_dict[table_name]
-    #     schema_prompt = tuple(table_schema.keys() if table_schema is None else table_schema.keys())
-    #     schema_value_prompt = ','.join(['?' for _ in range(table_schema.keys() if table_schema is None else table_schema.keys())])
-        
-    #     query = self.insertion_query.format(table_name = table_name, table_schema = schema_prompt, table_schema_value = schema_value_prompt)
-
-
-    #     # Execute query with extracted values
-    #     self.cursor.executemany(query, [tuple(d.values()) for d in rows_data])
-
-    #     # Commit changes and close connection
-    #     self.connection.commit()
 
     def close_conn(self):
 
