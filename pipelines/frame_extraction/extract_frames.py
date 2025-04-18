@@ -47,7 +47,7 @@ class FrameExtractor:
                 # Rotate image if needed (height > width)
                 img_array = np.array(pil_img)
                 if img_array.shape[0] > img_array.shape[1]:
-                    pil_img = pil_img.rotate(90, expand=True)
+                    pil_img = pil_img.rotate(-90, expand=True)
                     print(f"Rotated frame {len(frames)} from {img_array.shape} to {np.array(pil_img).shape}")
                 
                 frames.append((frame_count/fps, pil_img))
