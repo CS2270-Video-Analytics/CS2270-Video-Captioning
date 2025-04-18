@@ -24,7 +24,7 @@ class Config:
         'repeat_penalty': 0.5,
         'presence_penalty': 0.7,
         'frequency_penalty':0.3,
-        'max_tokens': 200,
+        'max_tokens': 2048,
         'stop_tokens': None,
         'keep_alive': 30000
     }
@@ -51,8 +51,9 @@ class Config:
         "- object's category should only consider the typical categories seen in the current scene" \
         "- for object's category, try to reuse category name from previously seen object categories in {object_set} " \
         "- put same category object's chunk next to each other " \
-        "- capture key identifying attributes per object so we can differentiate between objects of the same category. For example for person, capture gender, height, clothing, race etc. For vehicle it can be brand, model, color, license, etc." \
-        "- for attributes, only include those that we can identify. " \
+        "- capture key identifying attributes per object so we can differentiate between objects of the same category. \
+            For example for person, gender, height, clothing, race etc are important. For vehicle brand, model, color, license, etc are important. Apply the similar idea to other categories." \
+        "- However, for attributes, please only include those that we can identify well. If not confident, don't include it as we want included information to be accurate." \
         "- keep description concise " \
         "Example: " \
         "object id: 1 " \
@@ -115,7 +116,7 @@ class Config:
     db_path = './database_integration/video_frames.db'
     text2table_model_name = 'OpenAI;gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
     text2table_params = {
-        'temperature': 1,
+        'temperature': 0.5,
         'top_k': None,
         'top_p': None,
         'num_ctx': None,
@@ -211,10 +212,11 @@ class Config:
 
     text2table_schema_generation_prompt =\
     """
-    Given the extracted categories and attributes for each object in the current video, generate SQL CREATE TABLE statements for each unique category that does not already have a table. Each table must include the following columns:
+    Given the extracted categories and attributes for each object in the current video, generate SQL CREATE TABLE statements for each unique category that does not already have a table. 
+    Each table must include the following columns:
     - "video_id" (TEXT, not null)
     - "frame_id" (REAL, not null)
-    - "object_id" (INTEGER, unique for each frame)
+    - "object_id" (INTEGER)
     - "location" (TEXT)
     
     Addtionally, 
@@ -222,6 +224,7 @@ class Config:
     (2) for each category's attributes we should create meaningful columns that are representatitve and extractable. For example, for a person with attribute description "male wearing black shirt, holding papers", creating attribute columns like gender, clothing, attachment, action would make sense. For objects like furniture, type, color, design, material, etc would make sense.
     (3) avoid using reserved SQL keywords as table name and if necessary, append '_data' to the category name to form the table name to avoid error.
     (4) consider carefully if an attribute can be part of table's column or a new table, pick one that's most relevant to the object.
+    (5) for output, generate only the sql create table statements and don't include anything else before or after.
 
     Extracted category-attribute pairs:
     {attributes}

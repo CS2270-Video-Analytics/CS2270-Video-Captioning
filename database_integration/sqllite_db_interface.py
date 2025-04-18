@@ -98,12 +98,14 @@ class SQLLiteDBInterface():
         schema_value_prompt = ','.join(['?' for _ in range(len(table_schema[0].keys()))])
         
         query = self.insertion_query.format(table_name = table_name, table_schema = schema_prompt, table_schema_value = schema_value_prompt)
+        
+        try:
+            # Insert multiple rows at once using executemany()
+            self.cursor.executemany(query, rows_data)
+            self.connection.commit()
+        except Exception as e:
+            print(f"Error inserting {rows_data} into {table_name}: {e}")
 
-        # Insert multiple rows at once using executemany()
-        self.cursor.executemany(query, rows_data)
-
-        self.connection.commit()
-    
     def extract_all_rows(self, table_name:str):
         return  self.execute_query(query=f"SELECT * FROM {table_name};")
     
