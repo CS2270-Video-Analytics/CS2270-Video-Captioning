@@ -1,8 +1,10 @@
 datasets/Spider_test
-models/text2sql/.env
 models/text2sql/2270-env
 models/text2sql/__pycache__
 outputs/
 datasets/bdd_videos/
 __pycache__/
 captions.db
+.env
+*.db
+*.index

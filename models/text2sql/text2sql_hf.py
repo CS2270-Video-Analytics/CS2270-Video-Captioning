@@ -1,82 +1,43 @@
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModelForSeq2SeqLM
+from config.config import Config
+import logging
 
-def create_text2sql_func_hf(model_name):
+# Set up logging
+logger = logging.getLogger(__name__)
+
+def create_text2sql_func_hf(model_name=None):
     """
-    Creates a function that converts natural language questions into SQL queries
-    using the Hugging Face model_name running locally.
-
-    Parameters:
-        model_name (str): The Hugging Face model to use.
-
-    Returns:
-        function: A function `text2sql(question, schema_info)` that generates
-                  SQLite-compatible SQL queries.
-    """
-    # Load tokenizer and model
-    # tokenizer = AutoTokenizer.from_pretrained(model_name)
-    if "OpenELM" in model_name:
-        tokenizer = AutoTokenizer.from_pretrained("gpt2", use_fast=False)
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-    # model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16, device_map="auto")
-    if "T5" in model_name:
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_name, torch_dtype=torch.float16, device_map="auto")
-    else:
-        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.float16, device_map="auto")
+    Create a function that uses HuggingFace models for text-to-SQL conversion
     
-    def text2sql(question, schema_info):
+    Args:
+        model_name (str, optional): The specific model name to use
+        
+    Returns:
+        function: A function that converts natural language to SQL
+    """
+    # Use model name from config if not provided
+    if model_name is None:
+        model_name = Config.text2sql_model_name.split(';')[1]
+    
+    def text2sql_func(question, schema_info):
         """
-        Generates an SQLite-compatible SQL query from a natural language question.
-
-        Parameters:
-            question (str): The natural language question.
-            schema_info (str): The database schema information.
-
+        Convert natural language question to SQL using HuggingFace model
+        
+        Args:
+            question (str): The natural language question to convert
+            schema_info (str): Information about the database schema
+            
         Returns:
-            str: The generated SQL query.
+            str: The generated SQL query
+            
+        Raises:
+            NotImplementedError: This is a placeholder implementation
         """
-        # prompt = f"translate English to SQL: {question} | Schema: {schema_info}"
-        prompt = f"""
-        translate English to SQL:
-        - Use **SQLite3** syntax.
-        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        - **No JSON functions** (assume basic text handling).
-        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        - **BOOLEAN should be INTEGER** (0 = False, 1 = True).
-        - Use **LOWER()** for case-insensitive string matching.
-        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        - Assume **foreign key constraints are disabled** unless explicitly turned on.
-
-        **Schema**: {schema_info}
-
-        **User Question**: {question}
-
-        **SQL Query**:
-        """
-        # Tokenize input
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-
-        # Generate SQL query
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs, 
-                max_new_tokens=512, 
-                do_sample=False, 
-                num_beams=5,
-                pad_token_id=tokenizer.eos_token_id
-                )
-                # temperature=0.3, pad_token_id=tokenizer.eos_token_id)
-
-        # Decode and return the generated SQL
-        generated_sql = tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-        # if "SQL Query:" in generated_sql:
-        #     generated_sql = generated_sql.split("SQL Query:")[-1].strip()
-        #         # Stop at "-- END QUERY" if it exists
-        # if "-- END QUERY" in generated_sql:
-        #     generated_sql = generated_sql.split("-- END QUERY")[0].strip()
-
-        return generated_sql
-
-    return text2sql
+        try:
+            # This is a placeholder - implement with actual HuggingFace API when available
+            logger.warning("HuggingFace model implementation not available yet")
+            raise NotImplementedError("HuggingFace model implementation not available yet")
+        except Exception as e:
+            logger.error(f"Error in HuggingFace text2sql: {str(e)}")
+            raise
+    
+    return text2sql_func 

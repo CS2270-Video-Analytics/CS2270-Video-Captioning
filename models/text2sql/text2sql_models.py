@@ -1,261 +1,139 @@
 import os
-from dotenv import load_dotenv, find_dotenv
-from openai import OpenAI
-import anthropic
+import logging
+import openai
 from config.config import Config
-if Config.debug:
-    import pdb
 
-def create_text2sql_func_openai(model_name="gpt-3.5-turbo", temperature=0):
-    """
-    Creates a function that generates SQL queries from natural language questions 
-    using OpenAI's API with a specified LLM model.
-    Parameters:
-        model_name (str): The OpenAI language model to use (e.g., "gpt-3.5-turbo").
-        temperature (float, optional): Between 0 and 1.
+# Set up logging
+logger = logging.getLogger(__name__)
 
-    Returns:
-        function: A function `question_to_sql(question, schema_info)` that generates
-                  SQL queries given a natural language question and database schema.
-
-    """
-    _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
-    OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
-    client = OpenAI()
-
-    def question_to_sql(question, schema_info):
+class Text2SQLModelFactory:
+    """Factory class for creating text-to-SQL model functions"""
+    
+    @staticmethod
+    def create_model(model_type, model_name=None):
         """
-        Generates an SQL query from a natural language question using OpenAI's API.
-
-        Parameters:
-            question (str): The natural language question to convert into SQL.
-            schema_info (str): The database schema information, including table 
-                               and column definitions.
-
+        Create a text-to-SQL model function based on the specified model type
+        
+        Args:
+            model_type (str): The type of model to create (e.g., 'OpenAI', 'DeepSeek', etc.)
+            model_name (str, optional): The specific model name to use
+            
         Returns:
-            str: The generated SQL query.
+            function: A function that converts natural language to SQL
+            
+        Raises:
+            ValueError: If the model type is not supported
         """
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries.
-        # Use the provided database schema to generate the correct SQL query.
-        # Make sure the SQL you generate is specifically for an **SQLite3** database.
-        # Database Schema:
-        # {schema_info}
+        model_creators = {
+            'OpenAI': Text2SQLModelFactory._create_openai_model,
+            'DeepSeek': Text2SQLModelFactory._create_deepseek_model,
+            'Anthropic': Text2SQLModelFactory._create_anthropic_model,
+            'HuggingFace': Text2SQLModelFactory._create_huggingface_model
+        }
+        
+        if model_type not in model_creators:
+            raise ValueError(f"Unsupported model type: {model_type}. Supported types: {list(model_creators.keys())}")
+        
+        return model_creators[model_type](model_name)
+    
+    @staticmethod
+    def _create_openai_model(model_name=None):
+        """Create a function that uses OpenAI models for text-to-SQL conversion"""
+        
+        # Use model name from config if not provided
+        if model_name is None:
+            model_name = Config.text2sql_model_name.split(';')[1]
+        
+        # Set up OpenAI API key
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable not set")
+        
+        openai.api_key = api_key
+        
+        def text2sql_func(question, schema_info):
+            """
+            Convert natural language question to SQL using OpenAI model
+            
+            Args:
+                question (str): The natural language question to convert
+                schema_info (str): Information about the database schema
+                
+            Returns:
+                str: The generated SQL query
+                
+            Raises:
+                Exception: If there's an error with the API call
+            """
+            try:
+                # Generate the prompt using the config
+                prompt = Config.get_text2sql_prompt(schema_info, question)
+                
+                # Get parameters from config
+                params = Config.text2sql_params
+                
+                # Call the OpenAI API with all parameters from config
+                response = openai.chat.completions.create(
+                    model=model_name,
+                    messages=[
+                        {"role": "system", "content": "You are a SQL expert that converts natural language to SQL queries."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=params.get('temperature', 1.0),
+                    max_tokens=params.get('max_tokens', 200),
+                    top_p=params.get('top_p', 0.9),
+                    frequency_penalty=params.get('frequency_penalty', 0.0),
+                    presence_penalty=params.get('presence_penalty', 0.0),
+                    stop=params.get('stop_tokens', None),
+                )
+                
+                # Extract the SQL query from the response
+                sql_query = response.choices[0].message.content.strip()
+                return sql_query
+                
+            except Exception as e:
+                logger.error(f"Error in OpenAI text2sql: {str(e)}")
+                raise
+        
+        return text2sql_func
+    
+    @staticmethod
+    def _create_deepseek_model(model_name=None):
+        """Create a function that uses DeepSeek models for text-to-SQL conversion"""
+        # This is a placeholder - implement with actual DeepSeek API when available
+        def text2sql_func(question, schema_info):
+            raise NotImplementedError("DeepSeek model implementation not available yet")
+        return text2sql_func
+    
+    @staticmethod
+    def _create_anthropic_model(model_name=None):
+        """Create a function that uses Anthropic models for text-to-SQL conversion"""
+        # This is a placeholder - implement with actual Anthropic API when available
+        def text2sql_func(question, schema_info):
+            raise NotImplementedError("Anthropic model implementation not available yet")
+        return text2sql_func
+    
+    @staticmethod
+    def _create_huggingface_model(model_name=None):
+        """Create a function that uses HuggingFace models for text-to-SQL conversion"""
+        # This is a placeholder - implement with actual HuggingFace API when available
+        def text2sql_func(question, schema_info):
+            raise NotImplementedError("HuggingFace model implementation not available yet")
+        return text2sql_func
 
-        # Question: "{question}"
-        # Expected Output: Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
+# For backward compatibility
+def create_text2sql_func_openai(model_name=None):
+    """Create a function that uses OpenAI models for text-to-SQL conversion"""
+    return Text2SQLModelFactory._create_openai_model(model_name)
 
-        prompt = f"""
-        You are an AI that converts natural language questions into SQL queries 
-        specifically for an **SQLite3** database. 
+def create_text2sql_func_deepseek(model_name=None):
+    """Create a function that uses DeepSeek models for text-to-SQL conversion"""
+    return Text2SQLModelFactory._create_deepseek_model(model_name)
 
-        ### **Important SQLite Constraints:**
-        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        - **No native JSON functions** (assume basic text handling).
-        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-        - Use **LOWER()** for case-insensitive string matching.
-        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        - Always assume **foreign key constraints are disabled unless explicitly turned on**.
+def create_text2sql_func_anthropic(model_name=None):
+    """Create a function that uses Anthropic models for text-to-SQL conversion"""
+    return Text2SQLModelFactory._create_anthropic_model(model_name)
 
-        ### **Database Schema:**
-        {schema_info}
-
-        ### **User Question:**
-        "{question}"
-
-        ### **Expected Output:**
-        Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        SQL Query:
-        """
-
-        messages = [{"role": "user", "content": prompt}]
-
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=temperature,
-        )
-
-        return response.choices[0].message.content.strip()
-
-    return question_to_sql
-
-
-def create_text2sql_func_deepseek(model_name = None, temperature=0):
-    """
-    Creates a function that generates SQL queries from natural language questions 
-    using DeepSeek's API with a specified LLM model.
-    Parameters:
-        temperature (float, optional): Between 0 and 1.
-
-    Returns:
-        function: A function `question_to_sql(question, schema_info)` that generates
-                  SQL queries given a natural language question and database schema.
-
-    """
-    _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
-    # OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
-    client = OpenAI(api_key=os.environ['DEEPSEEK_API_KEY'], base_url="https://api.deepseek.com")
-
-    def question_to_sql(question, schema_info):
-        """
-        Generates an SQL query from a natural language question using OpenAI's API.
-
-        Parameters:
-            question (str): The natural language question to convert into SQL.
-            schema_info (str): The database schema information, including table 
-                               and column definitions.
-
-        Returns:
-            str: The generated SQL query.
-        """
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries.
-        # Use the provided database schema to generate the correct SQL query.
-        # Make sure the SQL you generate is specifically for an **SQLite3** database.
-        # Database Schema:
-        # {schema_info}
-
-        # Question: "{question}"
-        # Expected Output: Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
-
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries 
-        # specifically for an **SQLite3** database. 
-
-        # ### **Important SQLite Constraints:**
-        # - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        # - **No native JSON functions** (assume basic text handling).
-        # - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        # - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-        # - Use **LOWER()** for case-insensitive string matching.
-        # - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        # - Always assume **foreign key constraints are disabled unless explicitly turned on**.
-
-        # ### **Database Schema:**
-        # {schema_info}
-
-        # ### **User Question:**
-        # "{question}"
-
-        # ### **Expected Output:**
-        # Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
-        prompt = prompt = f"""
-        ### System Instruction ###
-        Convert the following question into a **valid SQLite3 SQL query**.
-        - **Only return the SQL query, without any explanation**.
-        - **Do not include extra comments or explanations**.
-        - **End the SQL query with a semicolon (`;`)**.
-
-        **Schema**:
-        {schema_info}
-
-        **User Question**:
-        {question}
-
-        **SQL Query**:
-        """
-
-        messages = [{"role": "user", "content": prompt}]
-
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=messages,
-            temperature=temperature,
-        )
-        generated_sql = response.choices[0].message.content.strip()
-        # **Stop output if it contains an explanation**
-        if "### Explanation" in generated_sql:
-            generated_sql = generated_sql.split("### Explanation")[0].strip()
-
-        return generated_sql
-
-    return question_to_sql
-
-
-def create_text2sql_func_anthropic(model_name="claude-3-5-haiku-latest", temperature=0):
-    """
-    Creates a function that generates SQL queries from natural language questions 
-    using Anthropic's API with a specified LLM model.
-    Parameters:
-        model_name (str): The OpenAI language model to use (e.g., "gpt-3.5-turbo").
-        temperature (float, optional): Between 0 and 1.
-
-    Returns:
-        function: A function `question_to_sql(question, schema_info)` that generates
-                  SQL queries given a natural language question and database schema.
-
-    """
-    _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
-    client = anthropic.Anthropic(
-        api_key=os.environ['ANTHROPIC_API_KEY'],
-    )
-
-    def question_to_sql(question, schema_info):
-        """
-        Generates an SQL query from a natural language question using OpenAI's API.
-
-        Parameters:
-            question (str): The natural language question to convert into SQL.
-            schema_info (str): The database schema information, including table 
-                               and column definitions.
-
-        Returns:
-            str: The generated SQL query.
-        """
-        # prompt = f"""
-        # You are an AI that converts natural language questions into SQL queries.
-        # Use the provided database schema to generate the correct SQL query.
-        # Make sure the SQL you generate is specifically for an **SQLite3** database.
-        # Database Schema:
-        # {schema_info}
-
-        # Question: "{question}"
-        # Expected Output: Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        # SQL Query:
-        # """
-
-        prompt = f"""
-        You are an AI that converts natural language questions into SQL queries 
-        specifically for an **SQLite3** database. 
-
-        ### **Important SQLite Constraints:**
-        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
-        - **No native JSON functions** (assume basic text handling).
-        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
-        - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
-        - Use **LOWER()** for case-insensitive string matching.
-        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
-        - Always assume **foreign key constraints are disabled unless explicitly turned on**.
-
-        ### **Database Schema:**
-        {schema_info}
-
-        ### **User Question:**
-        "{question}"
-
-        ### **Expected Output:**
-        Provide a valid **SQLite3-compatible** SQL query based on the question and schema.
-        **Do not include explanations or extra text.**
-        Return only the SQL query
-        SQL Query:
-        """
-
-        messages = [{"role": "user", "content": prompt}]
-
-        response = client.messages.create(
-            model=model_name,
-            max_tokens=1024,
-            messages=messages,
-        )
-
-        return response.content[0].text.strip()
-
-    return question_to_sql
+def create_text2sql_func_hf(model_name=None):
+    """Create a function that uses HuggingFace models for text-to-SQL conversion"""
+    return Text2SQLModelFactory._create_huggingface_model(model_name) 
