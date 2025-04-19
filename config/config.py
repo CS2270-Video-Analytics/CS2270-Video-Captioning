@@ -295,7 +295,8 @@ class Config:
     #-------------------------------------------------------------------------
     # LLM-Judge settings
     #-------------------------------------------------------------------------
-
+    llm_judge = False
+    
     schema_sufficiency_prompt = """
     You are a careful and knowledgeable database assistant.
     Your task is to determine whether the given SQLite3 database schema contains enough information to answer a user's question.

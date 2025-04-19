@@ -86,7 +86,7 @@ class VideoQueryPipeline():
                 print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
                 break
 
-    def process_single_video(self, video_path:str, video_filename:str):
+    def process_single_video(self, video_path: str, video_filename: str):
         self.generate_captions(video_path = video_path, video_filename = video_filename)
         self.run_text2table()
         
@@ -95,13 +95,16 @@ class VideoQueryPipeline():
         self.text2sql_pipeline.clear_pipeline()
         self.text2table_pipeline.clear_pipeline()
     
-    def process_query(self, language_query:str):
+    def process_query(self, language_query: str, llm_judge: bool):
 
         #extract the schema for the processed object table
         table_schemas = self.sql_dbs.get_schema()
         
         #parse the language query into a SQL query
-        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schemas = table_schemas)
+        user_query = self.text2sql_pipeline.run_pipeline(
+                                question = language_query, 
+                                table_schemas = table_schemas, 
+                                llm_judge = llm_judge)
 
         #execute query on the sql db
         self.sql_dbs.execute_query(query = user_query)
@@ -132,5 +135,5 @@ if __name__ == '__main__':
     # dummy_query = "How many times does a pedestrian wearing a white shirt cross the road while a red car is there?"
     dummy_query = "What are the frames where traffic light sign is green and the car in front is an SUV?"
     pdb.set_trace()
-    dummy.process_query(language_query = dummy_query)
+    dummy.process_query(language_query = dummy_query, llm_judge = Config.llm_judge)
         
