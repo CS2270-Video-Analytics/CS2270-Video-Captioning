@@ -291,6 +291,41 @@ class Config:
 
         SQL query:
         """
+    
+    #-------------------------------------------------------------------------
+    # LLM-Judge settings
+    #-------------------------------------------------------------------------
+
+    schema_sufficiency_prompt = """
+    You are a careful and knowledgeable database assistant.
+    Your task is to determine whether the given SQLite3 database schema contains enough information to answer a user's question.
+    ---
+    ### Guidelines:
+    1. Carefully read the user question and identify all the **attributes** required to answer it.
+    - Use concise phrases like: "license plates of Vehicles", "speed of Vehicles", or "locations of Pedestrians".
+    - Include **all** attributes — even if they are not in the schema.
+    2. Examine the schema and determine whether these attributes are present.
+    3. Respond with the following format:
+    Sufficient: <Yes|No>
+    Required Attributes:
+    <Attribute 1>
+    <Attribute 2>
+    <Attribute 3> ...
+    Only return this structured output. Do **not** include explanations or generate SQL.
+    ---
+    ### Notes:
+    - The column `Frame_ID` refers to a **timestamp** representing when a frame was captured.
+    ---
+    ### User Question:
+    {query}
+    ---
+    ### Database Schema:
+    {table_schemas}
+    ---
+    Sufficient:
+    """
+
+    max_schema_sufficiency_retries = 3
 
     #-------------------------------------------------------------------------
     # Database settings
@@ -321,3 +356,10 @@ class Config:
         'description': "TEXT", 
         'action': "TEXT"
     }
+    
+    #-------------------------------------------------------------------------
+    # Input Video Settings
+    #-------------------------------------------------------------------------
+    video_path = 'datasets/bdd/'
+    video_filename = 'test3.mov'
+    

@@ -6,6 +6,9 @@ if Config.debug:
     import pdb
 from models.text2sql import Text2SQLModelFactory
 from models.language_models.OpenAIText import OpenAIText
+from models.language_models.OllamaText import OllamaText
+from models.language_models.Anthropic import Anthropic
+from models.language_models.DeepSeek import DeepSeek
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -17,19 +20,23 @@ class Text2SQLPipeline():
         Initialize the Text2SQL pipeline with the model specified in the config
         """
         try:
-            # Initialize the OpenAIText model with parameters from config
-            self.model = OpenAIText(
-                model_params=Config.text2sql_params,
-                model_name=Config.text2sql_model_name.split(';')[1],
-                model_precision=Config.model_precision,
-                system_eval=Config.system_eval
-            )
-            logger.info(f"Initialized Text2SQL pipeline with OpenAIText model: {self.model.model_name}")
+            #initialize the model that needs to be used for captioning
+            model_options = {'Ollama': OllamaText, 'OpenAI': OpenAIText, 'Anthropic': Anthropic, 'DeepSeek':DeepSeek}
+            [text2sql_model, text2sql_model_name] = Config.caption_model_name.split(';')
+            assert text2sql_model in model_options, f'ERROR: model {text2sql_model} does not exist or is not supported yet'
+            
+            self.text2sql_model = model_options[text2sql_model](
+                                    model_params = Config.text2sql_params, 
+                                    model_name=text2sql_model_name, 
+                                    model_precision=Config.model_precision, 
+                                    system_eval=Config.system_eval)
+
+            logger.info(f"Initialized Text2SQL pipeline with: {self.text2sql_model.model_name}")
         except Exception as e:
             logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
             raise
 
-    def run_pipeline(self, question: str, db_file: str):
+    def run_pipeline(self, question: str, table_schemas: str, llm_judge:bool=True):
         """
         Converts a natural language question into an SQL query using the existing database schema.
 
@@ -41,90 +48,69 @@ class Text2SQLPipeline():
             str: The generated SQL query.
         """
         try:
-            table_schema = self.get_existing_schema(db_file)
-            prompt = Config.get_text2sql_prompt(table_schema, question)
-            sql_query, info = self.model.run_inference(prompt)
-            if info['error']:
-                raise Exception(info['error'])
-            logger.debug(f"Generated SQL query: {sql_query}")
-            return sql_query
+            sufficiency, required_attributes = self.check_schema_sufficiency(query=question, table_schemas = table_schemas, llm_judge=llm_judge)
+            if sufficiency:
+                prompt = Config.get_text2sql_prompt(table_schemas, question)
+                sql_query, info = self.text2sql_model.run_inference(prompt)
+                if info['error']:
+                    raise Exception(info['error'])
+                logger.debug(f"Generated SQL query: {sql_query}")
+                return sql_query
+            else:
+                raise NotImplementedError("SQL Table Update: Text2Column Module to be implemented")
         except Exception as e:
             logger.error(f"Error in run_pipeline: {str(e)}")
             raise
     
     def clear_pipeline(self):
-        #clear the cache that remains for previous runs of text2table
+        #clear the cache that remains for previous runs of text2sql
         self.table_attributes = []
         self.all_objects = []
 
-    def execute_sql(self, db_file, sql_query):
-        """
-        Executes an SQL query on a given SQLite database.
-
-        Parameters:
-            db_file (str): Path to the SQLite database file.
-            sql_query (str): The SQL query to execute.
-
-        Returns:
-            list: Query result as a list of tuples, or an error message if execution fails.
-        """
-        # Connect to the SQLite database
-        conn = None
-        try:
-            conn = sqlite3.connect(db_file)
-            cursor = conn.cursor()
-
-            cursor.execute(sql_query)
-            result = cursor.fetchall()  # Fetch query results
-            logger.debug(f"SQL execution result: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"Error executing SQL: {str(e)}")
-            return f"Error: {str(e)}"
-        finally:
-            if conn:
-                conn.close()
-
-    def normalize_sql(self, sql):
-        """
-        Remove extraneous formatting, code block markers, and standardize SQL.
-        
-        Parameters:
-            sql (str): The SQL query to normalize
+    def check_schema_sufficiency(self, query: str, table_schemas: str, llm_judge:bool=True):
+        if llm_judge:
+            prompt = Config.schema_sufficiency_prompt.format(query=query, table_schemas=table_schemas)
             
+            for _ in range(Config.max_schema_sufficiency_retries):
+                sufficiency_response, info = self.text2sql_model.run_inference(prompt)
+                if info['error']:
+                    raise Exception(info['error'])
+
+                sufficient, required_attributes = self.parse_schema_sufficiency_response_llm_judge(sufficiency_response)
+                if sufficient and required_attributes:
+                    return sufficient, None
+
+        return sufficient, required_attributes
+    
+    def parse_schema_sufficiency_response_llm_judge(self, response: str) -> tuple[str, list[str]]:
+        """
+        Parses the LLM schema sufficiency response.
+        Args:
+            response (str): The raw response string from the LLM.
         Returns:
-            str: The normalized SQL query
+            Tuple[str, List[str]]: ("Yes" or "No", list of required attribute strings)
         """
-        sql = sql.strip().replace("```sql", "").replace("```", "").strip()  # Remove markdown SQL blocks
-        return sqlparse.format(sql, reindent=True, keyword_case='upper').strip()  # Standardize format
+        lines = [line.strip() for line in response.strip().splitlines() if line.strip()]
 
-    def get_existing_schema(self, db_file):
-        """
-        Retrieve the schema of existing tables in the database.
+        #check for sufficient in output
+        sufficiency_line = next((line for line in lines if line.lower().startswith("sufficient:")), None)
+        if not sufficiency_line:
+            sufficiency = None
+        elif sufficiency_line.split(":")[1].strip() == "Yes":
+            sufficiency = True
+        elif sufficiency_line.split(":")[1].strip() == "No":
+            sufficiency = False
+        else:
+            sufficiency = None 
 
-        Parameters:
-            db_file (str): Path to the SQLite database file.
-
-        Returns:
-            dict: A dictionary with table names as keys and column information as values.
-        """
-        schema = {}
+        #check required attributes section
         try:
-            conn = sqlite3.connect(db_file)
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-            tables = cursor.fetchall()
-            for table in tables:
-                table_name = table[0]
-                cursor.execute(f"PRAGMA table_info({table_name});")
-                columns = cursor.fetchall()
-                schema[table_name] = [(col[1], col[2]) for col in columns]  # (column_name, data_type)
-        except Exception as e:
-            logger.error(f"Error retrieving schema: {str(e)}")
-        finally:
-            if conn:
-                conn.close()
-        return schema
+            start_index = lines.index("Required Attributes:") + 1
+            required_attributes = lines[start_index:]
+        except ValueError:
+            required_attributes = None
+
+        return sufficiency, required_attributes
 
 if __name__ == "__main__":
     pipeline = Text2SQLPipeline()
@@ -148,3 +134,4 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error: {e}")
         print("-" * 50)
+        

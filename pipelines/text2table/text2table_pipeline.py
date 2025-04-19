@@ -36,7 +36,11 @@ class Text2TablePipeline():
         [text2table_model, text2table_model_name] = Config.caption_model_name.split(';')
         assert text2table_model in model_options, f'ERROR: model {text2table_model} does not exist or is not supported yet'
         
-        self.text2table_model = model_options[text2table_model](model_params = Config.text2table_params, model_name=text2table_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
+        self.text2table_model = model_options[text2table_model](
+                                    model_params = Config.text2table_params, 
+                                    model_name=text2table_model_name, 
+                                    model_precision=Config.model_precision, 
+                                    system_eval=Config.system_eval)
 
         #extract the list of attributes to capture across frame descriptions
         self.table_attributes = []
@@ -284,10 +288,7 @@ class Text2TablePipeline():
         
         return parsed_rows
 
-
-
 if __name__ == '__main__':
-
     test_caption = "The image shows a city street with cars and buildings.\
 The foreground features a white car with a yellow license plate, facing away from the camera. The license plate reads \"54-628-74\" and has a yellow background with black text.\
 A white car is driving on the left side of the road, heading towards the camera.\
@@ -307,14 +308,3 @@ The image captures a typical urban scene, with cars and pedestrians navigating t
 
     #dummy run with video and frame id 1
     db_data_row = t2t.run_pipeline(test_caption, 1, 1)
-
-
-
-
-
-
-
-
-
-
-
