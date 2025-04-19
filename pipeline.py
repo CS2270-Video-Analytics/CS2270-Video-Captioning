@@ -98,13 +98,12 @@ class VideoQueryPipeline():
     def process_query(self, language_query:str):
 
         #extract the schema for the processed object table
-        table_schema = self.sql_dbs.get_schema(tables_to_include = {Config.processed_table_name})
-
+        table_schemas = self.sql_dbs.get_schema()
+        
         #parse the language query into a SQL query
-        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schema = table_schema)
+        user_query = self.text2sql_pipeline.run_pipeline(question = language_query, table_schemas = table_schemas)
 
         #execute query on the sql db
-        #TODO: hwo to parse arguments to SQL query
         self.sql_dbs.execute_query(query = user_query)
 
     def process_all_videos(self, video_path: str):
@@ -124,9 +123,14 @@ if __name__ == '__main__':
     dummy = VideoQueryPipeline()
 
     # video_path = 'datasets/bdd_videos/bdd100k/videos/test'
-    video_path = 'datasets/bdd/'
-    filename = 'cd31bcc0-07b8e93f.mov'
+    video_path = Config.video_path
+    filename = Config.video_filename
 
     # Process all videos in the directory
-    dummy.process_single_video(video_path=video_path, video_filename = filename)
+    # dummy.process_single_video(video_path=video_path, video_filename = filename)
+
+    # dummy_query = "How many times does a pedestrian wearing a white shirt cross the road while a red car is there?"
+    dummy_query = "What are the frames where traffic light sign is green and the car in front is an SUV?"
+    pdb.set_trace()
+    dummy.process_query(language_query = dummy_query)
         
