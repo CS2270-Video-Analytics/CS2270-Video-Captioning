@@ -20,9 +20,9 @@ def db_interface():
     }
     db_interface = SQLLiteDBInterface(db_name=test_db_name, table_name_schema_dict=test_table_name_schema_dict)
     yield db_interface
-    # # Teardown: Remove the test database after tests
-    # db_interface.close_conn()
-    # os.remove(os.path.join(Config.sql_db_path, test_db_name))
+    # Teardown: Remove the test database after tests
+    db_interface.close_conn()
+    os.remove(os.path.join(Config.sql_db_path, test_db_name))
 
 def test_create_table(db_interface):
     # Test if the table is created correctly

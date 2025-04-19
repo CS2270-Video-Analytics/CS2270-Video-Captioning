@@ -7,7 +7,7 @@ import logging
 # Set up logging
 logger = logging.getLogger(__name__)
 
-class SQLLiteDBInterface():
+class SQLLiteDBInterface:
     def __init__(self, db_name: str, table_name_schema_dict: Optional[Dict] = None):
         # Connect to SQLite database (or create it if it doesn't exist)
         self.connection = sqlite3.connect(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name))

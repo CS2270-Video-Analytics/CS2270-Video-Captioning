@@ -129,3 +129,5 @@ psutil==7.0.0
 
 # Additional packages from pytest
 pytest
+
+aiohttp==3.11.16

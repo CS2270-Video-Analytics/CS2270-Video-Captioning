@@ -17,7 +17,7 @@ class VideoQueryPipeline():
         self.captioning_pipeline = CaptioningPipeline()
 
         #SQL db containing raw and processed SQL table
-        self.sql_dbs = SQLLiteDBInterface()
+        self.sql_dbs = SQLLiteDBInterface(Config.sql_db_name)
 
         #vector db containing image embeddings
         # Since we are no longer doing VectorDB, we can comment this out
@@ -96,7 +96,7 @@ class VideoQueryPipeline():
     
     def process_query(self, language_query: str, llm_judge: bool):
         #extract the schema for the processed object table
-        table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos(tables_to_include = {Config.processed_table_name})
+        table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
 
         #parse the language query into a SQL query
         user_query = self.text2sql_pipeline.run_pipeline(
@@ -120,17 +120,8 @@ class VideoQueryPipeline():
             self.process_single_video(video_path=video_path, video_filename=video_filename)
 
 if __name__ == '__main__':
-    dummy = VideoQueryPipeline()
-
-    # video_path = 'datasets/bdd_videos/bdd100k/videos/test'
-    video_path = Config.video_path
-    filename = Config.video_filename
-
-    # Process all videos in the directory
-    # dummy.process_single_video(video_path=video_path, video_filename = filename)
-
-    # dummy_query = "How many times does a pedestrian wearing a white shirt cross the road while a red car is there?"
-    dummy_query = "What are the frames where traffic light sign is green and the car in front is an SUV?"
-    pdb.set_trace()
-    dummy.process_query(language_query = dummy_query, llm_judge = Config.llm_judge)
+    query_pipeline = VideoQueryPipeline()
+    query_pipeline.process_single_video(video_path=Config.video_path, video_filename = Config.video_filename)
+    # QUERY = "What are the frames where traffic light sign is green and the car in front is an SUV?"
+    # query_pipeline.process_query(language_query = QUERY)
         
