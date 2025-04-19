@@ -85,7 +85,7 @@ class Text2TablePipeline():
         frame_extraction_prompt = self.attribute_extraction_prompt.format(
             incontext_examples = Config.text2table_incontext_prompt, 
             all_joined_captions = all_captions)
-        extracted_attributes, __ = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
+        extracted_attributes = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
 
         return extracted_attributes.strip()
     
@@ -103,7 +103,7 @@ class Text2TablePipeline():
             existing_tables=", ".join(self.table_context),
             attributes=extracted_attributes
         )
-        generated_schemas, __ = self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
+        generated_schemas = self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
         generated_schemas = self.clean_schema(generated_schemas)
 
         print("generated_schemas: ")
@@ -249,8 +249,12 @@ class Text2TablePipeline():
         # prompt = self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
         prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema = json_schema_template.replace("{frame_id}", f"{frame_id}").replace("{video_id}", f"{video_id}"))
         # raw_response, _ = self.text2table_model.run_inference(data_stream=prompt, **dict(system_content= self.text2table_frame_context))
-        raw_response, _ = self.text2table_model.run_inference(data_stream=prompt)
-        json_response = self.extract_json_from_response(raw_response)
+        try:
+            raw_response = self.text2table_model.run_inference(data_stream=prompt)
+            json_response = self.extract_json_from_response(raw_response)
+        except Exception as e:
+            print(f"Error in text2table inference: {e}")
+            json_response = {}
         
         db_data_rows = {}
         for table, columns in parsed_db_schema.items():

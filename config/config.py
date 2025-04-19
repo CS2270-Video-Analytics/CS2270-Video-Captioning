@@ -10,12 +10,12 @@ class Config:
     model_precision = torch.float16
     num_threads = 8
     system_eval = False
+    batch_size = 40
 
     #-------------------------------------------------------------------------
     # Captioning Pipeline settings
     #-------------------------------------------------------------------------
     caption_model_name = 'OpenAI;gpt-4o-mini' #'OllamaVision;llama3.2-vision:11b' #options: [OllamaVision, OpenAI, BLIP2, BLIP] 'BLIP2/Salesforce/blip2-opt-2.7b'
-    
     caption_model_params = {
         'temperature': 0.7,
         'top_k': 3,
@@ -398,7 +398,6 @@ class Config:
     #-------------------------------------------------------------------------
     sql_db_path = './database_integration'
     sql_db_name = "video_frames.db"
-    batch_size = 4
     vec_db_path = './database_integration'
     vec_db_name = 'video_frames.index'
     
@@ -427,5 +426,5 @@ class Config:
     # Input Video Settings
     #-------------------------------------------------------------------------
     video_path = 'datasets/bdd/'
-    video_filename = 'test3.mov'
+    video_filename = 'cd31bcc0-07b8e93f.mov'
     

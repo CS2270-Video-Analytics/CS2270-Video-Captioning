@@ -22,8 +22,6 @@ class OpenAIText(LanguageModel):
         pass
     
     def run_inference(self, data_stream: str, **kwargs):
-        info = {}
-
         messages = [
             {"role": "user", "content": data_stream}
         ]
@@ -45,10 +43,9 @@ class OpenAIText(LanguageModel):
                 request_params["stop"] = stop_tokens
             
             response = self.model_client.chat.completions.create(**request_params)
-
-            info['error'] = None
+            return response.choices[0].message.content.strip()
         except openai.APIError as e:
-            info['error'] = e
+            return f"API Error: {str(e)}"
+        
 
-        return response.choices[0].message.content.strip(), info
 

@@ -5,6 +5,7 @@ from pipelines.text2table.text2table_pipeline import Text2TablePipeline
 from database_integration import SQLLiteDBInterface, VectorDBInterface
 from config.config import Config
 import os
+import asyncio
 import pdb
 import torch
 
@@ -29,45 +30,26 @@ class VideoQueryPipeline():
         #raw caption 2 formatted table pipeline
         self.text2table_pipeline = Text2TablePipeline(all_objects = [], db_path=Config.db_path)
 
-    def generate_captions(self, video_path:str, video_filename:str):
-        #first check for valid video path
+    async def generate_captions(self, video_path:str, video_filename:str):
         assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {video_filename} does not exist"
-
-        #process the video to get a frame extractor
-        frame_iterator = self.video_processor.process_single_video(video_path = os.path.join(video_path, video_filename), video_id=video_filename, captioning_pipeline = self.captioning_pipeline, curr_vec_idx = -1)
-
-        #iterate all frame batches and add to both sql and vector DBs
-        while True:
-            try:
-                sql_batch, vector_batch = next(frame_iterator)
-
-                #insert rows into the SQL db
-                self.sql_dbs.insert_many_rows_list(table_name = Config.caption_table_name, rows_data = sql_batch)
-
-                #insert vectors into the vector db
-                # vector_batch = torch.cat(vector_batch, dim=0)
-                # self.vector_db.insert_many_vectors(vectors = vector_batch)
-                                
-            except StopIteration:
-                break
-        
-        # # self.captioning_pipeline.object_set = {'traffic light', 'traffic sign', 'vehicle', 'vegetation', 'building', 'road'}        #once all batches of frames (vectors and raw captions) have been added, start text to table pipeline
-        self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set) #first update with list of all objects found in the video
+        async for sql_batch, vector_batch in self.video_processor.process_single_video(
+            video_path=os.path.join(video_path, video_filename),
+            video_id=video_filename,
+            captioning_pipeline=self.captioning_pipeline,
+            curr_vec_idx=-1
+        ):
+            self.sql_dbs.insert_many_rows_list(table_name = Config.caption_table_name, rows_data = sql_batch)
+        self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set)
     
     def run_text2table(self):
         #extract a combined caption from the raw table and create new tables from the schema the LLM generates
         total_num_rows = self.sql_dbs.get_total_num_rows(table_name=Config.caption_table_name)
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
-
         structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
-        print("Schema")
-        print(structured_table_schemas)
-
-        self.sql_dbs.execute_many_queries(structured_table_schemas)
+        self.sql_dbs.execute_script(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
-        db_schema = self.sql_dbs.get_all_schemas_except_raw_videos()
         db_schema = self.sql_dbs.get_all_schemas_except_raw_videos()
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
         #insert a batch of rows into the SQL object db
@@ -86,8 +68,8 @@ class VideoQueryPipeline():
                 print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
                 break
 
-    def process_single_video(self, video_path: str, video_filename: str):
-        self.generate_captions(video_path = video_path, video_filename = video_filename)
+    async def process_single_video(self, video_path:str, video_filename:str):
+        await self.generate_captions(video_path = video_path, video_filename = video_filename)
         self.run_text2table()
         
         #clear cached data in pipeline for multiple videos
@@ -108,7 +90,7 @@ class VideoQueryPipeline():
         #execute query on the sql db
         self.sql_dbs.execute_query(query = user_query)
 
-    def process_all_videos(self, video_path: str):
+    async def process_all_videos(self, video_path: str):
         # List all files in the directory
         all_files = os.listdir(video_path)
         
@@ -118,11 +100,10 @@ class VideoQueryPipeline():
         # Process each video file
         for video_filename in video_files:
             print(f"Processing video: {video_filename}")
-            self.process_single_video(video_path=video_path, video_filename=video_filename)
+            await self.process_single_video(video_path=video_path, video_filename=video_filename)
 
 if __name__ == '__main__':
     query_pipeline = VideoQueryPipeline()
-    query_pipeline.process_single_video(video_path=Config.video_path, video_filename = Config.video_filename)
+    asyncio.run(query_pipeline.process_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
     # QUERY = "What are the frames where traffic light sign is green and the car in front is an SUV?"
     # query_pipeline.process_query(language_query = QUERY)
-        

@@ -64,7 +64,7 @@ class CaptioningPipeline():
         self.previous_descriptions = deque()
         self.object_set = set(Config.init_object_set)
 
-    def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
+    async def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
         #(1) add the previous frame description to the prompt
         if Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
@@ -74,8 +74,11 @@ class CaptioningPipeline():
 
         #(2) pass the model the captioning prompt for captioning
         #TODO: figure out data streaming
-        description, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = description_prompt, system_content = self.context_prompt, detail=self.caption_detail))
-        
+        try:
+            description = await self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = description_prompt, system_content = self.context_prompt, detail=self.caption_detail))
+        except Exception as e:
+            print(f"Error from captioning model inference: {e}")
+            description = {}
         #(3) process the new description: append into previous queue + pop out from queue if needed
         self.previous_descriptions.append(description)
         if len(self.previous_descriptions) > self.sliding_window_size:
@@ -84,7 +87,7 @@ class CaptioningPipeline():
         #(4) generate a set of new objects in the current frame and add to the self.object_set
         if Config.obj_focus:
             obj_prompt = self.object_prompt.format(curr_img_caption = self.previous_descriptions[-1], object_set = ','.join(self.object_set))
-            new_objs, info = self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt, detail='low'))
+            new_objs = await self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt, detail='low'))
             new_objs = new_objs.split('[')[1].split(']')[0].split(',')
             new_objs = [obj.strip().lower() for obj in new_objs if len(obj.strip().lower()) > 0]
             self.object_set.update(new_objs)

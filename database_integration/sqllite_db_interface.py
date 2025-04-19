@@ -90,12 +90,9 @@ class SQLLiteDBInterface:
 
         return result
     
-    def execute_many_queries(self, queries: str, args: Optional[tuple] = None):
+    def execute_script(self, queries: str):
         try:
-            if not args:
-                self.cursor.executemany(queries)
-            else:
-                self.cursor.executemany(queries, args)
+            self.cursor.executescript(queries)
             self.connection.commit()
             self.table_name_schema_dict = self.extract_schema_dict() #update the schema dictionary if we create new tables
             return self.cursor.fetchall()  # return all rows relevant to query
@@ -118,7 +115,7 @@ class SQLLiteDBInterface:
             print(f"Error inserting {rows_data} into {table_name}: {e}")
 
     def extract_all_rows(self, table_name:str):
-        return  self.execute_query(query=f"SELECT * FROM {table_name};")
+        return self.execute_query(query=f"SELECT * FROM {table_name};")
     
     def get_total_num_rows(self, table_name:str):
         #get total number of rows in table
