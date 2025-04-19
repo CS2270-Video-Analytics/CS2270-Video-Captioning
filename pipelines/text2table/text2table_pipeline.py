@@ -288,10 +288,7 @@ class Text2TablePipeline():
         
         return parsed_rows
 
-
-
 if __name__ == '__main__':
-
     test_caption = "The image shows a city street with cars and buildings.\
 The foreground features a white car with a yellow license plate, facing away from the camera. The license plate reads \"54-628-74\" and has a yellow background with black text.\
 A white car is driving on the left side of the road, heading towards the camera.\
@@ -311,14 +308,3 @@ The image captures a typical urban scene, with cars and pedestrians navigating t
 
     #dummy run with video and frame id 1
     db_data_row = t2t.run_pipeline(test_caption, 1, 1)
-
-
-
-
-
-
-
-
-
-
-

@@ -8,7 +8,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 class SQLLiteDBInterface():
-
     def __init__(self, db_name:str = None, table_name_schema_dict:Dict = None):
         # Connect to SQLite database (or create it if it doesn't exist)
         self.connection = sqlite3.connect(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name))
@@ -44,7 +43,6 @@ class SQLLiteDBInterface():
             self.connection.commit()
 
     def extract_schema_dict(self):
-
         # Get all user-defined table names (exclude internal SQLite tables)
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
         tables = [row[0] for row in self.cursor.fetchall()]
@@ -145,7 +143,6 @@ class SQLLiteDBInterface():
         return combined_description
 
     def close_conn(self):
-
         self.cursor.close()
     
     def get_schema(self, tables_to_include:Set[str]=None):
@@ -218,7 +215,3 @@ class SQLLiteDBInterface():
             if conn:
                 conn.close()
         return schema
-
-
-
-

@@ -397,7 +397,7 @@ class Config:
     # Database settings
     #-------------------------------------------------------------------------
     sql_db_path = './database_integration'
-    sql_db_name = "bdd_jazlyn.db"
+    sql_db_name = "video_frames.db"
     batch_size = 4
     vec_db_path = './database_integration'
     vec_db_name = 'video_frames.index'
@@ -428,3 +428,4 @@ class Config:
     #-------------------------------------------------------------------------
     video_path = 'datasets/bdd/'
     video_filename = 'test3.mov'
+    

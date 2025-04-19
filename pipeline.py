@@ -9,7 +9,6 @@ import pdb
 import torch
 
 class VideoQueryPipeline():
-
     def __init__(self):
         #video sampling module to sample videos
         self.video_processor = VideoProcessor()
@@ -96,7 +95,6 @@ class VideoQueryPipeline():
         self.text2table_pipeline.clear_pipeline()
     
     def process_query(self, language_query: str, llm_judge: bool):
-
         #extract the schema for the processed object table
         table_schemas = self.sql_dbs.get_schema()
         
@@ -120,7 +118,6 @@ class VideoQueryPipeline():
         for video_filename in video_files:
             print(f"Processing video: {video_filename}")
             self.process_single_video(video_path=video_path, video_filename=video_filename)
-
 
 if __name__ == '__main__':
     dummy = VideoQueryPipeline()
