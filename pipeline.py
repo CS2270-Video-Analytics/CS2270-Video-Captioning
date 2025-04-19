@@ -67,7 +67,7 @@ class VideoQueryPipeline():
         
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
-        db_schema = self.sql_dbs.get_schema()
+        db_schema = self.sql_dbs.get_all_schemas_except_raw_videos()
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
         #insert a batch of rows into the SQL object db
         batch_count = 0
@@ -96,8 +96,8 @@ class VideoQueryPipeline():
     
     def process_query(self, language_query: str, llm_judge: bool):
         #extract the schema for the processed object table
-        table_schemas = self.sql_dbs.get_schema()
-        
+        table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos(tables_to_include = {Config.processed_table_name})
+
         #parse the language query into a SQL query
         user_query = self.text2sql_pipeline.run_pipeline(
                                 question = language_query, 

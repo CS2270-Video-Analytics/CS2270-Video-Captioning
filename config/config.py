@@ -406,7 +406,7 @@ class Config:
     caption_table_name = "raw_videos"
     caption_table_pk = ['video_id', 'frame_id']
     caption_table_schema = {
-        'video_id': "INTEGER", 
+        'video_id': "TEXT NOT NULL", 
         'frame_id': "REAL NOT NULL", 
         'description': "TEXT NOT NULL", 
         'vector_id': "INTEGER"
@@ -415,7 +415,7 @@ class Config:
     processed_table_name = "processed_video"
     processed_table_pk = ['video_id', 'frame_id', 'object']
     processed_table_schema = {
-        'video_id': "INTEGER", 
+        'video_id': "TEXT NOT NULL", 
         'frame_id': "REAL NOT NULL", 
         'object': "TEXT NOT NULL", 
         'image_location': "TEXT", 

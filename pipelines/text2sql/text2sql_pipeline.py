@@ -42,7 +42,7 @@ class Text2SQLPipeline():
             logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
             raise
 
-    def run_pipeline(self, question: str, table_schemas: str, llm_judge:bool=True):
+    def run_pipeline(self, question: str, table_schemas: str, llm_judge: bool=True):
         """
         Converts a natural language question into an SQL query using the existing database schema.
 

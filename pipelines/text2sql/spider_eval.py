@@ -1,7 +1,7 @@
 import json
 import os
 from tqdm import tqdm
-from text2sql_pipeline import get_schema, execute_sql, normalize_sql
+from text2sql_pipeline import get_all_schemas_except_raw_videos, execute_sql, normalize_sql
 from text2sql_models import create_text2sql_func_openai, create_text2sql_func_deepseek, create_text2sql_func_anthropic
 from text2sql_hf import create_text2sql_func_hf
  
@@ -21,7 +21,7 @@ def evaluate_text2sql(test_data, db_base_path, text2sql_func, to_print=False):
         db_file = os.path.join(db_base_path, db_id, f"{db_id}.sqlite")
         
         # Generate SQL using the pipeline
-        schema = get_schema(db_file)
+        schema = get_all_schemas_except_raw_videos(db_file)
         generated_sql = normalize_sql(text2sql_func(question, schema))
         
         # Execute both SQL queries
