@@ -41,11 +41,11 @@ class VideoQueryPipeline():
             self.sql_dbs.insert_many_rows_list(table_name = Config.caption_table_name, rows_data = sql_batch)
         self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set)
     
-    def run_text2table(self):
+    async def run_text2table(self):
         #extract a combined caption from the raw table and create new tables from the schema the LLM generates
         total_num_rows = self.sql_dbs.get_total_num_rows(table_name=Config.caption_table_name)
         combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
-        structured_table_schemas = self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
+        structured_table_schemas = await self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
         self.sql_dbs.execute_script(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db
@@ -55,22 +55,21 @@ class VideoQueryPipeline():
         #insert a batch of rows into the SQL object db
         batch_count = 0
         row_count = 0
-        while True:
-            try:
-                data_batch = next(obj_iterator)
-                batch_count += 1
-                for data_dict in data_batch:
-                    for (table_name, rows_data) in data_dict.items():
-                        self.sql_dbs.insert_many_rows_list(table_name = table_name, rows_data = rows_data)
-                        row_count += len(rows_data)
-                print(f"[Progress] Processed batch {batch_count} — total rows inserted: {row_count}")
-            except StopIteration:
-                print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
-                break
+        # Use async for to iterate over an iterator produced by an async function
+        async for data_batch in obj_iterator:
+            batch_count += 1
+            for frame_caption in data_batch:
+                # Dictionary {table: a list of rows} where each row is object level
+                frame_caption_dict = frame_caption[0]
+                for table_name, rows_data in frame_caption_dict.items():
+                    self.sql_dbs.insert_many_rows_list(table_name=table_name, rows_data=rows_data)
+                    row_count += len(rows_data)
+            print(f"[Progress] Processed batch {batch_count} — total rows inserted: {row_count}")
+        print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
 
     async def process_single_video(self, video_path:str, video_filename:str):
         await self.generate_captions(video_path = video_path, video_filename = video_filename)
-        self.run_text2table()
+        await self.run_text2table()
         
         #clear cached data in pipeline for multiple videos
         self.captioning_pipeline.clear_pipeline()

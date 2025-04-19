@@ -14,8 +14,8 @@ from models.language_models.Anthropic import Anthropic
 from models.language_models.OpenAIText import OpenAIText
 from models.language_models.OllamaText import OllamaText
 from models.language_models.DeepSeek import DeepSeek
-import torch
 import sqlite3
+import asyncio
 
 class Text2TablePipeline():
     def __init__(self, all_objects:List[str], db_path: str):
@@ -63,7 +63,7 @@ class Text2TablePipeline():
         tables = [row[0] for row in self.cursor.fetchall()]
         return tables
     
-    def get_scene_description(self, all_captions: str):
+    async def get_scene_description(self, all_captions: str):
         prompt = f"""
         You are given a list of object-level captions describing elements detected in a video frame. 
         Based on these descriptions, summarize the overall scene depicted in the video using a short phrase of 1–3 words. 
@@ -75,22 +75,23 @@ class Text2TablePipeline():
         Scene Summary:
         """
 
-        scene_descriptor =  self.text2table_model.run_inference(data_stream= prompt, )[0]
+        scene_descriptor =  await self.text2table_model.run_inference(data_stream= prompt, )[0]
         print("Scene descriptor: ", scene_descriptor)
         self.scene_descriptor = scene_descriptor.strip()
         return scene_descriptor.strip()
 
-    def extract_table_attributes(self, all_captions:str):
+    async def extract_table_attributes(self, all_captions:str):
         scene_descriptor = self.get_scene_description(all_captions)
         frame_extraction_prompt = self.attribute_extraction_prompt.format(
-            incontext_examples = Config.text2table_incontext_prompt, 
-            all_joined_captions = all_captions)
-        extracted_attributes = self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
+            incontext_examples = Config.text2table_incontext_prompt,
+            all_joined_captions = all_captions
+        )
+        extracted_attributes = await self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
 
         return extracted_attributes.strip()
     
-    def extract_table_schemas(self, all_captions:str):
-        extracted_attributes = self.extract_table_attributes(all_captions)
+    async def extract_table_schemas(self, all_captions:str):
+        extracted_attributes = await self.extract_table_attributes(all_captions)
         print("Extracted attributes:")
         print(extracted_attributes), extracted_attributes
 
@@ -103,7 +104,7 @@ class Text2TablePipeline():
             existing_tables=", ".join(self.table_context),
             attributes=extracted_attributes
         )
-        generated_schemas = self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
+        generated_schemas = await self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
         generated_schemas = self.clean_schema(generated_schemas)
 
         print("generated_schemas: ")
@@ -222,35 +223,39 @@ class Text2TablePipeline():
         valid_json = self.extract_complete_json(text)
         return valid_json
     
-    def run_pipeline_video(self, video_data:List[tuple], database_schema:str):
+    async def run_pipeline_video(self, video_data: List[tuple], database_schema: str):
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
         
-        #collate all data for all frames before inserting
-        frame_data = []
+        # Iterate over video data in batches
+        batch_size = Config.batch_size
+        for batch_start in range(0, len(video_data), batch_size):
+            batch_end = min(batch_start + batch_size, len(video_data))
+            tasks = []
+            # Create tasks for each frame in the batch
+            for i in range(batch_start, batch_end):
+                video_id, frame_id, caption, __ = video_data[i]
 
-        #iterate all rows from the video data raw captions and run the pipeline per batch
-        for i, (video_id, frame_id, caption, __) in enumerate(video_data):
+                task = self.run_pipeline(
+                    parsed_db_schema=parsed_db_schema,
+                    caption=caption,
+                    video_id=video_id,
+                    frame_id=frame_id
+                )
+                tasks.append(task)
 
-            frame_obj_data = self.run_pipeline(
-                parsed_db_schema=parsed_db_schema,
-                caption = caption,
-                video_id = video_id,
-                frame_id = frame_id
-            )
-            frame_data += frame_obj_data
-
-            if len(frame_data) >= Config.batch_size or i == len(video_data) - 1: 
-                yield frame_data
-                frame_data = [] #empty the batch
+            # Wait for all tasks to complete
+            results = await asyncio.gather(*tasks)
+            # Yield the batch results
+            yield results
                 
-    def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
+    async def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
         json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
         # prompt = self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
         prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema = json_schema_template.replace("{frame_id}", f"{frame_id}").replace("{video_id}", f"{video_id}"))
         # raw_response, _ = self.text2table_model.run_inference(data_stream=prompt, **dict(system_content= self.text2table_frame_context))
         try:
-            raw_response = self.text2table_model.run_inference(data_stream=prompt)
+            raw_response = await self.text2table_model.run_inference(data_stream=prompt)
             json_response = self.extract_json_from_response(raw_response)
         except Exception as e:
             print(f"Error in text2table inference: {e}")
