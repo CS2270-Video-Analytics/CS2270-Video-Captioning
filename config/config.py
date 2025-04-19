@@ -362,3 +362,4 @@ class Config:
     #-------------------------------------------------------------------------
     video_path = 'datasets/bdd/'
     video_filename = 'test3.mov'
+    
