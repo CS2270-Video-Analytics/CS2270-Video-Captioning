@@ -88,7 +88,7 @@ class Text2SQLPipeline():
             logger.error(f"Error in run_pipeline: {str(e)}")
             raise
         
-        sufficient, required_attributes, required_tables = self.parse_schema_sufficiency_response_manual(sql_query, table_schemas)
+        sufficient, required_attributes, required_tables = self.parse_schema_manually(sql_query, table_schemas)
         if sufficient and required_attributes:
             return sufficient, required_attributes, required_tables, sql_query, info
         else:
@@ -142,7 +142,7 @@ class Text2SQLPipeline():
 
         return {table: set(cols) for table, cols in resolved.items()}
 
-    def parse_schema_sufficiency_response_manual(self, sql_query: str, table_schemas: str):
+    def parse_schema_manually(self, sql_query: str, table_schemas: str):
         """
         Parses the schema manually to determine a sufficiency response.
         Args:
@@ -194,13 +194,13 @@ class Text2SQLPipeline():
             if info['error']:
                 raise Exception(info['error'])
 
-            sufficient, required_attributes = self.parse_schema_sufficiency_response_llm_judge(sufficiency_response)
+            sufficient, required_attributes = self.parse_llm_judge_response(sufficiency_response)
             if sufficient and required_attributes:
                 return sufficient, None
         
         return sufficient, required_attributes
     
-    def parse_schema_sufficiency_response_llm_judge(self, response: str) -> tuple[str, list[str]]:
+    def parse_llm_judge_response(self, response: str) -> tuple[str, list[str]]:
         """
         Parses the schema using LLM to determine a sufficiency response.
         Args:
