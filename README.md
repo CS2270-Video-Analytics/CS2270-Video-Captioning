@@ -13,3 +13,8 @@
 ```
 srun --partition=gpu --gres=gpu:2 --cpus-per-task=4 --mem=16G --time=02:00:00 --pty bash
 ```
+
+# Profile latency using Pyinstrument
+```
+pyinstrument -o test_async_latency_text2table.html pipeline.py
+```

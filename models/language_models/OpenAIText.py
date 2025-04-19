@@ -3,7 +3,7 @@ from ..model import LanguageModel
 import torch
 from dotenv import load_dotenv, find_dotenv
 import openai
-from openai import OpenAI
+from openai import AsyncOpenAI
 import os 
 from typing import Optional, Dict
 from torchvision import transforms
@@ -14,16 +14,13 @@ class OpenAIText(LanguageModel):
     def __init__(self, model_params: Dict, model_name:str="gpt-4o-mini", model_precision = torch.float16, system_eval:bool = False):
         super().__init__(model_params=model_params, model_precision=model_precision, system_eval=system_eval)
         _ = load_dotenv(find_dotenv())  # Load environment variables from .env file
-        OpenAI.api_key = os.environ['OPENAI_API_KEY']  # Set API key from environment
-        self.model_client = OpenAI()
+        self.model_client = AsyncOpenAI(api_key=os.environ['OPENAI_API_KEY'])
         self.model_name = model_name
 
     def preprocess_data(self, data_stream: str, text_input:Optional[str]):
         pass
     
-    def run_inference(self, data_stream: str, **kwargs):
-        info = {}
-
+    async def run_inference(self, data_stream: str, **kwargs):
         messages = [
             {"role": "user", "content": data_stream}
         ]
@@ -44,11 +41,7 @@ class OpenAIText(LanguageModel):
             if isinstance(stop_tokens, list) and stop_tokens:
                 request_params["stop"] = stop_tokens
             
-            response = self.model_client.chat.completions.create(**request_params)
-
-            info['error'] = None
-        except openai.APIError as e:
-            info['error'] = e
-
-        return response.choices[0].message.content.strip(), info
-
+            response = await self.model_client.chat.completions.create(**request_params)
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return f"API Error: {str(e)}"

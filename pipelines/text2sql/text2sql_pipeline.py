@@ -42,7 +42,7 @@ class Text2SQLPipeline():
             logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
             raise
 
-    def run_pipeline(self, question: str, table_schemas: str, llm_judge:bool=True):
+    async def run_pipeline(self, question: str, table_schemas: str, llm_judge: bool=True):
         """
         Converts a natural language question into an SQL query using the existing database schema.
 
@@ -61,7 +61,7 @@ class Text2SQLPipeline():
                 sufficiency, required_attributes, required_tables, sql_query, info = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
             if sufficiency and not llm_judge:
                 prompt = Config.get_text2sql_prompt(table_schemas, question)
-                sql_query, info = self.text2sql_model.run_inference(prompt)
+                sql_query, info = await self.text2sql_model.run_inference(prompt)
                 if info['error']:
                     raise Exception(info['error'])
                 logger.debug(f"Generated SQL query: {sql_query}")
@@ -219,7 +219,7 @@ class Text2SQLPipeline():
         elif sufficiency_line.split(":")[1].strip() == "No":
             sufficiency = False
         else:
-            sufficiency = None 
+            sufficiency = None
 
         #check required attributes section
         try:
