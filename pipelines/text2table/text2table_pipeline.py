@@ -36,7 +36,11 @@ class Text2TablePipeline():
         [text2table_model, text2table_model_name] = Config.caption_model_name.split(';')
         assert text2table_model in model_options, f'ERROR: model {text2table_model} does not exist or is not supported yet'
         
-        self.text2table_model = model_options[text2table_model](model_params = Config.text2table_params, model_name=text2table_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
+        self.text2table_model = model_options[text2table_model](
+                                    model_params = Config.text2table_params, 
+                                    model_name=text2table_model_name, 
+                                    model_precision=Config.model_precision, 
+                                    system_eval=Config.system_eval)
 
         #extract the list of attributes to capture across frame descriptions
         self.table_attributes = []
