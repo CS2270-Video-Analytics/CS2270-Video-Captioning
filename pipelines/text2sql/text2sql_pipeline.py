@@ -1,4 +1,5 @@
 import sqlite3
+import ast
 import re
 import sqlparse
 import sqlglot
@@ -222,12 +223,28 @@ class Text2SQLPipeline():
 
         #check required attributes section
         try:
-            start_index = lines.index("Required Attributes:") + 1
-            required_attributes = lines[start_index:]
+            existing_line = next((line for line in lines if line.lower().startswith("existing")), None)
+            start_index = existing_line.index(":") + 1
+            end_index = len(existing_line)
+
+            required_attributes = existing_line[start_index:end_index].strip()
+            required_attributes = re.sub(r"(\w+)", r"'\1'", required_attributes)
+            required_attributes = ast.literal_eval(required_attributes)
+            
+            create_line = next((line for line in lines if line.lower().startswith("new")), None)
+            start_index = create_line.index(":")+1
+            end_index = len(create_line)
+            
+            new_attributes = create_line[start_index:end_index].strip()
+            new_attributes = re.sub(r"(\w+)", r"'\1'", new_attributes)
+            new_attributes = ast.literal_eval(new_attributes)
+            if new_attributes == '\'None\'':
+                new_attributes = None
+
         except ValueError:
             required_attributes = None
 
-        return sufficiency, required_attributes
+        return sufficiency, required_attributes, new_attributes
 
 if __name__ == "__main__":
     pipeline = Text2SQLPipeline()

@@ -295,34 +295,99 @@ class Config:
     #-------------------------------------------------------------------------
     # LLM-Judge settings
     #-------------------------------------------------------------------------
-    llm_judge = False
+    llm_judge = True
     
-    schema_sufficiency_prompt = """
-    You are a careful and knowledgeable database assistant.
-    Your task is to determine whether the given SQLite3 database schema contains enough information to answer a user's question.
-    ---
-    ### Guidelines:
-    1. Carefully read the user question and identify all the **attributes** required to answer it.
-    - Use concise phrases like: "license plates of Vehicles", "speed of Vehicles", or "locations of Pedestrians".
-    - Include **all** attributes — even if they are not in the schema.
-    2. Examine the schema and determine whether these attributes are present.
-    3. Respond with the following format:
-    Sufficient: <Yes|No>
-    Required Attributes:
-    <Attribute 1>
-    <Attribute 2>
-    <Attribute 3> ...
-    Only return this structured output. Do **not** include explanations or generate SQL.
-    ---
-    ### Notes:
-    - The column `Frame_ID` refers to a **timestamp** representing when a frame was captured.
-    ---
-    ### User Question:
-    {query}
-    ---
-    ### Database Schema:
+    schema_sufficiency_prompt ="""
+    Given (1) the existing database table schemas (including table names and attributes) below and (2) user’s query in a natural language format, determine whether the database contains relevant table and if the table contain relevant attributes to answer user’s query using the output template below.
+
+    Output template:
+    (1) Sufficient: <Yes | No> [ if the existing database have sufficient tables and associated attributes to answer the query]
+    (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes, else output None.
+    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return None.
+
+    Other requirements:
+    * If “Sufficient” is Yes, then both “Existing tables and attributes to add” and “New tables and new attributes to generate” should be None
+    * If “Sufficient” is No, then “Existing tables and attributes to add” and “New tables and new attributes to generate” can be either None, or both not None. The number of tables to add attributes or generate can vary from 1 to many if both are not None.
+    * Always prioritize adding new key attributes to existing tables compared to generate additional new tables with new attributes. New tables should only be generated if existing tables are not relevant at all to the query.
+    * For “New tables and new attributes to generate”, include video_id, frame_id, object_id and location attributes to be consistent with existing database tables. Other attributes are added if they are relevant and necessary to answer the query. Don’t add them if they are not necessary.
+
+    Here are 2 examples:
+
+    Example 1:
+    Existing table schemas:
+    Table: traffic_light_data
+    - video_id (TEXT)
+    - frame_id (REAL)
+    - object_id (INTEGER)
+    - location (TEXT)
+    - color (TEXT)
+    - state (TEXT)
+
+    Table: vehicle_data
+    - video_id (TEXT)
+    - frame_id (REAL)
+    - object_id (INTEGER)
+    - location (TEXT)
+    - color (TEXT)
+    - brand (TEXT)
+    - model (TEXT)
+    - license_plate (TEXT)
+    - type (TEXT)
+
+    Table: sign_data
+    - video_id (TEXT)
+    - frame_id (REAL)
+    - object_id (INTEGER)
+    - location (TEXT)
+    - shape (TEXT)
+    - text (TEXT)
+
+    User query: 
+    What frames does a blue sign appear with a red Volvo car in the background?
+
+    Answer:
+    Sufficient: No
+    Existing tables and attributes to add: {{sign_data: color}}
+    New tables and new attributes to generate: None
+
+    Example 2:
+    Existing table schemas:
+    Table: person
+    - video_id (TEXT)
+    - frame_id (REAL)
+    - object_id (INTEGER)
+    - location (TEXT)
+    - gender (TEXT)
+    - clothing (TEXT)
+    - action (TEXT)
+        
+    Table: furniture
+    - video_id (TEXT)
+    - frame_id (REAL)
+    - object_id (INTEGER)
+    - location (TEXT)
+    - type (TEXT)
+    - color (TEXT)
+    - design (TEXT)
+    - materials (TEXT)
+
+    User query: 
+    What frames does the male turn off light?
+
+    Answer:
+    Sufficient: No
+    Existing tables and attributes to add: None
+    New tables and new attributes to generate: {{scene_brightness: video_id, frame_id, object_id, location, brightness}}
+
+    Now your task:
+
+    Existing table schemas:
     {table_schemas}
-    ---
+
+    User query:
+    {query}
+
+    Answer:
     Sufficient:
     """
 
