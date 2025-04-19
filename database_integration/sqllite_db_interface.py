@@ -191,4 +191,3 @@ class SQLLiteDBInterface:
 
         except Exception as e:
             return f"Error retrieving schemas: {str(e)}"
-        
