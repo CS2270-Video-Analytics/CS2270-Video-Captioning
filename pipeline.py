@@ -68,6 +68,7 @@ class VideoQueryPipeline():
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
         db_schema = self.sql_dbs.get_all_schemas_except_raw_videos()
+        db_schema = self.sql_dbs.get_all_schemas_except_raw_videos()
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
         #insert a batch of rows into the SQL object db
         batch_count = 0
