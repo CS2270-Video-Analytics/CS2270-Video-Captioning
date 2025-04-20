@@ -402,7 +402,7 @@ class Config:
     # Database settings
     #-------------------------------------------------------------------------
     import os
-    sql_db_path = './database_integration'
+    sql_db_path = './database_integration/db_files/'
     sql_db_name = video_filename + ".db"
     db_path = os.path.join(sql_db_path, sql_db_name)
     vec_db_path = './database_integration'
