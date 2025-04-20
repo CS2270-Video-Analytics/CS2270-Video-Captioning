@@ -75,8 +75,7 @@ class Text2TablePipeline():
         Scene Summary:
         """
 
-        scene_descriptor =  await self.text2table_model.run_inference(data_stream= prompt, )
-        scene_descriptor = scene_descriptor[0]
+        scene_descriptor = await self.text2table_model.run_inference(data_stream= prompt, )
         print("Scene descriptor: ", scene_descriptor)
         self.scene_descriptor = scene_descriptor.strip()
         return scene_descriptor.strip()

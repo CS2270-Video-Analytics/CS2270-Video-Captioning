@@ -113,7 +113,6 @@ class Config:
     #-------------------------------------------------------------------------
     # Text2Table Pipeline settings
     #-------------------------------------------------------------------------
-    db_path = './database_integration/video_frames.db'
     text2table_model_name = 'OpenAI;gpt-4o-mini'  # options: [Ollama, OpenAI, Seq2Seq]
     text2table_params = {
         'temperature': 0.5,
@@ -394,12 +393,20 @@ class Config:
     max_schema_sufficiency_retries = 3
 
     #-------------------------------------------------------------------------
+    # Input Video Settings
+    #-------------------------------------------------------------------------
+    video_path = 'datasets/charades/'
+    video_filename = '013SD.mp4'
+
+    #-------------------------------------------------------------------------
     # Database settings
     #-------------------------------------------------------------------------
+    import os
     sql_db_path = './database_integration'
-    sql_db_name = "video_frames.db"
+    sql_db_name = video_filename + ".db"
+    db_path = os.path.join(sql_db_path, sql_db_name)
     vec_db_path = './database_integration'
-    vec_db_name = 'video_frames.index'
+    vec_db_name = video_filename + ".index"
     
     # Table definitions
     caption_table_name = "raw_videos"
@@ -421,9 +428,3 @@ class Config:
         'description': "TEXT", 
         'action': "TEXT"
     }
-    
-    #-------------------------------------------------------------------------
-    # Input Video Settings
-    #-------------------------------------------------------------------------
-    video_path = 'datasets/bdd/'
-    video_filename = 'cd31bcc0-07b8e93f.mov'

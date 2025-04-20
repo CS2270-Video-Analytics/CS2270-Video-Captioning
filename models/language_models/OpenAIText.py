@@ -41,14 +41,14 @@ class OpenAIText(LanguageModel):
         if isinstance(stop_tokens, list) and stop_tokens:
             request_params["stop"] = stop_tokens
         
-        delay = 0.1
+        delay = 0.2
         max_retries = 5
         for _ in range(max_retries):
             try:
                 response = await self.model_client.chat.completions.create(**request_params)
                 return response.choices[0].message.content.strip()
             except Exception as e:
-                if "rate_limit_exceeded" in str(e):
+                if "rate_limit_exceeded" in str(e) or "insufficient_quota" in str(e):
                     print(f"Rate limit exceeded, retrying in {delay} seconds...")
                     await asyncio.sleep(delay)
                     delay *= 2  # Exponential backoff
