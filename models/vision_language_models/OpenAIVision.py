@@ -44,10 +44,8 @@ class OpenAIVision(VisionLanguageModel):
                     }
                 ]
             })
-
             delay = 0.3
             max_retries = 2
-
             for _ in range(max_retries):
                 try:
                     request_params = dict(model=self.model_name,

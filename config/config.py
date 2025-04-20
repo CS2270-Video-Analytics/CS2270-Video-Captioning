@@ -1,5 +1,5 @@
 import torch
-
+import os
 class Config:
     """Main configuration for the video captioning system"""
     #-------------------------------------------------------------------------
@@ -294,7 +294,7 @@ class Config:
     #-------------------------------------------------------------------------
     # LLM-Judge settings
     #-------------------------------------------------------------------------
-    llm_judge = True
+    llm_judge = False
     
     schema_sufficiency_prompt ="""
     Given (1) the existing database table schemas (including table names and attributes) below and (2) user’s query in a natural language format, determine whether the database contains relevant table and if the table contain relevant attributes to answer user’s query using the output template below.
@@ -302,12 +302,12 @@ class Config:
     Output template:
     (1) Sufficient: <Yes | No> [ if the existing database have sufficient tables and associated attributes to answer the query]
     (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes, else output None.
-    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return None.
+    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return {{}}.
 
     Other requirements:
     * If “Sufficient” is Yes, then both “Existing tables and attributes to add” and “New tables and new attributes to generate” should be None
     * If “Sufficient” is No, then “Existing tables and attributes to add” and “New tables and new attributes to generate” can be either None, or both not None. The number of tables to add attributes or generate can vary from 1 to many if both are not None.
-    * Always prioritize adding new key attributes to existing tables compared to generate additional new tables with new attributes. New tables should only be generated if existing tables are not relevant at all to the query.
+    * Priority: (1) first try to use existing tables and attributes if they are relevant to the query (2) only if 1 not possible then add new key attributes to existing tables (3) only if 1 and 2 both don't work, generate additional new tables with new attributes.
     * For “New tables and new attributes to generate”, include video_id, frame_id, object_id and location attributes to be consistent with existing database tables. Other attributes are added if they are relevant and necessary to answer the query. Don’t add them if they are not necessary.
 
     Here are 2 examples:
@@ -401,8 +401,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Database settings
     #-------------------------------------------------------------------------
-    import os
-    sql_db_path = './database_integration'
+    sql_db_path = './database_integration/db_files/'
     sql_db_name = video_filename + ".db"
     db_path = os.path.join(sql_db_path, sql_db_name)
     vec_db_path = './database_integration'
