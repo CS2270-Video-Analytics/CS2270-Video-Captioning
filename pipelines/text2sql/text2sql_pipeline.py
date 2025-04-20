@@ -1,21 +1,17 @@
-import sqlite3
 import ast
 import re
-import sqlparse
+import logging
 import sqlglot
 from sqlglot import exp
-import logging
-import asyncio
 from config.config import Config
-if Config.debug:
-    import pdb
-from models.text2sql import Text2SQLModelFactory
 from models.language_models.OpenAIText import OpenAIText
 from models.language_models.OllamaText import OllamaText
 from models.language_models.Anthropic import Anthropic
 from models.language_models.DeepSeek import DeepSeek
-from sqlparse.sql import IdentifierList, Identifier
-from sqlparse.tokens import Keyword, DML
+
+if Config.debug:
+    import pdb
+
 # Set up logging
 logger = logging.getLogger(__name__)
 
