@@ -302,7 +302,7 @@ class Config:
     Output template:
     (1) Sufficient: <Yes | No> [ if the existing database have sufficient tables and associated attributes to answer the query]
     (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes, else output None.
-    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return None.
+    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return {{}}.
 
     Other requirements:
     * If “Sufficient” is Yes, then both “Existing tables and attributes to add” and “New tables and new attributes to generate” should be None

@@ -81,7 +81,7 @@ class VideoQueryPipeline():
         table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
 
         #parse the language query into a SQL query
-        user_query = self.text2sql_pipeline.run_pipeline(
+        is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = self.text2sql_pipeline.run_pipeline(
                                 question = language_query, 
                                 table_schemas = table_schemas, 
                                 llm_judge = llm_judge)
