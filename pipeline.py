@@ -94,6 +94,10 @@ class VideoQueryPipeline():
         #execute query on the sql db
         self.sql_dbs.execute_query(query = sql_query)
 
+    async def process_many_queries(self, language_queries: list, llm_judge: bool):
+        for query in language_queries:
+            await self.process_query(language_query = query, llm_judge = llm_judge)
+    
     async def process_all_videos(self, video_path: str):
         # List all files in the directory
         all_files = os.listdir(video_path)
