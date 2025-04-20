@@ -49,16 +49,11 @@ class CaptioningPipeline():
         self.previous_descriptions.append('The video starts with a black screen')
         self.sliding_window_size = Config.sliding_window_size
 
-        #initialize the model that needs to be used for captioning
         model_options = {'OllamaVision': OllamaVision, 'BLIP': BLIP, 'BLIP2': BLIP2, 'OpenAI':OpenAIVision}
         [caption_model, caption_model_name] = Config.caption_model_name.split(';')
         assert caption_model in model_options, f'ERROR: model {Config.caption_model_name} does not exist or is not supported yet'
 
         self.caption_model = model_options[caption_model](model_name = caption_model_name, model_params = Config.caption_model_params, model_precision=Config.model_precision, system_eval=Config.system_eval)
-
-        #create models for clip vector embeddings
-        # self.clip_model = CLIP(model_name = Config.clip_model_name, model_precision=Config.model_precision, system_eval=Config.system_eval)
-    
     def clear_pipeline(self):
         #clear the cache that remains for previous runs of captioning
         self.previous_descriptions = deque()
@@ -75,7 +70,14 @@ class CaptioningPipeline():
         #(2) pass the model the captioning prompt for captioning
         #TODO: figure out data streaming
         try:
-            description = await self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = description_prompt, system_content = self.context_prompt, detail=self.caption_detail))
+            description = await self.caption_model.run_inference(
+                data_stream = data_stream,
+                **dict(
+                    prompt = description_prompt,
+                    system_content = self.context_prompt,
+                    detail=self.caption_detail
+                )
+            )
         except Exception as e:
             print(f"Error from captioning model inference: {e}")
             description = {}
