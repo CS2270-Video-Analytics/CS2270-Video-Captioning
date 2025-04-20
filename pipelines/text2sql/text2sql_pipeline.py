@@ -43,6 +43,11 @@ class Text2SQLPipeline():
             logger.error(f"Error initializing Text2SQL pipeline: {str(e)}")
             raise
 
+    def clear_pipeline(self):
+        #clear the cache that remains for previous runs of text2sql
+        self.table_attributes = []
+        self.all_objects = []
+    
     async def run_pipeline(self, question: str, table_schemas: str, llm_judge: bool=True):
         """
         Converts a natural language question into an SQL query using the existing database schema.
@@ -56,10 +61,10 @@ class Text2SQLPipeline():
         """
         try:
             if llm_judge:
-                sufficiency, existing_tables_attributes_dict, new_tables_attributes_dict = await self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
+                is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = await self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
             else:
                 #NOTE: required_tables isn't currently being used but can be integrated if we want to create new tables
-                sufficiency, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
+                is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
             
             if sufficiency and llm_judge:
                 prompt = Config.get_text2sql_prompt(table_schemas, question)
@@ -68,25 +73,62 @@ class Text2SQLPipeline():
                 except Exception as e:
                     raise RuntimeError(f"Error in text2sql run inference: {e}")
             
-            return sql_query
+            return is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict
         except Exception as e:
-            logger.error(f"Error in run_pipeline: {str(e)}")
-            raise
-    
-    def clear_pipeline(self):
-        #clear the cache that remains for previous runs of text2sql
-        self.table_attributes = []
-        self.all_objects = []
+            raise RuntimeError(f"Error in text2sql run inference: {e}")
     
     async def check_schema_sufficiency_manual(self, query: str, table_schemas: str):
         prompt = Config.get_text2sql_prompt(table_schemas, query)
         sql_query = await self.text2sql_model.run_inference(prompt)
         
         sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = self.parse_schema_manually(sql_query, table_schemas)
-        if sufficient and existing_tables_attributes_dict:
-            return sufficient, None, None, sql_query
-        else:
-            return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query
+        
+        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query
+
+    def parse_schema_manually(self, sql_query: str, table_schemas: str):
+        """
+        Parses the schema manually to determine a sufficiency response.
+        Args:
+            sql_query (str): The sql query string to extract sufficiency information
+            table_schemas (str): All table schemas/columns as a string to be parsed
+        Returns:
+            Tuple[str, List[str]]: ("Yes" or "No", list of required attribute strings)
+        """
+        #parse raw table schemas into dictionary format
+        table_schema_dict = {}
+        current_table = None
+
+        for line in table_schemas.strip().splitlines():
+            line = line.strip()
+            # Match Table: <table_name>
+            if line.startswith("Table:"):
+                current_table = line.split("Table:")[1].strip()
+                table_schema_dict[current_table] = set([])
+            # Match column definitions
+            elif current_table and line:
+                # Extract column name, ignoring datatype
+                col_match = re.search(r'-\s*(\w+)\s*\(', line)
+                if col_match:
+                    column_name = col_match.group(1)
+                    table_schema_dict[current_table].add(column_name)
+        
+        #parse SQL statement into dictionary 
+        sql_schema_dict = self.extract_sql_schema_dict(sql_query=sql_query)
+
+        #compare the raw table schema with the parsed sql schema and find missing attributes and/or tables
+        sufficient = True
+        existing_tables_attributes_dict = {}
+        new_tables_attributes_dict = {}
+        for table in sql_schema_dict:
+            if table not in table_schema_dict:
+                new_tables_attributes_dict[table] = sql_schema_dict[table]
+                sufficient = False
+            else:
+                existing_tables_attributes_dict[table] = sql_schema_dict[table].difference(table_schema_dict[table])
+                if len(existing_tables_attributes_dict[table]) > 0:
+                    sufficient = False
+        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
+
 
     def extract_sql_schema_dict(self, sql_query: str):
         parsed = sqlglot.parse_one(sql_query)
@@ -136,50 +178,6 @@ class Text2SQLPipeline():
 
         return {table: set(cols) for table, cols in resolved.items()}
 
-    def parse_schema_manually(self, sql_query: str, table_schemas: str):
-        """
-        Parses the schema manually to determine a sufficiency response.
-        Args:
-            sql_query (str): The sql query string to extract sufficiency information
-            table_schemas (str): All table schemas/columns as a string to be parsed
-        Returns:
-            Tuple[str, List[str]]: ("Yes" or "No", list of required attribute strings)
-        """
-        #parse raw table schemas into dictionary format
-        table_schema_dict = {}
-        current_table = None
-
-        for line in table_schemas.strip().splitlines():
-            line = line.strip()
-            # Match Table: <table_name>
-            if line.startswith("Table:"):
-                current_table = line.split("Table:")[1].strip()
-                table_schema_dict[current_table] = set([])
-            # Match column definitions
-            elif current_table and line:
-                # Extract column name, ignoring datatype
-                col_match = re.search(r'-\s*(\w+)\s*\(', line)
-                if col_match:
-                    column_name = col_match.group(1)
-                    table_schema_dict[current_table].add(column_name)
-        
-        #parse SQL statement into dictionary 
-        sql_schema_dict = self.extract_sql_schema_dict(sql_query=sql_query)
-
-        #compare the raw table schema with the parsed sql schema and find missing attributes and/or tables
-        sufficient = True
-        existing_tables_attributes_dict = {}
-        new_tables_attributes_dict = {}
-        for table in sql_schema_dict:
-            if table not in table_schema_dict:
-                new_tables_attributes_dict[table] = sql_schema_dict[table]
-                sufficient = False
-            else:
-                existing_tables_attributes_dict[table] = sql_schema_dict[table].difference(table_schema_dict[table])
-                if len(existing_tables_attributes_dict[table]) > 0:
-                    sufficient = False
-        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
-
     async def check_schema_sufficiency_llm_judge(self, query: str, table_schemas: str):
         prompt = Config.schema_sufficiency_prompt.format(query=query, table_schemas=table_schemas)
         
@@ -191,7 +189,7 @@ class Text2SQLPipeline():
 
             sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = self.parse_llm_judge_response(sufficiency_response)
             if sufficient and existing_tables_attributes_dict:
-                return sufficient, None, None
+                return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
         
         return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
     
@@ -233,10 +231,9 @@ class Text2SQLPipeline():
             new_tables_attributes_dict = create_line[start_index:end_index].strip()
             new_tables_attributes_dict = re.sub(r"(\w+)", r"'\1'", new_tables_attributes_dict)
             new_tables_attributes_dict = ast.literal_eval(new_tables_attributes_dict)
-            if new_tables_attributes_dict == '\'None\'':
-                new_tables_attributes_dict = None
         except ValueError:
             existing_tables_attributes_dict = None
+            new_tables_attributes_dict = None
 
         return sufficiency, existing_tables_attributes_dict, new_tables_attributes_dict
 
