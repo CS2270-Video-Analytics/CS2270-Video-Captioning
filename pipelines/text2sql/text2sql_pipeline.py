@@ -5,6 +5,7 @@ import sqlparse
 import sqlglot
 from sqlglot import exp
 import logging
+import asyncio
 from config.config import Config
 if Config.debug:
     import pdb
@@ -55,19 +56,19 @@ class Text2SQLPipeline():
         """
         try:
             if llm_judge:
-                sufficiency, required_attributes = self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
+                sufficiency, existing_tables_attributes_dict, new_tables_attributes_dict = await self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
             else:
                 #NOTE: required_tables isn't currently being used but can be integrated if we want to create new tables
-                sufficiency, required_attributes, required_tables, sql_query, info = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
-            if sufficiency and not llm_judge:
+                sufficiency, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
+            
+            if sufficiency and llm_judge:
                 prompt = Config.get_text2sql_prompt(table_schemas, question)
-                sql_query, info = await self.text2sql_model.run_inference(prompt)
-                if info['error']:
-                    raise Exception(info['error'])
-                logger.debug(f"Generated SQL query: {sql_query}")
-                return sql_query
-            else:
-                raise NotImplementedError("SQL Table Update: Text2Column Module to be implemented")
+                try:
+                    sql_query = await self.text2sql_model.run_inference(prompt)
+                except Exception as e:
+                    raise RuntimeError(f"Error in text2sql run inference: {e}")
+            
+            return sql_query
         except Exception as e:
             logger.error(f"Error in run_pipeline: {str(e)}")
             raise
@@ -77,22 +78,15 @@ class Text2SQLPipeline():
         self.table_attributes = []
         self.all_objects = []
     
-    def check_schema_sufficiency_manual(self, query: str, table_schemas: str):
+    async def check_schema_sufficiency_manual(self, query: str, table_schemas: str):
         prompt = Config.get_text2sql_prompt(table_schemas, query)
-        try:
-            sql_query, info = self.text2sql_model.run_inference(prompt)
-            if info['error']:
-                raise Exception(info['error'])
-            logger.debug(f"Generated SQL query: {sql_query}")
-        except Exception as e:
-            logger.error(f"Error in run_pipeline: {str(e)}")
-            raise
+        sql_query = await self.text2sql_model.run_inference(prompt)
         
-        sufficient, required_attributes, required_tables = self.parse_schema_manually(sql_query, table_schemas)
-        if sufficient and required_attributes:
-            return sufficient, required_attributes, required_tables, sql_query, info
+        sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = self.parse_schema_manually(sql_query, table_schemas)
+        if sufficient and existing_tables_attributes_dict:
+            return sufficient, None, None, sql_query
         else:
-            return sufficient, required_attributes, required_tables, sql_query, info
+            return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query
 
     def extract_sql_schema_dict(self, sql_query: str):
         parsed = sqlglot.parse_one(sql_query)
@@ -174,31 +168,32 @@ class Text2SQLPipeline():
 
         #compare the raw table schema with the parsed sql schema and find missing attributes and/or tables
         sufficient = True
-        required_attributes = {}
-        required_tables = {}
+        existing_tables_attributes_dict = {}
+        new_tables_attributes_dict = {}
         for table in sql_schema_dict:
             if table not in table_schema_dict:
-                required_tables[table] = sql_schema_dict[table]
+                new_tables_attributes_dict[table] = sql_schema_dict[table]
                 sufficient = False
             else:
-                required_attributes[table] = sql_schema_dict[table].difference(table_schema_dict[table])
-                if len(required_attributes[table]) > 0:
+                existing_tables_attributes_dict[table] = sql_schema_dict[table].difference(table_schema_dict[table])
+                if len(existing_tables_attributes_dict[table]) > 0:
                     sufficient = False
-        return sufficient, required_attributes, required_tables
+        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
 
-    def check_schema_sufficiency_llm_judge(self, query: str, table_schemas: str):
+    async def check_schema_sufficiency_llm_judge(self, query: str, table_schemas: str):
         prompt = Config.schema_sufficiency_prompt.format(query=query, table_schemas=table_schemas)
         
         for _ in range(Config.max_schema_sufficiency_retries):
-            sufficiency_response, info = self.text2sql_model.run_inference(prompt)
-            if info['error']:
-                raise Exception(info['error'])
+            
+            sufficiency_response = await self.text2sql_model.run_inference(prompt)
+            if "error" in sufficiency_response.lower():
+                raise Exception(f"Error in text2sql run inference: {sufficiency_response}")
 
-            sufficient, required_attributes = self.parse_llm_judge_response(sufficiency_response)
-            if sufficient and required_attributes:
-                return sufficient, None
+            sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = self.parse_llm_judge_response(sufficiency_response)
+            if sufficient and existing_tables_attributes_dict:
+                return sufficient, None, None
         
-        return sufficient, required_attributes
+        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
     
     def parse_llm_judge_response(self, response: str) -> tuple[str, list[str]]:
         """
@@ -227,26 +222,25 @@ class Text2SQLPipeline():
             start_index = existing_line.index(":") + 1
             end_index = len(existing_line)
 
-            required_attributes = existing_line[start_index:end_index].strip()
-            required_attributes = re.sub(r"(\w+)", r"'\1'", required_attributes)
-            required_attributes = ast.literal_eval(required_attributes)
+            existing_tables_attributes_dict = existing_line[start_index:end_index].strip()
+            existing_tables_attributes_dict = re.sub(r"(\w+)", r"'\1'", existing_tables_attributes_dict)
+            existing_tables_attributes_dict = ast.literal_eval(existing_tables_attributes_dict)
             
             create_line = next((line for line in lines if line.lower().startswith("new")), None)
             start_index = create_line.index(":")+1
             end_index = len(create_line)
             
-            new_attributes = create_line[start_index:end_index].strip()
-            new_attributes = re.sub(r"(\w+)", r"'\1'", new_attributes)
-            new_attributes = ast.literal_eval(new_attributes)
-            if new_attributes == '\'None\'':
-                new_attributes = None
-
+            new_tables_attributes_dict = create_line[start_index:end_index].strip()
+            new_tables_attributes_dict = re.sub(r"(\w+)", r"'\1'", new_tables_attributes_dict)
+            new_tables_attributes_dict = ast.literal_eval(new_tables_attributes_dict)
+            if new_tables_attributes_dict == '\'None\'':
+                new_tables_attributes_dict = None
         except ValueError:
-            required_attributes = None
+            existing_tables_attributes_dict = None
 
-        return sufficiency, required_attributes, new_attributes
+        return sufficiency, existing_tables_attributes_dict, new_tables_attributes_dict
 
-if __name__ == "__main__":
+async def main():
     pipeline = Text2SQLPipeline()
     test_questions = [
         # "Find all video_id and frame_id where someone is standing",
@@ -261,11 +255,13 @@ if __name__ == "__main__":
     for question in test_questions:
         print(f"\nQuestion: {question}")
         try:
-            sql_query = pipeline.run_pipeline(question, Config.db_path)
+            sql_query = await pipeline.run_pipeline(question, Config.db_path)
             print(f"Generated SQL: {sql_query}")
             results = pipeline.execute_sql(Config.db_path, sql_query)
             print(results)
         except Exception as e:
             print(f"Error: {e}")
         print("-" * 50)
+
+asyncio.run(main())
         
