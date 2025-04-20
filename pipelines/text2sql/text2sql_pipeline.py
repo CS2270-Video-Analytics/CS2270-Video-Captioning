@@ -61,20 +61,10 @@ class Text2SQLPipeline():
         """
         try:
             if llm_judge:
-                is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = await self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
-
-                sql_query = None
-                if is_sufficient:
-                    prompt = Config.get_text2sql_prompt(table_schemas, question)
-                    try:
-                        sql_query = await self.text2sql_model.run_inference(prompt)
-                    except Exception as e:
-                        raise RuntimeError(f"Error in text2sql run inference: {e}")
+                is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query = await self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
             else:
                 #NOTE: required_tables isn't currently being used but can be integrated if we want to create new tables
                 is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
-            
-            
             
             return is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict
         except Exception as e:
@@ -184,17 +174,23 @@ class Text2SQLPipeline():
     async def check_schema_sufficiency_llm_judge(self, query: str, table_schemas: str):
         prompt = Config.schema_sufficiency_prompt.format(query=query, table_schemas=table_schemas)
         
+        sql_query = None
         for _ in range(Config.max_schema_sufficiency_retries):
-            
             sufficiency_response = await self.text2sql_model.run_inference(prompt)
             if "error" in sufficiency_response.lower():
                 raise Exception(f"Error in text2sql run inference: {sufficiency_response}")
 
             sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = self.parse_llm_judge_response(sufficiency_response)
+
             if sufficient and existing_tables_attributes_dict:
-                return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
+                prompt = Config.get_text2sql_prompt(table_schemas, query)
+                try:
+                    sql_query = await self.text2sql_model.run_inference(prompt)
+                except Exception as e:
+                    raise RuntimeError(f"Error in text2sql run inference: {e}")
+                return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query
         
-        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
+        return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query
     
     def parse_llm_judge_response(self, response: str) -> tuple[str, list[str]]:
         """
