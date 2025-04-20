@@ -91,8 +91,20 @@ class VideoQueryPipeline():
         print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
 
-        #execute query on the sql db
-        self.sql_dbs.execute_query(query = sql_query)
+        #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
+        if not is_sufficient and existing_tables_attributes_dict:
+            pass
+        if not is_sufficient and not existing_tables_attributes_dict:
+            raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
+        
+        #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
+        if not is_sufficient and new_tables_attributes_dict:
+            pass
+        if not is_sufficient and not new_tables_attributes_dict:
+            raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
+        
+        if is_sufficient:
+            self.sql_dbs.execute_query(query = sql_query)
 
     async def process_many_queries(self, language_queries: list, llm_judge: bool):
         for query in language_queries:
