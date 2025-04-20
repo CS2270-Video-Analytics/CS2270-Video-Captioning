@@ -76,15 +76,20 @@ class VideoQueryPipeline():
         self.text2sql_pipeline.clear_pipeline()
         self.text2table_pipeline.clear_pipeline()
     
-    def process_query(self, language_query: str, llm_judge: bool):
+    async def process_query(self, language_query: str, llm_judge: bool):
         #extract the schema for the processed object table
         table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
-
+        
         #parse the language query into a SQL query
-        is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = self.text2sql_pipeline.run_pipeline(
-                                question = language_query, 
-                                table_schemas = table_schemas, 
-                                llm_judge = llm_judge)
+        is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = await self.text2sql_pipeline.run_pipeline(
+            question = language_query, 
+            table_schemas = table_schemas, 
+            llm_judge = llm_judge
+        )
+        print(f"is_sufficient: {is_sufficient}")
+        print(f"sql_query: {sql_query}")
+        print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
+        print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
 
         #execute query on the sql db
         self.sql_dbs.execute_query(query = sql_query)
@@ -103,6 +108,12 @@ class VideoQueryPipeline():
 
 if __name__ == '__main__':
     query_pipeline = VideoQueryPipeline()
-    asyncio.run(query_pipeline.process_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
-    # QUERY = "What are the frames where traffic light sign is green and the car in front is an SUV?"
-    # query_pipeline.process_query(language_query = QUERY)
+    pdb.set_trace()
+    # asyncio.run(query_pipeline.process_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
+    test_questions = [
+        "What frames have the cabinet in it?",
+        "Is there a cabinet in the video?",
+        "What color is the cabinet?"
+    ]
+    for question in test_questions:
+        asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
