@@ -42,20 +42,30 @@ class OpenAIVision(VisionLanguageModel):
             ]
         })
 
-        try:
-            request_params = dict(model=self.model_name,
-                messages=messages,
-                temperature=self.model_params['temperature'],
-                top_p = self.model_params['top_p'],
-                max_tokens=self.model_params['max_tokens'],
-                frequency_penalty=self.model_params['frequency_penalty'],
-                presence_penalty=self.model_params['presence_penalty'])
-            request_params = {k: v for k, v in request_params.items() if v is not None}
-            stop_tokens = self.model_params.get("stop_tokens")
-            if isinstance(stop_tokens, list) and stop_tokens:
-                request_params["stop"] = stop_tokens
-            
-            response = await self.model_client.chat.completions.create(**request_params)
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            return f"API Error: {str(e)}"
+        delay = 0.1 
+        max_retries = 5
+
+        for _ in range(max_retries):
+            try:
+                request_params = dict(model=self.model_name,
+                    messages=messages,
+                    temperature=self.model_params['temperature'],
+                    top_p = self.model_params['top_p'],
+                    max_tokens=self.model_params['max_tokens'],
+                    frequency_penalty=self.model_params['frequency_penalty'],
+                    presence_penalty=self.model_params['presence_penalty'])
+                request_params = {k: v for k, v in request_params.items() if v is not None}
+                stop_tokens = self.model_params.get("stop_tokens")
+                if isinstance(stop_tokens, list) and stop_tokens:
+                    request_params["stop"] = stop_tokens
+                
+                response = await self.model_client.chat.completions.create(**request_params)
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                if "rate_limit_exceeded" in str(e):
+                    print(f"Rate limit exceeded, retrying in {delay} seconds...")
+                    await asyncio.sleep(delay)
+                    delay *= 2  # Exponential backoff
+                else:
+                    return f"API Error: {str(e)}"
+        return "Max retries exceeded"

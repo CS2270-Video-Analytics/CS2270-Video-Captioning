@@ -75,13 +75,14 @@ class Text2TablePipeline():
         Scene Summary:
         """
 
-        scene_descriptor =  await self.text2table_model.run_inference(data_stream= prompt, )[0]
+        scene_descriptor =  await self.text2table_model.run_inference(data_stream= prompt, )
+        scene_descriptor = scene_descriptor[0]
         print("Scene descriptor: ", scene_descriptor)
         self.scene_descriptor = scene_descriptor.strip()
         return scene_descriptor.strip()
 
     async def extract_table_attributes(self, all_captions:str):
-        scene_descriptor = self.get_scene_description(all_captions)
+        scene_descriptor = await self.get_scene_description(all_captions)
         frame_extraction_prompt = self.attribute_extraction_prompt.format(
             incontext_examples = Config.text2table_incontext_prompt,
             all_joined_captions = all_captions
