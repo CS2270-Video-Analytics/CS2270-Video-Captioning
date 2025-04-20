@@ -112,6 +112,11 @@ class Text2SQLPipeline():
         existing_tables_attributes_dict = {}
         new_tables_attributes_dict = {}
         for table in sql_schema_dict:
+            if 'unknown_table' in table:
+                sufficient = False
+                existing_tables_attributes_dict = None
+                new_tables_attributes_dict = None
+                break
             if table not in table_schema_dict:
                 new_tables_attributes_dict[table] = sql_schema_dict[table]
                 sufficient = False
