@@ -87,7 +87,7 @@ class VideoQueryPipeline():
                                 llm_judge = llm_judge)
 
         #execute query on the sql db
-        self.sql_dbs.execute_query(query = user_query)
+        self.sql_dbs.execute_query(query = sql_query)
 
     async def process_all_videos(self, video_path: str):
         # List all files in the directory
