@@ -62,17 +62,19 @@ class Text2SQLPipeline():
         try:
             if llm_judge:
                 is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict = await self.check_schema_sufficiency_llm_judge(query=question, table_schemas = table_schemas)
+
+                sql_query = None
+                if is_sufficient:
+                    prompt = Config.get_text2sql_prompt(table_schemas, question)
+                    try:
+                        sql_query = await self.text2sql_model.run_inference(prompt)
+                    except Exception as e:
+                        raise RuntimeError(f"Error in text2sql run inference: {e}")
             else:
                 #NOTE: required_tables isn't currently being used but can be integrated if we want to create new tables
                 is_sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query = self.check_schema_sufficiency_manual(query=question, table_schemas = table_schemas)
             
-            sql_query = None
-            if is_sufficient and llm_judge:
-                prompt = Config.get_text2sql_prompt(table_schemas, question)
-                try:
-                    sql_query = await self.text2sql_model.run_inference(prompt)
-                except Exception as e:
-                    raise RuntimeError(f"Error in text2sql run inference: {e}")
+            
             
             return is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict
         except Exception as e:
