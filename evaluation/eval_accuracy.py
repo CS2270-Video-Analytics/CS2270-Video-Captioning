@@ -63,7 +63,7 @@ async def main():
             start_time = time.time()
             table_schemas = sql_dbs.get_all_schemas_except_raw_videos()
 
-            sql_query = await text2sql_pipeline.run_pipeline(
+            _, system_query, _, _ = await text2sql_pipeline.run_pipeline(
                 question=nl_query, 
                 table_schemas=table_schemas, 
                 llm_judge=False
@@ -101,7 +101,7 @@ async def main():
 
     # Convert results to DataFrame and save
     results_df = pd.DataFrame(results)
-    #results_df.to_csv("datasets/eval_results/video_annotation_evaluation_results.csv", index=False, quoting=csv.QUOTE_ALL)
+    # results_df.to_csv("datasets/eval_results/video_annotation_evaluation_results.csv", index=False, quoting=csv.QUOTE_ALL)
 
 # Run async main
 asyncio.run(main())
