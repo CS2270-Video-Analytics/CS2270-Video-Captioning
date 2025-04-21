@@ -77,12 +77,8 @@ class VideoQueryPipeline():
         self.text2table_pipeline.clear_pipeline()
     
     async def process_query(self, language_query: str, llm_judge: bool):
-    async def process_query(self, language_query: str, llm_judge: bool):
         #extract the schema for the processed object table
         table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
-        
-        
-        #parse the language query into a SQL query
         is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = await self.text2sql_pipeline.run_pipeline(
             question = language_query, 
             table_schemas = table_schemas, 
@@ -106,7 +102,8 @@ class VideoQueryPipeline():
             raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         
         if is_sufficient:
-            self.sql_dbs.execute_query(query = sql_query)
+            result = self.sql_dbs.execute_query(query = sql_query)
+            return result
 
     async def process_many_queries(self, language_queries: list, llm_judge: bool):
         for query in language_queries:
@@ -125,13 +122,17 @@ class VideoQueryPipeline():
             await self.process_single_video(video_path=video_path, video_filename=video_filename)
 
 if __name__ == '__main__':
+    import time
+    start_time = time.time()
     query_pipeline = VideoQueryPipeline()
-    pdb.set_trace()
-    # asyncio.run(query_pipeline.process_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
+    asyncio.run(query_pipeline.process_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
     test_questions = [
         "What frames have the cabinet in it?",
-        "Is there a cabinet in the video?",
-        "What color is the cabinet?"
     ]
     for question in test_questions:
-        asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
+        result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
+        print(f"Question: {question}")
+        print(f"Result: {result}")
+        print("------------------------")
+    end_time = time.time()
+    print(f"Time taken: {end_time - start_time}")
