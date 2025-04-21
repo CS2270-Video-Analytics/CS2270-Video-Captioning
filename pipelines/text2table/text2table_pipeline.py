@@ -1,7 +1,7 @@
 import sys
 import os
 from config.config import Config
-from typing import List, Dict
+from typing import List, Dict, Optional
 import re
 import json
 
@@ -25,6 +25,7 @@ class Text2TablePipeline():
         #store all prompts for text2table
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         self.schema_extraction_prompt_format = Config.text2table_schema_generation_prompt
+        self.schema_extraction_reboot_prompt_format = Config.text2table_reboot_schema_generation_prompt
 
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
@@ -223,7 +224,7 @@ class Text2TablePipeline():
         valid_json = self.extract_complete_json(text)
         return valid_json
     
-    async def run_pipeline_video(self, video_data: List[tuple], database_schema: str):
+    async def run_pipeline_video(self, video_data: List[tuple], database_schema: str, reboot: bool = False):
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
         
@@ -234,11 +235,11 @@ class Text2TablePipeline():
             tasks = []
             # Create tasks for each frame in the batch
             for i in range(batch_start, batch_end):
-                video_id, frame_id, caption, __ = video_data[i]
+                video_id, frame_id, caption, __, focused_caption = video_data[i]
 
                 task = self.run_pipeline(
                     parsed_db_schema=parsed_db_schema,
-                    caption=caption,
+                    caption=caption if not reboot else focused_caption,
                     video_id=video_id,
                     frame_id=frame_id
                 )

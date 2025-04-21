@@ -301,7 +301,7 @@ class Config:
 
     Output template:
     (1) Sufficient: <Yes | No> [ if the existing database have sufficient tables and associated attributes to answer the query]
-    (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes, else output None.
+    (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes, else output {{}}.
     (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return {{}}.
 
     Other requirements:
@@ -393,6 +393,20 @@ class Config:
     max_schema_sufficiency_retries = 3
 
     #-------------------------------------------------------------------------
+    # Reboot New Table
+    #-------------------------------------------------------------------------
+    text2table_reboot_schema_generation_prompt = None #modify this into a fromatted create table SQL statement
+    rebooting_caption_prompt_format = None
+    temp_col_name = 'focused_description'
+    temp_col_type = "TEXT"
+    table_reboot_enabled = True
+
+    #-------------------------------------------------------------------------
+    # Reboot Text2Column
+    #-------------------------------------------------------------------------
+    text2column_enabled = False
+
+    #-------------------------------------------------------------------------
     # Input Video Settings
     #-------------------------------------------------------------------------
     video_path = 'datasets/charades/'
@@ -414,7 +428,8 @@ class Config:
         'video_id': "TEXT NOT NULL", 
         'frame_id': "REAL NOT NULL", 
         'description': "TEXT NOT NULL", 
-        'vector_id': "INTEGER"
+        'vector_id': "INTEGER",
+        temp_col_name: temp_col_type
     }
     
     processed_table_name = "processed_video"

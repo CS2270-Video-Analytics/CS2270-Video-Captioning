@@ -25,6 +25,7 @@ class SQLLiteDBInterface:
             self.table_name_schema_dict = self.extract_schema_dict()
 
         self.insertion_query = "INSERT OR IGNORE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
+        self.add_col_query = "ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type} DEFAULT NULL;"
 
     def create_table(self):
         for (table_name, vals) in self.table_name_schema_dict.items():
@@ -98,6 +99,42 @@ class SQLLiteDBInterface:
             return self.cursor.fetchall()  # return all rows relevant to query
         except Exception as e:
             print(f"Error executing multiple queries: {e}")
+            return None
+    #NOTE: this is not used anymore but may be needed for future use
+    def create_column(self, table_name: str, col_name: str, col_type: str):
+        try:
+            #first alter table to create new column
+            add_col_query = self.add_col_query.format(table_name=table_name, col_name=col_name, col_type=col_type)
+            self.cursor.execute(add_col_query)
+            self.connection.commit()
+        except Exception as e:
+            if "duplicate column name" in e:
+                pass
+            else:
+                raise RuntimeError(f"Error in insert_columns: {e}")
+
+    def insert_column_data(self, table_name:str, col_name:str, col_type:str, data:list):
+        try:
+            # 2. Create temporary update table
+            self.cursor.execute("DROP TABLE IF EXISTS temp;")
+            self.cursor.execute(f"CREATE TEMP TABLE temp (id INTEGER, id INTEGER, new_val {col_type});")
+
+            # 3. Insert values into temp
+            self.cursor.executemany("INSERT INTO temp (id, id, new_val) VALUES (?, ?, ?);", data)
+
+            # 4. Update using a join
+            self.cursor.execute(f"""
+                UPDATE {table_name}
+                SET {col_name} = (
+                    SELECT new_val FROM temp WHERE temp.id = {table_name}.id
+                )
+                WHERE id IN (SELECT id FROM temp);
+            """)
+            self.cursor.execute("DROP TABLE IF EXISTS temp;")
+            # 5. Finalize
+            self.conn.commit()
+        except Exception as e:
+            print(f"Error inserting columns {col_name} into table {table_name}")
             return None
 
     def insert_many_rows_list(self, table_name:str, rows_data: list):

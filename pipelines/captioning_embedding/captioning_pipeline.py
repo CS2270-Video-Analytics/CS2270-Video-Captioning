@@ -32,6 +32,9 @@ class CaptioningPipeline():
             self.description_prompt = Config.sliding_window_caption_prompt_format
         else:
             self.description_prompt = Config.question_prompt_format.format(question = Config.generic_caption_prompt_format)
+        
+        #construct prompts for rebooting (new attributes or new tables)
+        self.rebooting_prompt = Config.rebooting_caption_prompt_format
 
         if Config.obj_focus:
             self.object_prompt = Config.object_extraction_prompt_format
@@ -59,9 +62,12 @@ class CaptioningPipeline():
         self.previous_descriptions = deque()
         self.object_set = set(Config.init_object_set)
 
-    async def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int):
+    async def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int, new_tables_attributes_dict: dict, reboot: bool=False):
         #(1) add the previous frame description to the prompt
-        if Config.previous_frames:
+        if reboot:
+
+            description_prompt = self.rebooting_prompt.format()
+        elif Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
             description_prompt = self.description_prompt.format(object_set = ','.join(self.object_set))
         else:
@@ -87,7 +93,7 @@ class CaptioningPipeline():
             self.previous_descriptions.popleft()
         
         #(4) generate a set of new objects in the current frame and add to the self.object_set
-        if Config.obj_focus:
+        if Config.obj_focus and not reboot:
             obj_prompt = self.object_prompt.format(curr_img_caption = self.previous_descriptions[-1], object_set = ','.join(self.object_set))
             try:
                 new_objs = await self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt, detail='low'))
@@ -101,7 +107,7 @@ class CaptioningPipeline():
         # image_embedding, info = self.clip_model.run_inference(data_stream)
         # image_embedding = image_embedding.detach().cpu()
 
-        return [video_id, frame_id, description, self.object_set, None]
+        return [video_id, frame_id, description, self.object_set, None, 'NULL']
         
 
 if __name__ == '__main__':

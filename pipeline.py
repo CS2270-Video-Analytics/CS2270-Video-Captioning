@@ -4,6 +4,7 @@ from pipelines.text2sql.text2sql_pipeline import Text2SQLPipeline
 from pipelines.text2table.text2table_pipeline import Text2TablePipeline
 from database_integration import SQLLiteDBInterface, VectorDBInterface
 from config.config import Config
+from typing import Optional
 import os
 import asyncio
 import pdb
@@ -41,16 +42,17 @@ class VideoQueryPipeline():
             self.sql_dbs.insert_many_rows_list(table_name = Config.caption_table_name, rows_data = sql_batch)
         self.text2table_pipeline.update_objects(self.captioning_pipeline.object_set)
     
-    async def run_text2table(self):
-        #extract a combined caption from the raw table and create new tables from the schema the LLM generates
-        total_num_rows = self.sql_dbs.get_total_num_rows(table_name=Config.caption_table_name)
-        combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
-        structured_table_schemas = await self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
-        self.sql_dbs.execute_script(structured_table_schemas)
+    async def run_text2table(self, new_structured_table_name: Optional[str] = None, reboot: bool=False):
+        if not reboot:
+            #extract a combined caption from the raw table and create new tables from the schema the LLM generates
+            total_num_rows = self.sql_dbs.get_total_num_rows(table_name=Config.caption_table_name)
+            combined_description = self.sql_dbs.extract_concatenated_captions(table_name=Config.caption_table_name, attribute = 'description', num_rows=total_num_rows)
+            structured_table_schemas = await self.text2table_pipeline.extract_table_schemas(all_captions = combined_description)
+            self.sql_dbs.execute_script(structured_table_schemas)
         
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
-        db_schema = self.sql_dbs.get_all_schemas_except_raw_videos()
+        db_schema = self.sql_dbs.get_all_schemas_except_raw_videos() if not reboot else self.sql_dbs.get_table_schema(table_name=new_structured_table_name)
         obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
         #insert a batch of rows into the SQL object db
         batch_count = 0
@@ -67,7 +69,7 @@ class VideoQueryPipeline():
             print(f"[Progress] Processed batch {batch_count} — total rows inserted: {row_count}")
         print(f"[Done] All {batch_count} batches processed. Total rows inserted: {row_count}")
 
-    async def process_single_video(self, video_path:str, video_filename:str):
+    async def insert_single_video(self, video_path:str, video_filename:str):
         await self.generate_captions(video_path = video_path, video_filename = video_filename)
         await self.run_text2table()
         
@@ -90,14 +92,21 @@ class VideoQueryPipeline():
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
 
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
-        if not is_sufficient and existing_tables_attributes_dict:
-            pass
+        if not is_sufficient and len(existing_tables_attributes_dict.keys()) > 0 and Config.text2column_enabled:
+            raise NotImplementedError("Error: not yet implemented text2column")
         if not is_sufficient and not existing_tables_attributes_dict:
             raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         
         #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
-        if not is_sufficient and new_tables_attributes_dict:
-            pass
+        if not is_sufficient and new_tables_attributes_dict and Config.table_reboot_enabled:
+            
+            async for sql_batch, vector_batch in self.video_processor.process_single_video(video_path=None, video_id=None, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_tables_attributes_dict=new_tables_attributes_dict, frames_considered=None, reboot=True):
+                self.sql_dbs.insert_column_data(table_name=Config.caption_table_name, col_name=Config.temp_col_name, col_type=Config.temp_col_type, data=sql_batch)
+
+            for new_table_name in new_tables_attributes_dict.keys():
+                self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=Config.processed_table_pk + new_tables_attributes_dict[new_table_name], table_prim_key=Config.caption_table_pk)
+                await self.run_text2table(new_structured_table_name=new_table_name, reboot=True)
+
         if not is_sufficient and not new_tables_attributes_dict:
             raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         
@@ -109,7 +118,7 @@ class VideoQueryPipeline():
         for query in language_queries:
             await self.process_query(language_query = query, llm_judge = llm_judge)
     
-    async def process_all_videos(self, video_path: str):
+    async def insert_all_videos(self, video_path: str):
         # List all files in the directory
         all_files = os.listdir(video_path)
         
@@ -119,7 +128,7 @@ class VideoQueryPipeline():
         # Process each video file
         for video_filename in video_files:
             print(f"Processing video: {video_filename}")
-            await self.process_single_video(video_path=video_path, video_filename=video_filename)
+            await self.insert_single_video(video_path=video_path, video_filename=video_filename)
 
 if __name__ == '__main__':
     import time
