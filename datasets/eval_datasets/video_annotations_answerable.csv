@@ -1,0 +1,28 @@
+dataset,video_id,nl_query,answerable
+BDD,00afa5b2-c14a542f.mov,Is there a black SUV in the video?,1
+BDD,00afa5b2-c14a542f.mov,Does the black SUV move after the signal is green?,1
+BDD,00afa5b2-c14a542f.mov,Does the dog cross the bridge?,0
+BDD,00a2f5b6-d4217a96.mov,Is there a black mercedes?,1
+BDD,00a2f5b6-d4217a96.mov,Does the man wearing gray finish crossing before the signal turns green?,1
+BDD,00a2f5b6-d4217a96.mov,Does the helicopter land before frame 5?,0
+BDD,00abf44e-04004ca0.mov,Is there a person who is cycling?,1
+BDD,00abf44e-04004ca0.mov,Is there an aeroplane?,1
+BDD,00abf44e-04004ca0.mov,Does the boat park next to the dog?,0
+Charades,0BWYH.mp4,Are there cleaning supplies?,1
+Charades,0BWYH.mp4,Does the person sneeze?,1
+Charades,0BWYH.mp4,Does the cat jump?,0
+Charades,0BH84.mp4,Is there a door?,1
+Charades,0BH84.mp4,How many buttons are on the person's shirt?,1
+Charades,0BH84.mp4,Does the vending machine have coca-cola?,0
+Charades,0A8ZT.mp4,Is there a bed?,1
+Charades,0A8ZT.mp4,How many items are on top of the cabinet?,1
+Charades,0A8ZT.mp4,When does the horse jump?,0
+UCF101,v_SoccerPenalty_g20_c03.mp4,Is there a goalkeeper?,1
+UCF101,v_SoccerPenalty_g20_c03.mp4,Is there a red advertisement with fly emirates?,1
+UCF101,v_SoccerPenalty_g20_c03.mp4,When does the black mercedes turn left?,0
+UCF101,v_Basketball_g16_c02.mp4,Is there a hoop?,1
+UCF101,v_Basketball_g16_c02.mp4,Does the person dribble before shooting?,1
+UCF101,v_Basketball_g16_c02.mp4,Does the Toyota Camry have its headlights on?,0
+UCF101,v_Lunges_g19_c02.mp4,Is there a vending machine?,1
+UCF101,v_Lunges_g19_c02.mp4,Does the person lunge with his left leg before his right leg?,1
+UCF101,v_Lunges_g19_c02.mp4,Does the aeroplane land before frame 20?,0
