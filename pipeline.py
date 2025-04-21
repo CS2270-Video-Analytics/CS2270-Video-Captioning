@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # print("SYSTEM RESPONSE: ", result)
 
     #PART 3: MISSING TABLE QUERY FOR VIDEO
-    question = "How many frames are there black German Shepherd dogs in front of a red light?"
+    question = "How many frames contain a black German Shepherd dogs and a black car?"
     start_time = time.time()
     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     end_time = time.time()
