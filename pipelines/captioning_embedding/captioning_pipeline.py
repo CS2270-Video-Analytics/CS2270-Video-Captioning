@@ -65,8 +65,7 @@ class CaptioningPipeline():
     async def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int, new_tables_attributes_dict: dict, reboot: bool=False):
         #(1) add the previous frame description to the prompt
         if reboot:
-
-            description_prompt = self.rebooting_prompt.format()
+            description_prompt = self.rebooting_prompt.format(new_tables_attributes_dict = new_tables_attributes_dict)
         elif Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
             description_prompt = self.description_prompt.format(object_set = ','.join(self.object_set))
