@@ -7,7 +7,7 @@ from PIL import Image
 class FrameExtractor:
     """Base class for extracting frames from videos."""
     
-    def extract_uniform_frames(self, video_path, frames_per_video=40, specific_frames=None):
+    def extract_uniform_frames(self, video_path, frames_per_video=40, specific_frames: list=[]):
         """Extract frames uniformly from a video or at specific timestamps.
         
         Args:
@@ -18,13 +18,12 @@ class FrameExtractor:
         Returns:
             List of (timestamp, PIL Image) tuples
         """
-        if specific_frames is not None:
+        if not specific_frames:
             print(f"Extracting {len(specific_frames)} specific frames from: {video_path}")
         else:
             print(f"Extracting {frames_per_video} uniform frames from: {video_path}")
         
         start_time = time.time()
-        
         cap = cv2.VideoCapture(video_path)
         if not cap.isOpened():
             raise ValueError(f"Failed to open video file: {video_path}")
@@ -42,7 +41,7 @@ class FrameExtractor:
         
         frames = []
         
-        if specific_frames is not None:
+        if specific_frames:
             # Process specific timestamps
             for timestamp in specific_frames:
                 # Convert timestamp to frame index

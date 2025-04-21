@@ -28,7 +28,7 @@ class VideoProcessor:
         # Ensure output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
     
-    async def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int, new_tables_attributes_dict: dict, frames_considered: list, reboot: bool = True):
+    async def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int, new_attributes_dict: dict={}, specific_frames: list = [], reboot: bool = False):
         """Process a single video file.
         
         Args:
@@ -39,7 +39,7 @@ class VideoProcessor:
             Number of processed frames
         """
         # Extract frames
-        frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video, specific_frames=frames_considered)
+        frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video, specific_frames=specific_frames)
         # Save frames to disk (optional)
         if Config.save_frames:
             self.extractor.save_frames(video_id, frames, self.output_dir)
@@ -58,7 +58,7 @@ class VideoProcessor:
                     data_stream=image_tensor,
                     video_id=video_id,
                     frame_id=timestamp,
-                    new_tables_attributes_dict=new_tables_attributes_dict,
+                    new_attributes_dict=new_attributes_dict,
                     reboot=reboot
                 )
                 tasks.append(task)

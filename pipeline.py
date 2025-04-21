@@ -92,27 +92,33 @@ class VideoQueryPipeline():
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
 
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
-        if not is_sufficient and len(existing_tables_attributes_dict.keys()) > 0 and Config.text2column_enabled:
+        if not is_sufficient and existing_tables_attributes_dict and Config.text2column_enabled:
             raise NotImplementedError("Error: not yet implemented text2column")
-        if not is_sufficient and not existing_tables_attributes_dict:
+        elif not is_sufficient and not existing_tables_attributes_dict:
             raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         
         #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
         if not is_sufficient and new_tables_attributes_dict and Config.table_reboot_enabled:
+
+            unique_video_ids, unique_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids()
             
-            async for sql_batch, __ in self.video_processor.process_single_video(video_path=None, video_id=None, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_tables_attributes_dict=new_tables_attributes_dict, frames_considered=None, reboot=True):
-                self.sql_dbs.insert_column_data(table_name=Config.caption_table_name, col_name=Config.temp_col_name, col_type=Config.temp_col_type, data=sql_batch)
+            for video_id in unique_video_ids:
+                async for sql_batch, __ in self.video_processor.process_single_video(video_path=Config.video_path, video_id=video_id, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_attributes_dict=new_tables_attributes_dict, specific_frames=unique_frame_ids, reboot=True):
+                    self.sql_dbs.insert_column_data(table_name=Config.caption_table_name, col_name=Config.temp_col_name, col_type=Config.temp_col_type, data=sql_batch)
 
             for new_table_name in new_tables_attributes_dict.keys():
-                self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=Config.processed_table_pk + new_tables_attributes_dict[new_table_name], table_prim_key=Config.caption_table_pk)
+                table_schema = {key: "TEXT" for key in new_tables_attributes_dict[new_table_name]}
+                self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=table_schema, table_prim_key=Config.processed_table_pk)
                 await self.run_text2table(new_structured_table_name=new_table_name, reboot=True)
 
-        if not is_sufficient and not new_tables_attributes_dict:
+        elif not is_sufficient and not new_tables_attributes_dict:
             raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         
         if is_sufficient:
             result = self.sql_dbs.execute_query(query = sql_query)
             return result
+        else:
+            raise RuntimeError(f"Error in process_query: failed to process query {language_query}")
 
     async def process_many_queries(self, language_queries: list, llm_judge: bool):
         for query in language_queries:
@@ -132,12 +138,15 @@ class VideoQueryPipeline():
 
 if __name__ == '__main__':
     import time
-    start_time = time.time()
+    # start_time = time.time()
     query_pipeline = VideoQueryPipeline()
-    asyncio.run(query_pipeline.insert_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
+    # asyncio.run(query_pipeline.insert_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
     # test_questions = [
     #     "What frames have the cabinet in it?",
     # ]
+    question = "In what frames are baboons and on top of the aeroplane?"
+    result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
+    print(result)
     # for question in test_questions:
     #     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     #     print(f"Question: {question}")

@@ -120,6 +120,11 @@ class Text2SQLPipeline():
                 existing_tables_attributes_dict[table] = sql_schema_dict[table].difference(table_schema_dict[table])
                 if len(existing_tables_attributes_dict[table]) > 0:
                     sufficient = False
+        #include the primary keys in the existing_tables_attributes_dict and new_tables_attributes_dict
+        for table in existing_tables_attributes_dict:
+            existing_tables_attributes_dict[table] += Config.caption_table_pk
+        for table in new_tables_attributes_dict:
+            new_tables_attributes_dict[table] += Config.caption_table_pk
         return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
 
 
@@ -237,7 +242,7 @@ class Text2SQLPipeline():
         
         return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict, sql_query
     
-    def parse_llm_judge_response(self, response: str) -> tuple[str, list[str]]:
+    def parse_llm_judge_response(self, response: str):
         """
         Parses the schema using LLM to determine a sufficiency response.
         Args:

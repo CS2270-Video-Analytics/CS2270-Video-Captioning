@@ -62,10 +62,10 @@ class CaptioningPipeline():
         self.previous_descriptions = deque()
         self.object_set = set(Config.init_object_set)
 
-    async def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int, new_tables_attributes_dict: dict, reboot: bool=False):
+    async def run_pipeline(self, data_stream: torch.Tensor, video_id:int, frame_id:int, new_attributes_dict: dict={}, reboot: bool=False):
         #(1) add the previous frame description to the prompt
         if reboot:
-            description_prompt = self.rebooting_prompt.format(new_tables_attributes_dict = new_tables_attributes_dict)
+            description_prompt = self.rebooting_prompt.format(new_attributes_dict = new_attributes_dict)
         elif Config.previous_frames:
             previous_frames_descriptions = '\n-'.join(self.previous_descriptions)
             description_prompt = self.description_prompt.format(object_set = ','.join(self.object_set))
@@ -106,7 +106,7 @@ class CaptioningPipeline():
         # image_embedding, info = self.clip_model.run_inference(data_stream)
         # image_embedding = image_embedding.detach().cpu()
 
-        return [video_id, frame_id, description, self.object_set, None, 'NULL']
+        return [video_id, frame_id, description, self.object_set, None, 'NULL' if not reboot else description]
         
 
 if __name__ == '__main__':
@@ -125,5 +125,5 @@ if __name__ == '__main__':
         transform = transforms.ToTensor()
         image_tensor = transform(image)
         
-        [vid_id, frame_id, descrip, obj_set, image_embed] = captioner.run_pipeline(data_stream = image_tensor, video_id = 0, frame_id=i)
+        [vid_id, frame_id, descrip, obj_set, image_embed, focused_descrip] = captioner.run_pipeline(data_stream = image_tensor, video_id = 0, frame_id=i)
         
