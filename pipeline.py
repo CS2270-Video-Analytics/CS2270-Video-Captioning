@@ -32,7 +32,7 @@ class VideoQueryPipeline():
         self.text2table_pipeline = Text2TablePipeline(all_objects = [], db_path=Config.db_path)
 
     async def generate_captions(self, video_path:str, video_filename:str):
-        assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {video_filename} does not exist"
+        assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {os.path.join(video_path, video_filename)} does not exist"
         async for sql_batch, vector_batch in self.video_processor.process_single_video(
             video_path=os.path.join(video_path, video_filename),
             video_id=video_filename,
@@ -90,7 +90,7 @@ class VideoQueryPipeline():
         print(f"sql_query: {sql_query}")
         print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
-
+        pdb.set_trace()
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
         if not is_sufficient and existing_tables_attributes_dict and Config.text2column_enabled:
             raise NotImplementedError("Error: not yet implemented text2column")
@@ -113,7 +113,19 @@ class VideoQueryPipeline():
 
         elif not is_sufficient and not new_tables_attributes_dict:
             raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
-        
+        pdb.set_trace()
+        #check query after rebooting once
+        if not is_sufficient:
+            is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = await self.text2sql_pipeline.run_pipeline(
+                question = language_query, 
+                table_schemas = table_schemas, 
+                llm_judge = llm_judge
+            )
+            print(f"is_sufficient: {is_sufficient}")
+            print(f"sql_query: {sql_query}")
+            print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
+            print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
+
         if is_sufficient:
             result = self.sql_dbs.execute_query(query = sql_query)
             return result
@@ -138,15 +150,37 @@ class VideoQueryPipeline():
 
 if __name__ == '__main__':
     import time
-    # start_time = time.time()
+
+    #PART 1: INSERTING/PROCESSING A VIDEO 
     query_pipeline = VideoQueryPipeline()
+    # start_time = time.time()
+    # asyncio.run(query_pipeline.insert_single_video(video_path='datasets/bdd', video_filename='00afa5b2-c14a542f.mov'))
+    # end_time = time.time()
+    
+    #PART 2: SIMPLE QUERY FOR VIDEO
+    # question = "In how many frames does a Chevrolet appear in front of a red light?"
+    # question = "How many taxis are in the video?"
+    # start_time = time.time()
+    # result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
+    # end_time = time.time()
+    # print("SYSTEM RESPONSE: ", result)
+
+    #PART 3: MISSING TABLE QUERY FOR VIDEO
+    question = "How many frames are there black German Shepherd dogs in front of a red light?"
+    start_time = time.time()
+    result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
+    end_time = time.time()
+    print("SYSTEM RESPONSE: ", result)
+
+    print(f"Time taken: {end_time - start_time}")
+
+
+
+
     # asyncio.run(query_pipeline.insert_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
     # test_questions = [
     #     "What frames have the cabinet in it?",
     # ]
-    question = "In what frames are baboons and on top of the aeroplane?"
-    result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
-    print(result)
     # for question in test_questions:
     #     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     #     print(f"Question: {question}")

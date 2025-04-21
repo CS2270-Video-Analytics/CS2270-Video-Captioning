@@ -122,9 +122,9 @@ class Text2SQLPipeline():
                     sufficient = False
         #include the primary keys in the existing_tables_attributes_dict and new_tables_attributes_dict
         for table in existing_tables_attributes_dict:
-            existing_tables_attributes_dict[table] += Config.caption_table_pk
+            existing_tables_attributes_dict[table]
         for table in new_tables_attributes_dict:
-            new_tables_attributes_dict[table] += Config.caption_table_pk
+            new_tables_attributes_dict[table] = new_tables_attributes_dict[table].union(set(Config.caption_table_pk))
         return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
 
 

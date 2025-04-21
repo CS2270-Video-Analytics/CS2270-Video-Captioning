@@ -281,7 +281,6 @@ class Text2TablePipeline():
             except Exception as e:
                 print(f"ERROR: skipped processing video {video_id} and frame {frame_id} - {e}")
                 continue
-        pdb.set_trace()
         return [db_data_rows]
     
     def close_connection(self):
