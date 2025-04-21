@@ -74,6 +74,7 @@ class CaptioningPipeline():
 
         #(2) pass the model the captioning prompt for captioning
         #TODO: figure out data streaming
+        
         try:
             description = await self.caption_model.run_inference(
                 data_stream = data_stream,
@@ -83,6 +84,8 @@ class CaptioningPipeline():
                     detail=self.caption_detail
                 )
             )
+            print("DESIRED STOP")
+            pdb.set_trace()
         except Exception as e:
             print(f"Error from captioning model inference: {e}")
             description = {}

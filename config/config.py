@@ -455,44 +455,69 @@ class Config:
     temp_col_name = 'focused_description'
     temp_col_type = "TEXT"
     table_reboot_enabled = True
+    # rebooting_caption_prompt_format = \
+    #     "Task: given (1) the current scene frame recorded from a camera angle and (2) a dictionary of key value pairs " \
+    #     "where the key is the category of objects we previously miss to capture in each frame and the value is the fixed set of key attributes of the object we want to capture, " \
+    #     "help me identify all the objects in the frame that belong to the missing categories and provide description for each object in the format below. " \
+    #     "Template: "\
+    #     "object id: start from 1, auto increment by identified object " \
+    #     "(1) category: object's category" \
+    #     "(2) attributes: object's attributes " \
+    #     "(3) action: action of the object " \
+    #     "(4) location: object's relative location to other key objects " \
+    #     "Note: " \
+    #     "- category is given from dictionary keys. If dictionary keys are person_data and furniture_data, then we would want to provide descriptions for all objects that are either person or furniture. " \
+    #     "- attributes is given from dictionary values. If dictionary key is person_data then this is the corresponding dictionary value of this key " \
+    #     "- you capture action from the frame and only include this if the category is a moving object (e.g., person, vehicle, animal) " \
+    #     "- you capture location from the frame" \
+    #     "Example: " \
+    #     "new_tables_attributes_dict: {{person_data: {{height, gender, hair color, clothing}}, furniture_data: {{type, color, materials, pattern}}}} " \
+    #     "object id: 1 " \
+    #     "(1) category: person (you obtain it from the dictionary)" \
+    #     "(2) attributes: short, female, black, white dress (you capture it based on wanted attributes for person)" \
+    #     "(3) action: walking (you capture it) " \
+    #     "(4) location: to the left of the chair (you capture it)" \
+    #     "object id: 2 " \
+    #     "(1) category: person (you obtain it from the dictionary)" \
+    #     "(2) attributes: tall, male, yellow, black shirt (you capture it based on wanted attributes for person)" \
+    #     "(3) action: sitting (you capture it) " \
+    #     "(4) location: to the right of the chair (you capture it)" \
+    #     "object id: 4 " \
+    #     "(1) category: furniture (you obtain it from the dictionary)" \
+    #     "(2) attributes: chair, black, wood, plain (you capture it based on wanted attributes for person)" \
+    #     "(3) location: in between two persons " \
+    #     "object id: 5 " \
+    #     "(1) category: furniture " \
+    #     "(2) attributes: table, black, wood, carved " \
+    #     "(3) location: next to two persons " \
+    #     "Task (for the current frame): " \
+    #     "new_tables_attributes_dict: {new_attributes_dict}" \
+    #     "object id:"
     rebooting_caption_prompt_format = \
-        "Task: given (1) the current scene frame recorded from a camera angle and (2) a dictionary of key value pairs " \
-        "where the key is the category of objects we previously miss to capture in each frame and the value is the fixed set of key attributes of the object we want to capture, " \
-        "help me identify all the objects in the frame that belong to the missing categories and provide description for each object in the format below. " \
-        "Template: "\
-        "object id: start from 1, auto increment by identified object " \
-        "(1) category: object's category" \
-        "(2) attributes: object's attributes " \
-        "(3) action: action of the object " \
-        "(4) location: object's relative location to other key objects " \
-        "Note: " \
-        "- category is given from dictionary keys. If dictionary keys are person_data and furniture_data, then we would want to provide descriptions for all objects that are either person or furniture. " \
-        "- attributes is given from dictionary values. If dictionary key is person_data then this is the corresponding dictionary value of this key " \
-        "- you capture action from the frame and only include this if the category is a moving object (e.g., person, vehicle, animal) " \
-        "- you capture location from the frame" \
+        "Task: given the current frame recorded from a camera and a dictionary of key value pairs " \
+        "where the dictionary key is the topic/object we want to get information about and dictionary values are the set of attributes about the topic/object we want to capture, " \
+        "identify all instances of this topic/object in the current frame and provide description about the attributes in the format below. " \
         "Example: " \
-        "new_tables_attributes_dict: {{person_data: [height, gender, hair color, clothing], furniture_data: [type, color, materials, pattern]}} " \
-        "object id: 1 " \
-        "(1) category: person (you obtain it from the dictionary)" \
-        "(2) attributes: short, female, black, white dress (you capture it based on wanted attributes for person)" \
-        "(3) action: walking (you capture it) " \
-        "(4) location: to the left of the chair (you capture it)" \
-        "object id: 2 " \
-        "(1) category: person (you obtain it from the dictionary)" \
-        "(2) attributes: tall, male, yellow, black shirt (you capture it based on wanted attributes for person)" \
-        "(3) action: sitting (you capture it) " \
-        "(4) location: to the right of the chair (you capture it)" \
-        "object id: 4 " \
-        "(1) category: furniture (you obtain it from the dictionary)" \
-        "(2) attributes: chair, black, wood, plain (you capture it based on wanted attributes for person)" \
-        "(3) location: in between two persons " \
-        "object id: 5 " \
-        "(1) category: furniture " \
-        "(2) attributes: table, black, wood, carved " \
-        "(3) location: next to two persons " \
+        "new_tables_attributes_dict: {{person_data: {{height, gender, hair color, clothing}}, weather_data: {{weather, temperature}}}} " \
+        "Topic/Object: person " \
+        "(1) height: tall " \
+        "(2) gender: female " \
+        "(3) hair color: black " \
+        "(4) clothing: white dress "\
+        "Topic/Object: person " \
+        "(1) height: tall " \
+        "(2) gender: male " \
+        "(3) hair color: yellow " \
+        "(4) clothing: black shirt " \
+        "Topic/Object: weather " \
+        "(1) weather: dark and cloudy " \
+        "(2) temperature: cool " \
+        "Topic/Object: weather " \
+        "(1) weather: sunny with clouds " \
+        "(2) temperature: warm " \
         "Task (for the current frame): " \
-        "new_tables_attributes_dict: {new_attributes_dict}" \
-        "object id:"
+        "new_tables_attributes_dict: {new_attributes_dict} " \
+        "Topic/Object:" \
 
     #-------------------------------------------------------------------------
     # Reboot Text2Column

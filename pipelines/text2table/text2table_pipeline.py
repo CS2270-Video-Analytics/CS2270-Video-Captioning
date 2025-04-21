@@ -235,7 +235,7 @@ class Text2TablePipeline():
             # Create tasks for each frame in the batch
             for i in range(batch_start, batch_end):
                 video_id, frame_id, caption, __, focused_caption = video_data[i]
-
+                
                 task = self.run_pipeline(
                     parsed_db_schema=parsed_db_schema,
                     caption=caption if not reboot else focused_caption,

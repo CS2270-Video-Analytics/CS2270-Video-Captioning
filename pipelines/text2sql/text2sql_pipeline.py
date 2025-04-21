@@ -124,7 +124,7 @@ class Text2SQLPipeline():
         for table in existing_tables_attributes_dict:
             existing_tables_attributes_dict[table]
         for table in new_tables_attributes_dict:
-            new_tables_attributes_dict[table] = new_tables_attributes_dict[table].union(set(Config.caption_table_pk))
+            new_tables_attributes_dict[table] = new_tables_attributes_dict[table].union(set(Config.processed_table_pk))
         return sufficient, existing_tables_attributes_dict, new_tables_attributes_dict
 
 
