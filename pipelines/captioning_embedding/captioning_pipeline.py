@@ -84,8 +84,6 @@ class CaptioningPipeline():
                     detail=self.caption_detail
                 )
             )
-            print("DESIRED STOP")
-            pdb.set_trace()
         except Exception as e:
             print(f"Error from captioning model inference: {e}")
             description = {}
@@ -108,7 +106,6 @@ class CaptioningPipeline():
         #(5) generate clip embedding
         # image_embedding, info = self.clip_model.run_inference(data_stream)
         # image_embedding = image_embedding.detach().cpu()
-
         return [video_id, frame_id, description, self.object_set, None, 'NULL' if not reboot else description]
         
 

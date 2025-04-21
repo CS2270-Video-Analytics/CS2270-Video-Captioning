@@ -496,25 +496,21 @@ class Config:
     rebooting_caption_prompt_format = \
         "Task: given the current frame recorded from a camera and a dictionary of key value pairs " \
         "where the dictionary key is the topic/object we want to get information about and dictionary values are the set of attributes about the topic/object we want to capture, " \
-        "identify all instances of this topic/object in the current frame and provide description about the attributes in the format below. " \
+        "identify all instances of this topic/object in the current frame and provide description about the attributes in the format below. Only output the frame description without additional information." \
         "Example: " \
         "new_tables_attributes_dict: {{person_data: {{height, gender, hair color, clothing}}, weather_data: {{weather, temperature}}}} " \
         "Topic/Object: person " \
-        "(1) height: tall " \
-        "(2) gender: female " \
-        "(3) hair color: black " \
-        "(4) clothing: white dress "\
+        "topic/object id: 1 " \
+        "Description: tall female with black hair and white dress " \
         "Topic/Object: person " \
-        "(1) height: tall " \
-        "(2) gender: male " \
-        "(3) hair color: yellow " \
-        "(4) clothing: black shirt " \
+        "topic/object id: 2 " \
+        "Description: tall male with yellow hair and black shirt " \
         "Topic/Object: weather " \
-        "(1) weather: dark and cloudy " \
-        "(2) temperature: cool " \
+        "topic/object id: 3 " \
+        "Description: dark and cloudy with cool temperature " \
         "Topic/Object: weather " \
-        "(1) weather: sunny with clouds " \
-        "(2) temperature: warm " \
+        "topic/object id: 4 " \
+        "Description: sunny with clouds with warm temperature " \
         "Task (for the current frame): " \
         "new_tables_attributes_dict: {new_attributes_dict} " \
         "Topic/Object:" \

@@ -53,7 +53,8 @@ class VideoQueryPipeline():
         #extract and iterate all rows of the SQL db
         db_rows = self.sql_dbs.extract_all_rows(table_name = Config.caption_table_name)
         db_schema = self.sql_dbs.get_all_schemas_except_raw_videos() if not reboot else self.sql_dbs.get_table_schema(table_name=new_structured_table_name)
-        obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema)
+        
+        obj_iterator = self.text2table_pipeline.run_pipeline_video(video_data=db_rows, database_schema=db_schema, reboot=reboot)
         #insert a batch of rows into the SQL object db
         batch_count = 0
         row_count = 0
@@ -81,6 +82,7 @@ class VideoQueryPipeline():
     async def process_query(self, language_query: str, llm_judge: bool):
         #extract the schema for the processed object table
         table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
+        
         is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = await self.text2sql_pipeline.run_pipeline(
             question = language_query, 
             table_schemas = table_schemas, 
@@ -90,7 +92,7 @@ class VideoQueryPipeline():
         print(f"sql_query: {sql_query}")
         print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
-        pdb.set_trace()
+        # pdb.set_trace()
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
         if Config.text2column_enabled:
             if not is_sufficient and existing_tables_attributes_dict:
@@ -118,6 +120,7 @@ class VideoQueryPipeline():
         pdb.set_trace()
         #check query after rebooting once
         if not is_sufficient:
+            table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
             is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = await self.text2sql_pipeline.run_pipeline(
                 question = language_query, 
                 table_schemas = table_schemas, 
@@ -127,7 +130,7 @@ class VideoQueryPipeline():
             print(f"sql_query: {sql_query}")
             print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
             print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
-
+            # pdb.set_trace()
         if is_sufficient:
             result = self.sql_dbs.execute_query(query = sql_query)
             return result
@@ -158,6 +161,7 @@ if __name__ == '__main__':
     # start_time = time.time()
     # asyncio.run(query_pipeline.insert_single_video(video_path='datasets/bdd', video_filename='00afa5b2-c14a542f.mov'))
     # end_time = time.time()
+    # print(f"Time taken: {end_time - start_time}")
     
     #PART 2: SIMPLE QUERY FOR VIDEO
     # question = "In how many frames does a Chevrolet appear in front of a red light?"
@@ -166,15 +170,15 @@ if __name__ == '__main__':
     # result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     # end_time = time.time()
     # print("SYSTEM RESPONSE: ", result)
+    # print(f"Time taken: {end_time - start_time}")
 
     #PART 3: MISSING TABLE QUERY FOR VIDEO
-    question = "When does the weather first become sunny after the first 5 frames?"
+    question = "When does the weather first have overcast after the first 5 frames?"
     start_time = time.time()
     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     end_time = time.time()
     print("SYSTEM RESPONSE: ", result)
-
-    print(f"Time taken: {end_time - start_time}")
+    
 
 
 

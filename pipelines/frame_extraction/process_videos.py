@@ -69,6 +69,7 @@ class VideoProcessor:
             
             for result in results:
                 video_id, frame_id, description, object_list, image_embedding, focused_description = result
+                
                 sql_batch.append((video_id, frame_id, description, curr_vec_idx, focused_description) if not reboot else (video_id, frame_id, focused_description))
                 vector_batch.append(image_embedding)
 
