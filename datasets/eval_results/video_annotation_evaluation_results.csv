@@ -1,0 +1,394 @@
+"dataset","video_id","category","nl_query","ground_truth","comparator","SQL_query","system_output","processing_time","correctness"
+"BDD","00afa5b2-c14a542f.mov","existence","Is there a truck in the video?","0","equals","SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(type) LIKE '%truck%')","0","0.5078022480010986","1.0"
+"BDD","00afa5b2-c14a542f.mov","existence_one_filter","Is there a black SUV in the video?","1","equals","SELECT EXISTS (SELECT 1 
+FROM vehicle_data 
+WHERE LOWER(color) LIKE '%black%' 
+AND LOWER(type) LIKE '%suv%')","1","0.7068109512329102","1.0"
+"BDD","00afa5b2-c14a542f.mov","existence_multi_filter","Is there a black SUV with license plate 'T670483C'?","1","equals","SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(color) LIKE 'black' AND LOWER(type) LIKE 'suv' AND LOWER(license_plate) LIKE 't670483c')","0","0.5632069110870361","0.0"
+"BDD","00afa5b2-c14a542f.mov","frame_retrieval","What is the first frame in the video where the traffic signal turns red?","7","range","SELECT MIN(frame_id) FROM traffic_signal_data WHERE LOWER(light_color) LIKE '%red%'","6.964623032311516","0.3560628890991211","1.0"
+"BDD","00afa5b2-c14a542f.mov","attribute_retrieval","What is the licence plate of the black SUV?","T670483C'","IoU","SELECT license_plate FROM vehicle_data WHERE LOWER(color) LIKE '%black%' AND LOWER(type) LIKE '%suv%';","1670483C,J3684383,New York license plate,New York,38BOV691,16780491,New York,3EB0191,C8B7091,1687043C,visible,16708436,New York,New York,New York license plate,16170436,3CB691,New York license plate,New York,New York,New York license plate,New York license plate,New York license plate,New York,16974084,1670483C,New York license plate,169T843,196Y0A9,169T048,New York license plate,New York license plate,NY 3E8D91,New York license plate,New York,None,C8B09191,NY 3CBY49","0.5117912292480469","0.0"
+"BDD","00afa5b2-c14a542f.mov","range","Is there a a pedestrian wearing a red bagpack after frame 10?","1","equals","SELECT EXISTS (SELECT 1 FROM pedestrian_data WHERE frame_id > 10 AND LOWER(clothing_description) LIKE '%red backpack%')","1","0.4038989543914795","1.0"
+"BDD","00afa5b2-c14a542f.mov","counting","How many taxis are in the video?","2","equals","SELECT COUNT(DISTINCT vehicle_data.object_id) 
+FROM vehicle_data 
+WHERE LOWER(vehicle_data.type) LIKE '%taxi%' AND 
+      EXISTS (SELECT 1 FROM vehicle_data u WHERE u.video_id = vehicle_data.video_id AND u.frame_id = vehicle_data.frame_id)","2","0.7714130878448486","1.0"
+"BDD","00afa5b2-c14a542f.mov","temporal_conditions","Does the black SUV move after the signal is green?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM vehicle_data v
+    INNER JOIN traffic_signal_data t ON v.video_id = t.video_id AND v.frame_id = t.frame_id
+    WHERE LOWER(v.color) LIKE '%black%' 
+      AND LOWER(v.type) LIKE '%suv%' 
+      AND LOWER(t.light_color) LIKE '%green%' 
+      AND v.location = t.location
+);","0","3.5664827823638916","0.0"
+"BDD","00afa5b2-c14a542f.mov","object_co_occurence","Does the brick exterior building appear with a Black SUV in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM building_data AS b
+    INNER JOIN vehicle_data AS v ON b.video_id = v.video_id AND b.frame_id = v.frame_id
+    WHERE LOWER(b.facade_type) LIKE '%brick%' 
+    AND LOWER(v.color) LIKE '%black%' 
+    AND LOWER(v.type) LIKE '%suv%'
+)","1","1.2957649230957031","1.0"
+"BDD","00afa5b2-c14a542f.mov","attribute_comparison","Are there two cars of different colors?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM vehicle_data 
+    WHERE color IS NOT NULL 
+    GROUP BY color 
+    HAVING COUNT(DISTINCT color) >= 2
+)","0","0.8478457927703857","0.0"
+"BDD","00afa5b2-c14a542f.mov","negation","Is there a frame with no vehicles?","0","equals","SELECT EXISTS (SELECT 1 FROM person_data p 
+                WHERE NOT EXISTS (SELECT 1 FROM vehicle_data v 
+                                  WHERE p.video_id = v.video_id AND p.frame_id = v.frame_id));","0","0.8884809017181396","1.0"
+"BDD","00afa5b2-c14a542f.mov","category_frequency","Which color of vehicle is most common?","black","IoU","SELECT color FROM vehicle_data GROUP BY color ORDER BY COUNT(*) DESC LIMIT 1;","black","0.4130380153656006","1.0"
+"BDD","00afa5b2-c14a542f.mov","relative_location","Is the pedestrian wearing a red bagpack to the right of the black SUV?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM pedestrian_data pd 
+    LEFT JOIN vehicle_data vd ON pd.video_id = vd.video_id AND pd.frame_id = vd.frame_id 
+    WHERE LOWER(pd.clothing_description) LIKE '%red backpack%' 
+    AND LOWER(vd.color) LIKE '%black%' 
+    AND vd.type LIKE '%SUV%' 
+    AND pd.location LIKE '%' || vd.location || '%'
+    AND pd.location LIKE '%right%'
+)","0","1.1105639934539795","0.0"
+"BDD","00afa5b2-c14a542f.mov","action_filtering","Is there a pedestrian walking?","1","equals","SELECT EXISTS (SELECT 1 FROM pedestrian_data WHERE LOWER(action) LIKE '%walking%')","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,a,c,t,i,o,n","0.3443446159362793","0.0"
+"BDD","00afa5b2-c14a542f.mov","distinct_attribute_set","List all the distinct colors of cars","black, gray, yellow, silver","IoU","SELECT DISTINCT color FROM vehicle_data WHERE color IS NOT NULL;","black,gray,yellow,silver,grey","0.3810710906982422","0.8"
+"BDD","00a2f5b6-d4217a96.mov","existence","Is there an SUV?","1","equals","SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(model) LIKE '%suv%')","1","0.4820418357849121","1.0"
+"BDD","00a2f5b6-d4217a96.mov","existence_one_filter","Is there a black mercedes?","1","equals","SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(color) LIKE '%black%' AND LOWER(model) LIKE '%mercedes%')","1","0.6162588596343994","1.0"
+"BDD","00a2f5b6-d4217a96.mov","existence_multi_filter","Is there a black SUV with a license plate 'M777198'?","1","equals","SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(color) LIKE '%black%' AND LOWER(model) LIKE '%suv%' AND LOWER(license_plate) LIKE '%m777198%')","0","0.5877997875213623","0.0"
+"BDD","00a2f5b6-d4217a96.mov","frame_retrieval","What is the last frame where we see the black sedan?","37","range","SELECT MAX(frame_id) FROM vehicle_data WHERE LOWER(color) LIKE '%black%' AND LOWER(model) LIKE '%sedan%'","36.93541147132169","0.8742311000823975","1.0"
+"BDD","00a2f5b6-d4217a96.mov","attribute_retrieval","What brand of car is the black sedan?","Mercedes","IoU","SELECT DISTINCT model FROM vehicle_data WHERE LOWER(color) LIKE 'black' AND LOWER(model) LIKE '%sedan%';","sedan","0.4790778160095215","0.0"
+"BDD","00a2f5b6-d4217a96.mov","range","Is there pedestrian wearing a blue shirt after frame 30?","1","equals","SELECT EXISTS (SELECT 1 FROM pedestrian_data WHERE LOWER(clothing) LIKE '%blue shirt%' AND frame_id > 30)","1","0.5099260807037354","1.0"
+"BDD","00a2f5b6-d4217a96.mov","counting","How many black vehicles are there in the video?","5","equals","SELECT COUNT(*) FROM vehicle_data WHERE LOWER(color) LIKE '%black%'","100","0.5128440856933594","0.0"
+"BDD","00a2f5b6-d4217a96.mov","temporal_conditions","Does the man wearing gray finish crossing before the signal turns green?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM pedestrian_data AS pd
+    JOIN traffic_signal_data AS tsd ON pd.video_id = tsd.video_id AND pd.frame_id = tsd.frame_id
+    WHERE LOWER(pd.gender) = 'male' 
+      AND LOWER(pd.clothing) LIKE '%gray%' 
+      AND tsd.light_color = 'green'
+);","0","1.431575059890747","0.0"
+"BDD","00a2f5b6-d4217a96.mov","object_co_occurence","Is there a truck and a man wearing a white shirt in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM vehicle_data v
+    INNER JOIN pedestrian_data p ON v.video_id = p.video_id AND v.frame_id = p.frame_id
+    WHERE LOWER(v.model) LIKE '%truck%' 
+    AND LOWER(p.clothing) LIKE '%white shirt%'
+)","0","0.9211759567260742","0.0"
+"BDD","00a2f5b6-d4217a96.mov","attribute_comparison","Are there two pedestrians wearing the same color?","0","equals","SELECT EXISTS (SELECT 1 FROM pedestrian_data p1, pedestrian_data p2 WHERE p1.color LIKE p2.color AND p1.object_id <> p2.object_id)","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,p,2,.,c,o,l,o,r","0.5881621837615967","0.0"
+"BDD","00a2f5b6-d4217a96.mov","negation","Is there a frame with no trees?","0","equals","SELECT EXISTS (SELECT 1 
+               FROM vehicle_data 
+               WHERE video_id IN (SELECT DISTINCT video_id FROM tree_data)
+               AND frame_id NOT IN (SELECT frame_id FROM tree_data))","1","0.6376869678497314","0.0"
+"BDD","00a2f5b6-d4217a96.mov","category_frequency","Which traffic sign appears the most frequently?","one way","IoU","SELECT location, COUNT(*) as frequency FROM traffic_signal_data GROUP BY location ORDER BY frequency DESC LIMIT 1","left side of the frame","0.5134892463684082","0.0"
+"BDD","00a2f5b6-d4217a96.mov","relative_location","Is the truck to the left of the black SUV?","1","equals","SELECT EXISTS (
+  SELECT 1
+  FROM vehicle_data AS v1
+  INNER JOIN vehicle_data AS v2 ON v1.video_id = v2.video_id AND v1.frame_id = v2.frame_id
+  WHERE LOWER(v1.model) LIKE '%truck%' AND LOWER(v2.color) LIKE '%black%' AND LOWER(v2.model) LIKE '%suv%' AND v1.location LIKE '%left%'
+)","0","1.094731092453003","0.0"
+"BDD","00a2f5b6-d4217a96.mov","action_filtering","Does a vehicle turn right?","1","equals","SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE location LIKE '%right%')","1","0.6073751449584961","1.0"
+"BDD","00a2f5b6-d4217a96.mov","distinct_attribute_set","List all the distinct license plates of black cars","YH 01', 'M777198'","IoU","SELECT DISTINCT license_plate FROM vehicle_data WHERE LOWER(color) LIKE '%black%'","1,LO HA,None,visible,861111W,861LLLW,861LLLZW,861LLLHW,861LLLLH,861LLLHH,861LLLL,861LLW,861LLLM,861LL7,8617LLW,861LLWM,861LLLWN,86LLZZW,861LLXM,10 HA,New York,rear license plate visible","0.8515110015869141","0.0"
+"BDD","00abf44e-04004ca0.mov","existence","Is there an aeroplane?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(action) LIKE '%aeroplane%' OR LOWER(attachment) LIKE '%aeroplane%' OR LOWER(clothing) LIKE '%aeroplane%') OR EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(type) LIKE '%aeroplane%') OR EXISTS (SELECT 1 FROM construction_equipment_data WHERE LOWER(equipment_type) LIKE '%aeroplane%') OR EXISTS (SELECT 1 FROM street_sign_data WHERE LOWER(text_description) LIKE '%aeroplane%');","0","1.405344009399414","0.0"
+"BDD","00abf44e-04004ca0.mov","existence_one_filter","Is there a person who is cycling?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(action) LIKE '%cycling%')","1","0.39534473419189453","1.0"
+"BDD","00abf44e-04004ca0.mov","existence_multi_filter","Is there a person wearing white who is cycling?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(clothing) LIKE '%white%' AND LOWER(action) LIKE '%cycling%')","1","0.5230019092559814","1.0"
+"BDD","00abf44e-04004ca0.mov","frame_retrieval","What is the last frame we see an airplane?","11","range","SELECT MAX(frame_id) FROM vehicle_data WHERE LOWER(type) LIKE '%airplane%'","None","0.4069209098815918","0.0"
+"BDD","00abf44e-04004ca0.mov","attribute_retrieval","What color shirt is the person cycling wearing?","white","IoU","SELECT DISTINCT pd.clothing 
+FROM person_data pd 
+INNER JOIN pedestrian_data p ON pd.video_id = p.video_id AND pd.frame_id = p.frame_id 
+WHERE LOWER(p.action) LIKE '%cycling%'","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,p,.,a,c,t,i,o,n","0.6088528633117676","0.0"
+"BDD","00abf44e-04004ca0.mov","range","Is there a person wearing black before frame 5?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(clothing) LIKE '%black%' AND frame_id < 5)","1","0.6173238754272461","1.0"
+"BDD","00abf44e-04004ca0.mov","counting","How many people appear in the video?","3","equals","SELECT COUNT(DISTINCT video_id, frame_id, object_id) FROM person_data;","E,r,r,o,r,:, ,w,r,o,n,g, ,n,u,m,b,e,r, ,o,f, ,a,r,g,u,m,e,n,t,s, ,t,o, ,f,u,n,c,t,i,o,n, ,C,O,U,N,T,(,)","0.41429996490478516","0.0"
+"BDD","00abf44e-04004ca0.mov","temporal_conditions","Does the blue vehicle appear before the cyclist?","1","equals","SELECT EXISTS (
+    SELECT 1
+    FROM vehicle_data v
+    INNER JOIN pedestrian_data p ON v.video_id = p.video_id AND v.frame_id = p.frame_id
+    WHERE LOWER(v.color) LIKE '%blue%' AND LOWER(p.action) LIKE '%cyclist%'
+    AND v.frame_id < p.frame_id
+)","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,p,.,a,c,t,i,o,n","0.9143202304840088","0.0"
+"BDD","00abf44e-04004ca0.mov","object_co_occurence","Do the silver car and plane ever appear in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1
+    FROM vehicle_data AS v
+    INNER JOIN person_data AS p ON v.video_id = p.video_id AND v.frame_id = p.frame_id
+    WHERE LOWER(v.color) LIKE '%silver%'
+    AND LOWER(p.action) LIKE '%plane%'
+);","0","1.2285141944885254","0.0"
+"BDD","00abf44e-04004ca0.mov","attribute_comparison","Are there multiple cars with yellow license plates?","1","equals","SELECT EXISTS (SELECT 1 
+FROM vehicle_data 
+WHERE LOWER(location) LIKE '%yellow%')","0","0.6132512092590332","0.0"
+"BDD","00abf44e-04004ca0.mov","negation","Is there a frame without pedestrians?","1","equals","SELECT EXISTS (SELECT 1 
+FROM person_data 
+WHERE video_id IS NOT NULL 
+AND frame_id IS NOT NULL 
+AND object_id IS NOT NULL 
+AND NOT EXISTS (SELECT 1 FROM pedestrian_data WHERE person_data.video_id = pedestrian_data.video_id AND person_data.frame_id = pedestrian_data.frame_id));","1","0.716001033782959","1.0"
+"BDD","00abf44e-04004ca0.mov","category_frequency","Which color of traffic light appears for the most frames?","Red","IoU","SELECT color, COUNT(*) as frame_count 
+FROM street_sign_data 
+WHERE LOWER(text_description) LIKE '%traffic light%' 
+GROUP BY color 
+ORDER BY frame_count DESC 
+LIMIT 1;","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,c,o,l,o,r","0.6137599945068359","0.0"
+"BDD","00abf44e-04004ca0.mov","relative_location","Is the construction equipment to the left of the road?","1","equals","SELECT EXISTS (SELECT 1 FROM construction_equipment_data AS ce
+LEFT JOIN street_sign_data AS ss ON ce.video_id = ss.video_id AND ce.frame_id = ss.frame_id
+WHERE LOWER(ce.location) LIKE '%left%' AND LOWER(ss.location) LIKE '%road%')","0","0.8635311126708984","0.0"
+"BDD","00abf44e-04004ca0.mov","action_filtering","Does a pedestrian cross the road?","1","equals","SELECT EXISTS (SELECT 1 FROM pedestrian_data WHERE LOWER(action) LIKE '%cross%' AND LOWER(location) LIKE '%road%')","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,a,c,t,i,o,n","0.4664340019226074","0.0"
+"BDD","00abf44e-04004ca0.mov","distinct_attribute_set","List all the distinct types of construction equipment in the video","dumpster","IoU","SELECT DISTINCT equipment_type FROM construction_equipment_data WHERE video_id LIKE 'video%';","","0.40912389755249023","0.0"
+"Charades","0BWYH.mp4","existence","Are there cleaning supplies?","1","equals","SELECT EXISTS (SELECT 1 FROM cleaning_supplies_data)","1","0.7854831218719482","1.0"
+"Charades","0BWYH.mp4","existence_one_filter","Are there white plates?","1","equals","SELECT EXISTS (SELECT 1 FROM dishware_data WHERE LOWER(color) LIKE '%white%' AND LOWER(type) LIKE '%plate%')","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,c,o,l,o,r","0.35236620903015137","0.0"
+"Charades","0BWYH.mp4","existence_multi_filter","Are there wooden countertops with handles?","1","equals","SELECT EXISTS (SELECT 1 FROM countertop_data AS c JOIN kitchen_cabinet_data AS k ON c.video_id = k.video_id AND c.frame_id = k.frame_id WHERE LOWER(c.surface_material) LIKE '%wooden%' AND LOWER(k.door_status) LIKE '%handles%')","0","0.9758038520812988","0.0"
+"Charades","0BWYH.mp4","frame_retrieval","What is the first frame where the person starts to sneeze?","7","range","SELECT MIN(frame_id) FROM person_data WHERE LOWER(action) LIKE '%sneeze%'","None","0.4140968322753906","0.0"
+"Charades","0BWYH.mp4","attribute_retrieval","What color is the person's pants?","brown","IoU","SELECT DISTINCT clothing FROM person_data WHERE LOWER(clothing) LIKE '%pants%'","plaid shirt and brown pants","0.4037339687347412","0.0"
+"Charades","0BWYH.mp4","range","Does the person sneeze before frame 14?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE action LIKE '%sneeze%' AND frame_id < 14)","0","0.5154333114624023","0.0"
+"Charades","0BWYH.mp4","counting","How many times does the person sneeze?","2","equals","SELECT COUNT(*) FROM person_data WHERE LOWER(action) LIKE '%sneeze%'","0","0.2538878917694092","0.0"
+"Charades","0BWYH.mp4","temporal_conditions","Does the person put something back into the shelf before he sneezes?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data p 
+    INNER JOIN kitchen_cabinet_data k ON p.video_id = k.video_id AND p.frame_id = k.frame_id
+    WHERE LOWER(p.action) LIKE '%sneeze%' AND LOWER(k.door_status) LIKE '%closed%'
+);","0","0.972175121307373","0.0"
+"Charades","0BWYH.mp4","object_co_occurence","Is there a pack of bread and a toaster in the video?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM food_item_data f 
+    WHERE LOWER(f.type) LIKE '%bread%'
+    AND f.video_id = 'video_id_value' AND f.frame_id = 'frame_id_value'
+) 
+AND EXISTS (
+    SELECT 1 
+    FROM kitchen_appliance_data k 
+    WHERE LOWER(k.location) LIKE '%toaster%'
+    AND k.video_id = 'video_id_value' AND k.frame_id = 'frame_id_value'
+);","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,f,.,t,y,p,e","1.2278752326965332","0.0"
+"Charades","0BWYH.mp4","attribute_comparison","Are there multiple bowls in the video?","1","equals","SELECT EXISTS (SELECT 1 
+                FROM dishware_data 
+                WHERE LOWER(type) LIKE '%bowl%' 
+                GROUP BY video_id, frame_id 
+                HAVING COUNT(*) > 1)","0","0.8360507488250732","0.0"
+"Charades","0BWYH.mp4","negation","Is there more than one person in the video?","0","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE video_id IS NOT NULL GROUP BY video_id HAVING COUNT(DISTINCT object_id) > 1)","0","0.8037607669830322","1.0"
+"Charades","0BWYH.mp4","category_frequency","What color of container is the most common?","yellow","IoU","SELECT color FROM container_data GROUP BY color ORDER BY COUNT(*) DESC LIMIT 1;","yellow","0.5249061584472656","1.0"
+"Charades","0BWYH.mp4","relative_location","Is the fridge located to the right to the person?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data p
+    JOIN kitchen_appliance_data k ON p.video_id = k.video_id AND p.frame_id = k.frame_id
+    WHERE LOWER(p.location) LIKE '%right%' AND LOWER(k.location) LIKE '%fridge%'
+)","0","0.8132128715515137","0.0"
+"Charades","0BWYH.mp4","action_filtering","Does the person move?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE action LIKE '%move%')","0","0.3677239418029785","0.0"
+"Charades","0BWYH.mp4","distinct_attribute_set","List the colors on the persons shirt","yellow, white, gray","IoU","SELECT DISTINCT LOWER(clothing) AS shirt_color FROM person_data WHERE clothing IS NOT NULL;","plaid shirt,plaid shirt (yellow and blue),casual clothing,plaid shirt and brown pants,checkered shirt","0.36760401725769043","0.0"
+"Charades","0BH84.mp4","existence","Is there a door?","1","equals","SELECT EXISTS (SELECT 1 FROM door_data)","1","0.3880739212036133","1.0"
+"Charades","0BH84.mp4","existence_one_filter","Is there a blue plate in the video?","1","equals","SELECT EXISTS (SELECT 1 FROM dishware_data WHERE LOWER(color) LIKE '%blue%' AND LOWER(type) LIKE '%plate%')","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,c,o,l,o,r","0.642697811126709","0.0"
+"Charades","0BH84.mp4","existence_multi_filter","Is there a person wearing a red shirt talking on the phone?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data p 
+JOIN phone_data ph ON p.video_id = ph.video_id AND p.frame_id = ph.frame_id 
+WHERE LOWER(p.clothing) LIKE '%red%' AND LOWER(p.action) LIKE '%talking%')","1","0.6648449897766113","1.0"
+"Charades","0BH84.mp4","frame_retrieval","What is the first frame the person smiles?","4","range","SELECT MIN(frame_id) FROM person_data WHERE action LIKE '%smile%'","None","0.3865830898284912","0.0"
+"Charades","0BH84.mp4","attribute_retrieval","What is the beverage?","milk","IoU","SELECT * FROM beverage_data;","0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4,0BH84.mp4","0.41318297386169434","0.0"
+"Charades","0BH84.mp4","range","Is the kitchen visible before frame 2?","0","equals","SELECT EXISTS (SELECT 1 FROM kitchen_appliance_data WHERE frame_id < 2)","0","0.49053525924682617","1.0"
+"Charades","0BH84.mp4","counting","How many buttons are on the person's shirt?","5","equals","SELECT COUNT(*) FROM person_data WHERE LOWER(clothing) LIKE '%button%';","0","0.2720518112182617","0.0"
+"Charades","0BH84.mp4","temporal_conditions","Does the person drink the beverage before smiling?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data AS p 
+    JOIN beverage_data AS b ON p.video_id = b.video_id AND p.frame_id = b.frame_id 
+    WHERE LOWER(p.action) LIKE '%smile%' AND LOWER(b.type) LIKE '%drink%'
+)","0","0.8415639400482178","0.0"
+"Charades","0BH84.mp4","object_co_occurence","Are the milk and phone visible in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM phone_data AS p
+    INNER JOIN beverage_data AS b ON p.video_id = b.video_id AND p.frame_id = b.frame_id
+    WHERE LOWER(b.type) LIKE '%milk%'
+);","1","0.7024469375610352","1.0"
+"Charades","0BH84.mp4","attribute_comparison","Are there multiple doors in the video?","1","equals","SELECT EXISTS (SELECT 1 FROM door_data GROUP BY video_id, frame_id HAVING COUNT(*) > 1)","0","0.3952770233154297","0.0"
+"Charades","0BH84.mp4","negation","Is there a frame without the person?","0","equals","SELECT EXISTS (SELECT 1 FROM door_data WHERE (video_id, frame_id) NOT IN (SELECT video_id, frame_id FROM person_data))","1","0.6174073219299316","0.0"
+"Charades","0BH84.mp4","category_frequency","What color of beverage is the most common?","white","IoU","SELECT color FROM beverage_data GROUP BY color ORDER BY COUNT(*) DESC LIMIT 1;","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,c,o,l,o,r","0.3602607250213623","0.0"
+"Charades","0BH84.mp4","relative_location","Is the kitchen to the right of the person?","1","equals","SELECT EXISTS (
+    SELECT 1
+    FROM person_data p
+    LEFT JOIN kitchen_appliance_data k ON p.video_id = k.video_id AND p.frame_id = k.frame_id
+    WHERE LOWER(p.location) LIKE '%person%' AND LOWER(k.location) LIKE '%kitchen%'
+    AND LOWER(p.location) LIKE '%right%'
+)","0","1.585371971130371","0.0"
+"Charades","0BH84.mp4","action_filtering","Does the person drink?","","equals","SELECT EXISTS (SELECT 1 FROM person_data p JOIN beverage_data b ON p.video_id = b.video_id AND p.frame_id = b.frame_id WHERE LOWER(p.action) LIKE '%drink%')","1","0.7815859317779541","0.0"
+"Charades","0BH84.mp4","distinct_attribute_set","List the distinct colors of doors","brown, yellow","IoU","SELECT DISTINCT color FROM door_data","None,brown,yellow","0.28818392753601074","0.6666666666666666"
+"Charades","0A8ZT.mp4","existence","Is there a bed?","1","equals","SELECT EXISTS (SELECT 1 FROM bed_data)","1","0.3787379264831543","1.0"
+"Charades","0A8ZT.mp4","existence_one_filter","Is there a bottle with a dark liquid?","1","equals","SELECT EXISTS (SELECT 1 FROM bottle_data WHERE LOWER(color) LIKE '%dark%')","1","0.43389010429382324","1.0"
+"Charades","0A8ZT.mp4","existence_multi_filter","Is there a black cabinet with a photo frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM furniture_data f
+    INNER JOIN photo_frame_data p ON f.video_id = p.video_id AND f.frame_id = p.frame_id
+    WHERE LOWER(f.color) LIKE '%black%' AND LOWER(f.type) LIKE '%cabinet%'
+);","1","0.7914960384368896","1.0"
+"Charades","0A8ZT.mp4","frame_retrieval","What is the frame the person holds his phone","28","range","SELECT DISTINCT p.frame_id 
+FROM person_data p 
+WHERE LOWER(p.action) LIKE '%holds%' AND LOWER(p.clothing) LIKE '%phone%';","","0.5104351043701172","0.0"
+"Charades","0A8ZT.mp4","attribute_retrieval","What is the color of the person's beanie","black","IoU","SELECT DISTINCT f.color 
+FROM person_data p 
+LEFT JOIN furniture_data f ON p.video_id = f.video_id AND p.frame_id = f.frame_id 
+WHERE LOWER(p.clothing) LIKE '%beanie%'","dark finish,None,dark,black,black finish,dark wood","0.7158739566802979","0.16666666666666666"
+"Charades","0A8ZT.mp4","range","Is there a dark bottle visible before frame 10","1","equals","SELECT EXISTS (SELECT 1 FROM bottle_data WHERE LOWER(color) LIKE '%dark%' AND frame_id < 10)","1","0.32971787452697754","1.0"
+"Charades","0A8ZT.mp4","counting","How many items are on top of the cabinet?","3","equals","SELECT COUNT(*) FROM furniture_data WHERE LOWER(location) LIKE '%top of the cabinet%'","0","0.3599221706390381","0.0"
+"Charades","0A8ZT.mp4","temporal_conditions","Does the person pour before drinking?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data 
+    WHERE LOWER(action) LIKE '%pour%' 
+    AND LOWER(video_id) IN (
+        SELECT video_id 
+        FROM person_data 
+        WHERE LOWER(action) LIKE '%drink%'
+    )
+)","0","0.84663987159729","0.0"
+"Charades","0A8ZT.mp4","object_co_occurence","Does the bed and drink appear in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM bed_data b
+    INNER JOIN bottle_data bt ON b.video_id = bt.video_id AND b.frame_id = bt.frame_id
+)","1","0.6113429069519043","1.0"
+"Charades","0A8ZT.mp4","attribute_comparison","Are there multiple vases in the video?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM decorative_item_data 
+    WHERE LOWER(design) LIKE '%vase%' 
+    GROUP BY video_id 
+    HAVING COUNT(*) > 1
+)","1","0.6035408973693848","1.0"
+"Charades","0A8ZT.mp4","negation","Is there a frame without the person?","0","equals","SELECT EXISTS (SELECT 1 
+FROM photo_frame_data pf 
+LEFT JOIN person_data p ON pf.video_id = p.video_id AND pf.frame_id = p.frame_id 
+WHERE p.video_id IS NULL);","0","0.6009910106658936","1.0"
+"Charades","0A8ZT.mp4","category_frequency","What color of cabinet is the most common?","black","IoU","SELECT color FROM furniture_data WHERE LOWER(type) LIKE '%cabinet%' GROUP BY color ORDER BY COUNT(*) DESC LIMIT 1;","black","0.4322538375854492","1.0"
+"Charades","0A8ZT.mp4","relative_location","Is the vase on top of the cabinet?","1","equals","SELECT EXISTS (SELECT 1 FROM decorative_item_data di 
+INNER JOIN furniture_data f ON di.video_id = f.video_id AND di.frame_id = f.frame_id 
+WHERE LOWER(di.design) LIKE '%vase%' AND LOWER(f.type) LIKE '%cabinet%')","1","0.6963858604431152","1.0"
+"Charades","0A8ZT.mp4","action_filtering","Does the person look at his phone?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(action) LIKE '%look%' AND LOWER(clothing) LIKE '%phone%')","0","0.70619797706604","0.0"
+"Charades","0A8ZT.mp4","distinct_attribute_set","List all colors of the bedsheet","blue, white","IoU","SELECT DISTINCT b.bedding_type FROM bed_data b WHERE LOWER(b.bedding_type) LIKE '%' || LOWER('color') || '%';","plaid pattern, blue and white colors,plaid pattern, blue and green colors,checkered pattern, light colors","0.44782400131225586","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","existence","Is there a goalkeeper?","1","equals","SELECT EXISTS (SELECT 1 FROM goalkeeper_data)","1","4.971292734146118","1.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","existence_one_filter","Is there a white goal post?","1","equals","SELECT EXISTS (SELECT 1 FROM goalpost_data WHERE LOWER(color) LIKE '%white%')","1","0.5104408264160156","1.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","existence_multi_filter","Is there a red advertisement with 'Fly Emirates'?","1","equals","SELECT EXISTS (SELECT 1 FROM crowd_data WHERE LOWER(demographics) LIKE '%fly emirates%' AND LOWER(location) LIKE '%red%')","0","2.6513431072235107","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","frame_retrieval","What is the first frame the ball moves?","6","range","SELECT MIN(frame_id) FROM ball_data WHERE location LIKE '%move%'","None","0.3318812847137451","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","attribute_retrieval","What is the color of the goalkeeper's jersey?","black jersey","IoU","SELECT DISTINCT g.clothing FROM goalkeeper_data g","different sports uniform,black goalkeeper kit,goalkeeper kit,black goalkeeper jersey,soccer kit (goalkeeper uniform),goalkeeper jersey and gloves,green uniform,goalkeeper kit, gloves,green jersey,goalkeeper uniform,wearing a goalkeeper kit, gloves,goalkeeper uniform (black color),goalkeeper jersey, gloves,soccer uniform (shirt and shorts), goalkeeper gloves,goalkeeper jersey,wearing a goalkeeper kit,black jersey,black jersey, gloves,black kit,blue jersey,blue jersey, shorts, goalkeeper gloves,green jersey, shorts, gloves,black jersey, shorts,green goalkeeper jersey, gloves","0.3936758041381836","0.05"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","range","Does the ball hit the goal after frame 6?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM ball_data b
+    INNER JOIN goalpost_data g 
+    ON b.video_id = g.video_id AND b.frame_id = g.frame_id
+    WHERE b.frame_id > 6
+    AND LOWER(b.location) LIKE '%goal%'
+);","0","1.1059598922729492","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","counting","How many players are there?","3","equals","SELECT COUNT(DISTINCT object_id) FROM player_data","3","0.3395509719848633","1.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","temporal_conditions","Does the player run before shooting?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM player_data 
+    WHERE action LIKE '%run%' 
+    AND video_id IN (
+        SELECT video_id 
+        FROM player_data 
+        WHERE action LIKE '%shoot%'
+    )
+)","0","0.6578378677368164","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","object_co_occurence","Do four people ever appear in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM player_data p1
+    INNER JOIN player_data p2 ON p1.video_id = p2.video_id AND p1.frame_id = p2.frame_id AND p1.object_id <> p2.object_id
+    INNER JOIN player_data p3 ON p1.video_id = p3.video_id AND p1.frame_id = p3.frame_id AND p3.object_id NOT IN (p1.object_id, p2.object_id)
+    INNER JOIN player_data p4 ON p1.video_id = p4.video_id AND p1.frame_id = p4.frame_id AND p4.object_id NOT IN (p1.object_id, p2.object_id, p3.object_id)
+)","0","1.5781829357147217","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","attribute_comparison","Are there more than one goalkeepers?","0","equals","SELECT EXISTS (SELECT 1 FROM goalkeeper_data GROUP BY object_id HAVING COUNT(object_id) > 1)","1","0.4094510078430176","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","negation","Is there a frame without the goalkeeper?","0","equals","SELECT EXISTS (SELECT 1 FROM player_data p LEFT JOIN goalkeeper_data g ON p.video_id = g.video_id AND p.frame_id = g.frame_id WHERE g.object_id IS NULL)","0","0.550051212310791","1.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","category_frequency","What color bibs are most of the stewards wearing?","orange","IoU","SELECT clothing FROM player_data 
+WHERE LOWER(action) LIKE '%steward%' 
+GROUP BY clothing 
+ORDER BY COUNT(*) DESC 
+LIMIT 1;","","0.6786019802093506","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","relative_location","Which direction does the goal dive?","left","equals","SELECT location FROM goalkeeper_data WHERE LOWER(action) LIKE '%dive%'","E,r,r,o,r,:, ,n,o, ,s,u,c,h, ,c,o,l,u,m,n,:, ,a,c,t,i,o,n","0.40680575370788574","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","action_filtering","Does the player score?","1","equals","SELECT EXISTS (SELECT 1 FROM player_data WHERE action LIKE '%score%')","0","0.512488842010498","0.0"
+"UCF101","v_SoccerPenalty_g20_c03.mp4","distinct_attribute_set","List all the distinct colors of jerseys?","black jersey, blue jersey","IoU","SELECT DISTINCT clothing FROM player_data WHERE clothing IS NOT NULL
+UNION
+SELECT DISTINCT clothing FROM goalkeeper_data WHERE clothing IS NOT NULL
+UNION
+SELECT DISTINCT color FROM ball_data WHERE color IS NOT NULL
+UNION
+SELECT DISTINCT color FROM goalpost_data WHERE color IS NOT NULL;","black and white,black and white pattern,black goalkeeper jersey,black goalkeeper kit,black jersey,black jersey, gloves,black jersey, shorts,black kit,black uniform,blue jersey,blue jersey, shorts,blue jersey, shorts, cleats,blue jersey, shorts, goalkeeper gloves,blue kit,blue soccer kit,different sports uniform,goalkeeper jersey,goalkeeper jersey and gloves,goalkeeper jersey, gloves,goalkeeper kit,goalkeeper kit, gloves,goalkeeper uniform,goalkeeper uniform (black color),green goalkeeper jersey, gloves,green jersey,green jersey, shorts, gloves,green uniform,jersey and shorts,jersey and shorts, cleats,red jersey,soccer jersey and shorts,soccer kit,soccer kit (attacker uniform),soccer kit (goalkeeper uniform),soccer uniform,soccer uniform (jersey, shorts, cleats),soccer uniform (shirt and shorts),soccer uniform (shirt and shorts), goalkeeper gloves,soccer uniform (team colors not visible),sports uniform,team jersey and shorts,team jersey, shorts, cleats,uniform,wearing a goalkeeper kit,wearing a goalkeeper kit, gloves,wearing a jersey and shorts,white,white frame,white jersey,white jersey with shorts,white jersey, shorts, cleats,white netting,white with black markings,white with black patches","1.0228471755981445","0.0425531914893617"
+"UCF101","v_Basketball_g16_c02.mp4","existence","Is there a hoop?","1","equals","SELECT EXISTS (SELECT 1 FROM basketball_hoop_data)","1","0.37722206115722656","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","existence_one_filter","Is there a person wearing white shoes?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(clothing) LIKE '%white shoes%')","0","0.4235830307006836","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","existence_multi_filter","Is there a person with a white jersey and the number 32 on the jersey?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(clothing) LIKE '%white%' AND LOWER(action) LIKE '%32%')","0","0.4940962791442871","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","frame_retrieval","What is the first frame he throws the ball?","3","range","SELECT MIN(bd.frame_id) 
+FROM basketball_data bd 
+INNER JOIN person_data pd ON bd.video_id = pd.video_id AND bd.frame_id = pd.frame_id 
+WHERE LOWER(pd.action) LIKE '%throw%'","None","1.2302842140197754","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","attribute_retrieval","What color is the trash can?","green","IoU","SELECT color FROM trash_can_data","green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green,green","0.40938687324523926","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","range","Does the person walk towards the hoop before frame 6?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data p
+    INNER JOIN basketball_hoop_data b ON p.video_id = b.video_id AND p.frame_id < 6
+    WHERE LOWER(p.action) LIKE '%walk%' AND LOWER(b.position) LIKE '%hoop%'
+)","0","0.8165979385375977","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","counting","How many distinct trees are there?","3","equals","SELECT COUNT(DISTINCT object_id) FROM tree_data","3","0.30556321144104004","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","temporal_conditions","Does the person dribble before shooting?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data pd 
+    WHERE LOWER(pd.action) LIKE '%dribble%' 
+    AND EXISTS (
+        SELECT 1 
+        FROM person_data pd2 
+        WHERE LOW pfllower(pd2.action) LIKE '%shoot%' 
+        AND pd2.video_id = pd.video_id 
+        AND pd2.frame_id > pd.frame_id
+    )
+)","E,r,r,o,r,:, ,n,e,a,r, ,"",p,f,l,l,o,w,e,r,"",:, ,s,y,n,t,a,x, ,e,r,r,o,r","0.9165148735046387","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","object_co_occurence","Does the basketball and trash can appear in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM basketball_data AS b 
+    INNER JOIN trash_can_data AS t 
+    ON b.video_id = t.video_id AND b.frame_id = t.frame_id
+)","1","0.8230500221252441","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","attribute_comparison","Does the basketball enter the hoop multiple times?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM basketball_data b
+    INNER JOIN basketball_hoop_data h ON b.video_id = h.video_id AND b.frame_id = h.frame_id
+    GROUP BY b.video_id, b.frame_id
+    HAVING COUNT(b.object_id) > 1
+)","0","0.8192012310028076","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","negation","Is there a frame without the person?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE video_id IS NULL)","0","0.3875582218170166","0.0"
+"UCF101","v_Basketball_g16_c02.mp4","category_frequency","What is the most common color of basketball?","orange","IoU","SELECT color FROM basketball_data GROUP BY color ORDER BY COUNT(*) DESC LIMIT 1;","orange","0.42957377433776855","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","relative_location","Is the trash can to the right of the person?","1","equals","SELECT EXISTS (
+    SELECT 1
+    FROM person_data p
+    JOIN trash_can_data t ON p.video_id = t.video_id AND p.frame_id = t.frame_id
+    WHERE LOWER(t.location) LIKE '%right%'
+    AND p.video_id IS NOT NULL
+)","1","0.9227499961853027","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","action_filtering","Is the person ever dribbling the basketball?","1","equals","SELECT EXISTS (SELECT 1 
+FROM person_data pd 
+INNER JOIN basketball_data bd ON pd.video_id = bd.video_id AND pd.frame_id = bd.frame_id 
+WHERE LOWER(pd.action) LIKE '%dribble%' OR LOWER(pd.action) LIKE '%dribbling%')","1","0.5992660522460938","1.0"
+"UCF101","v_Basketball_g16_c02.mp4","distinct_attribute_set","List the distinct of the person's outfit","blue, white","IoU","SELECT DISTINCT clothing FROM person_data","blue shorts and a white tank top,blue jersey and shorts,light blue jersey and shorts,blue tank top and shorts,white tank top and blue shorts,[""red cap"", ""white tank top"", ""blue shorts""],white and blue jersey, shorts,white and blue jersey,sleeveless shirt and shorts,white shirt and blue shorts,white sleeveless shirt, blue shorts,blue shorts and a white shirt,blue shorts,blue shorts and a dark shirt,blue shorts and a t-shirt,tank top and shorts,white tank top, blue shorts,blue shorts, white tank top,shorts and a t-shirt,white tank top with number 12, shorts,white jersey with number 32, shorts,white shirt, blue shorts,white shirt and blue jeans,shorts and a tank top","0.30947399139404297","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","existence","Is there a vending machine?","1","equals","SELECT EXISTS (SELECT 1 FROM vending_machine_data)","1","0.4767439365386963","1.0"
+"UCF101","v_Lunges_g19_c02.mp4","existence_one_filter","Are there black dumbells?","1","equals","SELECT EXISTS (SELECT 1 FROM gym_equipment_data WHERE LOWER(type) LIKE '%dumbbell%' AND LOWER(color) LIKE '%black%')","1","0.5104329586029053","1.0"
+"UCF101","v_Lunges_g19_c02.mp4","existence_multi_filter","Is there a weight machine on the blue mat?","1","equals","SELECT EXISTS (SELECT 1 FROM gym_equipment_data WHERE LOWER(type) LIKE '%weight machine%' AND LOWER(location) LIKE '%blue mat%')","0","0.6861410140991211","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","frame_retrieval","What is the first frame where the person wearing the gray shirt appears?","1","range","SELECT MIN(frame_id) FROM person_data WHERE LOWER(clothing) LIKE '%gray%';","4.56","0.45256519317626953","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","attribute_retrieval","What is the color is the outfit of the person with the dumbells?","black","IoU","SELECT DISTINCT g.color 
+FROM person_data p 
+INNER JOIN gym_equipment_data g ON p.video_id = g.video_id AND p.frame_id = g.frame_id 
+WHERE LOWER(g.type) LIKE '%dumbbell%' AND LOWER(p.clothing) IS NOT NULL;","None,black,metallic,metal,gray,metallic finish","0.6385741233825684","0.16666666666666666"
+"UCF101","v_Lunges_g19_c02.mp4","range","Is the person lunging before frame 3?","1","equals","SELECT EXISTS (SELECT 1 
+                FROM person_data 
+                WHERE action LIKE '%lunging%' 
+                AND frame_id < 3)","1","0.4320249557495117","1.0"
+"UCF101","v_Lunges_g19_c02.mp4","counting","How many people are in the gym?","4","equals","SELECT COUNT(DISTINCT pd.object_id) FROM person_data pd INNER JOIN gym_equipment_data ged ON pd.video_id = ged.video_id AND pd.frame_id = ged.frame_id;","4","0.5873870849609375","1.0"
+"UCF101","v_Lunges_g19_c02.mp4","temporal_conditions","Does the person lunge with his left leg before his right leg?","1","equals","SELECT EXISTS (
+    SELECT 1 
+    FROM person_data 
+    WHERE action LIKE '%lunge%' AND (action LIKE '%left leg%' OR action LIKE '%right leg%')
+)","0","0.7552840709686279","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","object_co_occurence","Do dumbells and the vending machine exist in the same frame?","1","equals","SELECT EXISTS (
+    SELECT 1
+    FROM gym_equipment_data g
+    INNER JOIN vending_machine_data v ON g.video_id = v.video_id AND g.frame_id = v.frame_id
+    WHERE LOWER(g.type) LIKE '%dumbell%'
+)","0","0.785930871963501","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","attribute_comparison","Are there multiple workout machines in the video?","1","equals","SELECT EXISTS (SELECT 1 FROM gym_equipment_data WHERE LOWER(type) LIKE '%machine%')","1","0.47858119010925293","1.0"
+"UCF101","v_Lunges_g19_c02.mp4","negation","Is there a frame with no dumbells?","0","equals","SELECT EXISTS (
+    SELECT 1
+    FROM person_data p
+    LEFT JOIN gym_equipment_data g ON p.video_id = g.video_id AND p.frame_id = g.frame_id
+    WHERE g.type IS NULL OR LOWER(g.type) NOT LIKE '%dumbell%'
+)","1","1.0807569026947021","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","category_frequency","What is the most common color of clothing worn by people?","black","IoU","SELECT clothing FROM person_data GROUP BY clothing ORDER BY COUNT(*) DESC LIMIT 1;","black shirt and shorts","0.35311007499694824","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","relative_location","Is the vending machine behind the person holding dumbells?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data pd
+INNER JOIN vending_machine_data vm ON pd.video_id = vm.video_id AND pd.frame_id = vm.frame_id
+WHERE LOWER(pd.action) LIKE '%holding%' AND LOWER(pd.clothing) LIKE '%dumbell%' AND LOWER(vm.location) LIKE '%behind%')","0","0.8184018135070801","0.0"
+"UCF101","v_Lunges_g19_c02.mp4","action_filtering","Is there a person walking?","1","equals","SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(action) LIKE '%walking%')","1","0.512721061706543","1.0"
+"UCF101","v_Lunges_g19_c02.mp4","distinct_attribute_set","List the distinct colors of gym equipment","black, silver, blue, gray","IoU","SELECT DISTINCT color FROM gym_equipment_data","silver,dark,None,blue,black,metallic,metal,various colors,grey,gray and black,gray,black and silver,metallic finish,white","0.4065830707550049","0.2857142857142857"

@@ -1,0 +1,136 @@
+dataset,video_id,category,nl_query,ground_truth,comparator
+BDD,00afa5b2-c14a542f.mov,existence,Is there a truck in the video?,0,equals
+BDD,00afa5b2-c14a542f.mov,existence_one_filter,Is there a black SUV in the video?,1,equals
+BDD,00afa5b2-c14a542f.mov,existence_multi_filter,Is there a black SUV with license plate 'T670483C'?,1,equals
+BDD,00afa5b2-c14a542f.mov,frame_retrieval,What is the first frame in the video where the traffic signal turns red?,7,range
+BDD,00afa5b2-c14a542f.mov,attribute_retrieval,What is the licence plate of the black SUV?,T670483C',IoU
+BDD,00afa5b2-c14a542f.mov,range,Is there a a pedestrian wearing a red bagpack after frame 10?,1,equals
+BDD,00afa5b2-c14a542f.mov,counting,How many taxis are in the video?,2,equals
+BDD,00afa5b2-c14a542f.mov,temporal_conditions,Does the black SUV move after the signal is green?,1,equals
+BDD,00afa5b2-c14a542f.mov,object_co_occurence,Does the brick exterior building appear with a Black SUV in the same frame?,1,equals
+BDD,00afa5b2-c14a542f.mov,attribute_comparison,Are there two cars of different colors?,1,equals
+BDD,00afa5b2-c14a542f.mov,negation,Is there a frame with no vehicles?,0,equals
+BDD,00afa5b2-c14a542f.mov,category_frequency,Which color of vehicle is most common?,black,IoU
+BDD,00afa5b2-c14a542f.mov,relative_location,Is the pedestrian wearing a red bagpack to the right of the black SUV?,1,equals
+BDD,00afa5b2-c14a542f.mov,action_filtering,Is there a pedestrian walking?,1,equals
+BDD,00afa5b2-c14a542f.mov,distinct_attribute_set,List all the distinct colors of cars,"black, gray, yellow, silver",IoU
+BDD,00a2f5b6-d4217a96.mov,existence,Is there an SUV?,1,equals
+BDD,00a2f5b6-d4217a96.mov,existence_one_filter,Is there a black mercedes?,1,equals
+BDD,00a2f5b6-d4217a96.mov,existence_multi_filter,Is there a black SUV with a license plate 'M777198'?,1,equals
+BDD,00a2f5b6-d4217a96.mov,frame_retrieval,What is the last frame where we see the black sedan?,37,range
+BDD,00a2f5b6-d4217a96.mov,attribute_retrieval,What brand of car is the black sedan?,Mercedes,IoU
+BDD,00a2f5b6-d4217a96.mov,range,Is there pedestrian wearing a blue shirt after frame 30?,1,equals
+BDD,00a2f5b6-d4217a96.mov,counting,How many black vehicles are there in the video?,5,equals
+BDD,00a2f5b6-d4217a96.mov,temporal_conditions,Does the man wearing gray finish crossing before the signal turns green?,1,equals
+BDD,00a2f5b6-d4217a96.mov,object_co_occurence,Is there a truck and a man wearing a white shirt in the same frame?,1,equals
+BDD,00a2f5b6-d4217a96.mov,attribute_comparison,Are there two pedestrians wearing the same color?,0,equals
+BDD,00a2f5b6-d4217a96.mov,negation,Is there a frame with no trees?,0,equals
+BDD,00a2f5b6-d4217a96.mov,category_frequency,Which traffic sign appears the most frequently?,one way,IoU
+BDD,00a2f5b6-d4217a96.mov,relative_location,Is the truck to the left of the black SUV?,1,equals
+BDD,00a2f5b6-d4217a96.mov,action_filtering,Does a vehicle turn right?,1,equals
+BDD,00a2f5b6-d4217a96.mov,distinct_attribute_set,List all the distinct license plates of black cars,"YH 01', 'M777198'",IoU
+BDD,00abf44e-04004ca0.mov,existence,Is there an aeroplane?,1,equals
+BDD,00abf44e-04004ca0.mov,existence_one_filter,Is there a person who is cycling?,1,equals
+BDD,00abf44e-04004ca0.mov,existence_multi_filter,Is there a person wearing white who is cycling?,1,equals
+BDD,00abf44e-04004ca0.mov,frame_retrieval,What is the last frame we see an airplane?,11,range
+BDD,00abf44e-04004ca0.mov,attribute_retrieval,What color shirt is the person cycling wearing?,white,IoU
+BDD,00abf44e-04004ca0.mov,range,Is there a person wearing black before frame 5?,1,equals
+BDD,00abf44e-04004ca0.mov,counting,How many people appear in the video?,3,equals
+BDD,00abf44e-04004ca0.mov,temporal_conditions,Does the blue vehicle appear before the cyclist?,1,equals
+BDD,00abf44e-04004ca0.mov,object_co_occurence,Do the silver car and plane ever appear in the same frame?,1,equals
+BDD,00abf44e-04004ca0.mov,attribute_comparison,Are there multiple cars with yellow license plates?,1,equals
+BDD,00abf44e-04004ca0.mov,negation,Is there a frame without pedestrians?,1,equals
+BDD,00abf44e-04004ca0.mov,category_frequency,Which color of traffic light appears for the most frames?,Red,IoU
+BDD,00abf44e-04004ca0.mov,relative_location,Is the construction equipment to the left of the road?,1,equals
+BDD,00abf44e-04004ca0.mov,action_filtering,Does a pedestrian cross the road?,1,equals
+BDD,00abf44e-04004ca0.mov,distinct_attribute_set,List all the distinct types of construction equipment in the video,dumpster,IoU
+Charades,0BWYH.mp4,existence,Are there cleaning supplies?,1,equals
+Charades,0BWYH.mp4,existence_one_filter,Are there white plates?,1,equals
+Charades,0BWYH.mp4,existence_multi_filter,Are there wooden countertops with handles?,1,equals
+Charades,0BWYH.mp4,frame_retrieval,What is the first frame where the person starts to sneeze?,7,range
+Charades,0BWYH.mp4,attribute_retrieval,What color is the person's pants?,brown,IoU
+Charades,0BWYH.mp4,range,Does the person sneeze before frame 14?,1,equals
+Charades,0BWYH.mp4,counting,How many times does the person sneeze?,2,equals
+Charades,0BWYH.mp4,temporal_conditions,Does the person put something back into the shelf before he sneezes?,1,equals
+Charades,0BWYH.mp4,object_co_occurence,Is there a pack of bread and a toaster in the video?,1,equals
+Charades,0BWYH.mp4,attribute_comparison,Are there multiple bowls in the video?,1,equals
+Charades,0BWYH.mp4,negation,Is there more than one person in the video?,0,equals
+Charades,0BWYH.mp4,category_frequency,What color of container is the most common?,yellow,IoU
+Charades,0BWYH.mp4,relative_location,Is the fridge located to the right to the person?,1,equals
+Charades,0BWYH.mp4,action_filtering,Does the person move?,1,equals
+Charades,0BWYH.mp4,distinct_attribute_set,List the colors on the persons shirt,"yellow, white, gray",IoU
+Charades,0BH84.mp4,existence,Is there a door?,1,equals
+Charades,0BH84.mp4,existence_one_filter,Is there a blue plate in the video?,1,equals
+Charades,0BH84.mp4,existence_multi_filter,Is there a person wearing a red shirt talking on the phone?,1,equals
+Charades,0BH84.mp4,frame_retrieval,What is the first frame the person smiles?,4,range
+Charades,0BH84.mp4,attribute_retrieval,What is the beverage?,milk,IoU
+Charades,0BH84.mp4,range,Is the kitchen visible before frame 2?,0,equals
+Charades,0BH84.mp4,counting,How many buttons are on the person's shirt?,5,equals
+Charades,0BH84.mp4,temporal_conditions,Does the person drink the beverage before smiling?,1,equals
+Charades,0BH84.mp4,object_co_occurence,Are the milk and phone visible in the same frame?,1,equals
+Charades,0BH84.mp4,attribute_comparison,Are there multiple doors in the video?,1,equals
+Charades,0BH84.mp4,negation,Is there a frame without the person?,0,equals
+Charades,0BH84.mp4,category_frequency,What color of beverage is the most common?,white,IoU
+Charades,0BH84.mp4,relative_location,Is the kitchen to the right of the person?,1,equals
+Charades,0BH84.mp4,action_filtering,Does the person drink?,,equals
+Charades,0BH84.mp4,distinct_attribute_set,List the distinct colors of doors,"brown, yellow",IoU
+Charades,0A8ZT.mp4,existence,Is there a bed?,1,equals
+Charades,0A8ZT.mp4,existence_one_filter,Is there a bottle with a dark liquid?,1,equals
+Charades,0A8ZT.mp4,existence_multi_filter,Is there a black cabinet with a photo frame?,1,equals
+Charades,0A8ZT.mp4,frame_retrieval,What is the frame the person holds his phone,28,range
+Charades,0A8ZT.mp4,attribute_retrieval,What is the color of the person's beanie,black,IoU
+Charades,0A8ZT.mp4,range,Is there a dark bottle visible before frame 10,1,equals
+Charades,0A8ZT.mp4,counting,How many items are on top of the cabinet?,3,equals
+Charades,0A8ZT.mp4,temporal_conditions,Does the person pour before drinking?,1,equals
+Charades,0A8ZT.mp4,object_co_occurence,Does the bed and drink appear in the same frame?,1,equals
+Charades,0A8ZT.mp4,attribute_comparison,Are there multiple vases in the video?,1,equals
+Charades,0A8ZT.mp4,negation,Is there a frame without the person?,0,equals
+Charades,0A8ZT.mp4,category_frequency,What color of cabinet is the most common?,black,IoU
+Charades,0A8ZT.mp4,relative_location,Is the vase on top of the cabinet?,1,equals
+Charades,0A8ZT.mp4,action_filtering,Does the person look at his phone?,1,equals
+Charades,0A8ZT.mp4,distinct_attribute_set,List all colors of the bedsheet,"blue, white",IoU
+UCF101,v_SoccerPenalty_g20_c03.mp4,existence,Is there a goalkeeper?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,existence_one_filter,Is there a white goal post?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,existence_multi_filter,Is there a red advertisement with 'Fly Emirates'?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,frame_retrieval,What is the first frame the ball moves?,6,range
+UCF101,v_SoccerPenalty_g20_c03.mp4,attribute_retrieval,What is the color of the goalkeeper's jersey?,black jersey,IoU
+UCF101,v_SoccerPenalty_g20_c03.mp4,range,Does the ball hit the goal after frame 6?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,counting,How many players are there?,3,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,temporal_conditions,Does the player run before shooting?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,object_co_occurence,Do four people ever appear in the same frame?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,attribute_comparison,Are there more than one goalkeepers?,0,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,negation,Is there a frame without the goalkeeper?,0,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,category_frequency,What color bibs are most of the stewards wearing?,orange,IoU
+UCF101,v_SoccerPenalty_g20_c03.mp4,relative_location,Which direction does the goal dive?,left,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,action_filtering,Does the player score?,1,equals
+UCF101,v_SoccerPenalty_g20_c03.mp4,distinct_attribute_set,List all the distinct colors of jerseys?,"black jersey, blue jersey",IoU
+UCF101,v_Basketball_g16_c02.mp4,existence,Is there a hoop?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,existence_one_filter,Is there a person wearing white shoes?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,existence_multi_filter,Is there a person with a white jersey and the number 32 on the jersey?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,frame_retrieval,What is the first frame he throws the ball?,3,range
+UCF101,v_Basketball_g16_c02.mp4,attribute_retrieval,What color is the trash can?,green,IoU
+UCF101,v_Basketball_g16_c02.mp4,range,Does the person walk towards the hoop before frame 6?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,counting,How many distinct trees are there?,3,equals
+UCF101,v_Basketball_g16_c02.mp4,temporal_conditions,Does the person dribble before shooting?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,object_co_occurence,Does the basketball and trash can appear in the same frame?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,attribute_comparison,Does the basketball enter the hoop multiple times?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,negation,Is there a frame without the person?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,category_frequency,What is the most common color of basketball?,orange,IoU
+UCF101,v_Basketball_g16_c02.mp4,relative_location,Is the trash can to the right of the person?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,action_filtering,Is the person ever dribbling the basketball?,1,equals
+UCF101,v_Basketball_g16_c02.mp4,distinct_attribute_set,List the distinct of the person's outfit,"blue, white",IoU
+UCF101,v_Lunges_g19_c02.mp4,existence,Is there a vending machine?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,existence_one_filter,Are there black dumbells?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,existence_multi_filter,Is there a weight machine on the blue mat?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,frame_retrieval,What is the first frame where the person wearing the gray shirt appears?,1,range
+UCF101,v_Lunges_g19_c02.mp4,attribute_retrieval,What is the color is the outfit of the person with the dumbells?,black,IoU
+UCF101,v_Lunges_g19_c02.mp4,range,Is the person lunging before frame 3?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,counting,How many people are in the gym?,4,equals
+UCF101,v_Lunges_g19_c02.mp4,temporal_conditions,Does the person lunge with his left leg before his right leg?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,object_co_occurence,Do dumbells and the vending machine exist in the same frame?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,attribute_comparison,Are there multiple workout machines in the video?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,negation,Is there a frame with no dumbells?,0,equals
+UCF101,v_Lunges_g19_c02.mp4,category_frequency,What is the most common color of clothing worn by people?,black,IoU
+UCF101,v_Lunges_g19_c02.mp4,relative_location,Is the vending machine behind the person holding dumbells?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,action_filtering,Is there a person walking?,1,equals
+UCF101,v_Lunges_g19_c02.mp4,distinct_attribute_set,List the distinct colors of gym equipment,"black, silver, blue, gray",IoU
