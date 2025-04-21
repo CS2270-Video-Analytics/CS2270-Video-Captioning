@@ -92,27 +92,29 @@ class VideoQueryPipeline():
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
         pdb.set_trace()
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
-        if not is_sufficient and existing_tables_attributes_dict and Config.text2column_enabled:
-            raise NotImplementedError("Error: not yet implemented text2column")
-        elif not is_sufficient and not existing_tables_attributes_dict:
-            raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
+        if Config.text2column_enabled:
+            if not is_sufficient and existing_tables_attributes_dict:
+                raise NotImplementedError("Error: not yet implemented text2column")
+            elif not is_sufficient and existing_tables_attributes_dict is None:
+                raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         
         #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
-        if not is_sufficient and new_tables_attributes_dict and Config.table_reboot_enabled:
+        if Config.table_reboot_enabled:
+            if not is_sufficient and new_tables_attributes_dict:
 
-            unique_video_ids, unique_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids()
-            
-            for video_id in unique_video_ids:
-                async for sql_batch, __ in self.video_processor.process_single_video(video_path=Config.video_path, video_id=video_id, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_attributes_dict=new_tables_attributes_dict, specific_frames=unique_frame_ids, reboot=True):
-                    self.sql_dbs.insert_column_data(table_name=Config.caption_table_name, col_name=Config.temp_col_name, col_type=Config.temp_col_type, data=sql_batch)
+                unique_video_ids, unique_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids()
+                
+                for video_id in unique_video_ids:
+                    async for sql_batch, __ in self.video_processor.process_single_video(video_path=os.path.join(Config.video_path, video_id), video_id=video_id, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_attributes_dict=new_tables_attributes_dict, specific_frames=unique_frame_ids, reboot=True):
+                        self.sql_dbs.insert_column_data(table_name=Config.caption_table_name, col_name=Config.temp_col_name, col_type=Config.temp_col_type, data=sql_batch)
 
-            for new_table_name in new_tables_attributes_dict.keys():
-                table_schema = {key: "TEXT" for key in new_tables_attributes_dict[new_table_name]}
-                self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=table_schema, table_prim_key=Config.processed_table_pk)
-                await self.run_text2table(new_structured_table_name=new_table_name, reboot=True)
+                for new_table_name in new_tables_attributes_dict.keys():
+                    table_schema = {key: "TEXT" for key in new_tables_attributes_dict[new_table_name]}
+                    self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=table_schema, table_prim_key=Config.processed_table_pk)
+                    await self.run_text2table(new_structured_table_name=new_table_name, reboot=True)
 
-        elif not is_sufficient and not new_tables_attributes_dict:
-            raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
+            elif not is_sufficient and not new_tables_attributes_dict:
+                raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         pdb.set_trace()
         #check query after rebooting once
         if not is_sufficient:
@@ -166,7 +168,7 @@ if __name__ == '__main__':
     # print("SYSTEM RESPONSE: ", result)
 
     #PART 3: MISSING TABLE QUERY FOR VIDEO
-    question = "How many frames contain a black German Shepherd dogs and a black car?"
+    question = "When does the weather first become sunny after the first 5 frames?"
     start_time = time.time()
     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     end_time = time.time()

@@ -333,8 +333,8 @@ class Config:
         Other instructions:
         1. for the SQL query, only output a valid query with correct syntax that's executable without any additional text like prefix, suffix or formatting like ```sql, ```
         2. if the table name and attributes are semantically relevant to answering the question then try to use existing tables and attributes to answer user's question. Don't force using current tables and attributes if they don't fit.
-        3. if table or tables are semantically relevant to answering the question but certain necessary attributes are missing, then include these attributes in the SQL query
-        4. if no tables are relevant to answering the question, then include new tables and their attributes that are necessary e.g. if user asks about dogs but there is no animal related tables, create a new animal table.
+        3. if table or tables are semantically relevant to answering the question but certain necessary attributes are missing, then include these attributes in the SQL query. Do not try to add a new attribute, assume the attributes already exist.
+        4. if no tables are relevant to answering the question, then include new tables and their attributes that are necessary. Do not output a table creation statement, assume the new table already exists.
         4. if possible duplicate, deduplicate
         5. try using like instead of = for filtering
         6. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
@@ -502,7 +502,7 @@ class Config:
     #-------------------------------------------------------------------------
     # Input Video Settings
     #-------------------------------------------------------------------------
-    video_path = 'datasets/bdd'
+    video_path = 'datasets/bdd/'
     video_filename = '00afa5b2-c14a542f.mov'
 
     #-------------------------------------------------------------------------
