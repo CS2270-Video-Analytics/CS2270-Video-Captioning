@@ -100,7 +100,7 @@ class VideoQueryPipeline():
         #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
         if not is_sufficient and new_tables_attributes_dict and Config.table_reboot_enabled:
             
-            async for sql_batch, vector_batch in self.video_processor.process_single_video(video_path=None, video_id=None, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_tables_attributes_dict=new_tables_attributes_dict, frames_considered=None, reboot=True):
+            async for sql_batch, __ in self.video_processor.process_single_video(video_path=None, video_id=None, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_tables_attributes_dict=new_tables_attributes_dict, frames_considered=None, reboot=True):
                 self.sql_dbs.insert_column_data(table_name=Config.caption_table_name, col_name=Config.temp_col_name, col_type=Config.temp_col_type, data=sql_batch)
 
             for new_table_name in new_tables_attributes_dict.keys():
@@ -134,14 +134,14 @@ if __name__ == '__main__':
     import time
     start_time = time.time()
     query_pipeline = VideoQueryPipeline()
-    asyncio.run(query_pipeline.process_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
-    test_questions = [
-        "What frames have the cabinet in it?",
-    ]
-    for question in test_questions:
-        result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
-        print(f"Question: {question}")
-        print(f"Result: {result}")
-        print("------------------------")
-    end_time = time.time()
-    print(f"Time taken: {end_time - start_time}")
+    asyncio.run(query_pipeline.insert_single_video(video_path=Config.video_path, video_filename=Config.video_filename))
+    # test_questions = [
+    #     "What frames have the cabinet in it?",
+    # ]
+    # for question in test_questions:
+    #     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
+    #     print(f"Question: {question}")
+    #     print(f"Result: {result}")
+    #     print("------------------------")
+    # end_time = time.time()
+    # print(f"Time taken: {end_time - start_time}")
