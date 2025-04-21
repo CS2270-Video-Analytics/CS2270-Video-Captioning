@@ -271,16 +271,28 @@ class Config:
     def get_text2sql_prompt(schema_info: str, question: str) -> str:
         return f"""
         You are an AI thay converts user's natural language question into a SQL query with the context of 
-        existing table schemas below from a sqlite database. Based on user's question and existing tables' schemas
+        existing table schemas below from a **SQLite3** database.  database. Based on user's question and existing tables' schemas
         below, select all possible relevant tables and relevant attributes to the query to construct the SQL query. 
+
+        ### **Important SQLite Constraints:**
+        - Use **only INNER JOIN, LEFT JOIN, or CROSS JOIN** (no FULL OUTER JOIN).
+        - **No native JSON functions** (assume basic text handling).
+        - Data types are flexible; prefer **TEXT, INTEGER, REAL, and BLOB**.
+        - **BOOLEAN is represented as INTEGER** (0 = False, 1 = True).
+        - Use **LOWER()** for case-insensitive string matching.
+        - Primary keys auto-increment without `AUTOINCREMENT` unless explicitly required.
+        - Always assume **foreign key constraints are disabled unless explicitly turned on**.
         
         Note that:
         1. for the SQL query, only output a valid query that's executable without any additional text like prefix, suffix or formatting like ```sql, ```.
         2. for each table selected, only use existing columns and the column to use should make sense
-        3. can join relevant tables when necessary since video_id and frame_id are unique
-        4. if possible duplicate, deduplicate
-        5. try using like instead of = for filtering
-        6. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
+        3. use relevant tables and appropriate columns only.
+        4. can join relevant tables when necessary since video_id and frame_id are unique
+        5. if possible duplicate, deduplicate
+        6. try using like instead of = for filtering
+        7. For yes/no or "does there exist..." or "Is there..." questions, prefer using the `EXISTS` SQLite3 operator.
+            -  Make sure the `EXISTS` clause is always wrapped in a valid `SELECT` statement: `SELECT EXISTS (SELECT 1 FROM ... WHERE ...)`
+        8. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
 
         Database table schemas:
         {schema_info}
