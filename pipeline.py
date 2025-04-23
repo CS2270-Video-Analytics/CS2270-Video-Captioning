@@ -92,7 +92,6 @@ class VideoQueryPipeline():
         print(f"sql_query: {sql_query}")
         print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
-        # pdb.set_trace()
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
         if Config.text2column_enabled:
             if not is_sufficient and existing_tables_attributes_dict:
@@ -117,7 +116,6 @@ class VideoQueryPipeline():
 
             elif not is_sufficient and not new_tables_attributes_dict:
                 raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
-        pdb.set_trace()
         #check query after rebooting once
         if not is_sufficient:
             table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
@@ -130,7 +128,6 @@ class VideoQueryPipeline():
             print(f"sql_query: {sql_query}")
             print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
             print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
-            # pdb.set_trace()
         if is_sufficient:
             result = self.sql_dbs.execute_query(query = sql_query)
             return result
