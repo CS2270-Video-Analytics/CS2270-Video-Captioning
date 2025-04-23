@@ -269,15 +269,72 @@ class Config:
 
     @staticmethod
     def get_text2sql_prompt(schema_info: str, question: str) -> str:
-        return f"""
-        You are an AI thay converts user's natural language question into a SQL query with the context of 
-        existing table schemas below from a sqlite database. Based on user's question and existing tables' schemas
-        below, select all possible relevant tables and relevant attributes to the query to construct the SQL query. 
+        # return f"""
+        # You are an AI thay converts user's natural language question into a SQL query with the context of 
+        # existing table schemas below from a *SQLite3* database.  database. Based on user's question and existing tables' schemas
+        # below, select all possible relevant tables and relevant attributes to the query to construct the SQL query. 
+
+        # ### *Important SQLite Constraints:*
+        # - Use *only INNER JOIN, LEFT JOIN, or CROSS JOIN* (no FULL OUTER JOIN).
+        # - *No native JSON functions* (assume basic text handling).
+        # - Data types are flexible; prefer *TEXT, INTEGER, REAL, and BLOB*.
+        # - *BOOLEAN is represented as INTEGER* (0 = False, 1 = True).
+        # - Use *LOWER()* for case-insensitive string matching.
+        # - Primary keys auto-increment without AUTOINCREMENT unless explicitly required.
+        # - Always assume *foreign key constraints are disabled unless explicitly turned on*.
         
-        Note that:
-        1. for the SQL query, only output a valid query that's executable without any additional text like prefix, suffix or formatting like ```sql, ```.
-        2. for each table selected, only use existing columns and the column to use should make sense
-        3. can join relevant tables when necessary since video_id and frame_id are unique
+        # Note that:
+        # 1. for the SQL query, only output a valid query that's executable without any additional text like prefix, suffix or formatting like sql, .
+        # 2. for each table selected, only use existing columns and the column to use should make sense
+        # 3. use relevant tables and appropriate columns only.
+        # 4. can join relevant tables when necessary since video_id and frame_id are unique
+        # 5. if possible duplicate, deduplicate
+        # 6. try using like instead of = for filtering
+        # 7. For yes/no or "does there exist..." or "Is there..." questions, prefer using the EXISTS SQLite3 operator.
+        #     -  Make sure the EXISTS clause is always wrapped in a valid SELECT statement: SELECT EXISTS (SELECT 1 FROM ... WHERE ...)
+        # 8. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
+
+        # Database table schemas:
+        # {schema_info}
+
+        # User question:
+        # {question}
+
+        # SQL query:
+        # """
+        # return f"""
+        # You are an AI thay converts user's natural language question into a SQL query. 
+        # Given (1) user's natural language query and (2) the existing table name and table schemas (i.e., attributes) from a sqlite database, 
+        # formulate a SQL query to answer the user's question.
+        
+        # Note that:
+        # 1. for the SQL query, only output a valid query with correct syntax that's executable without any additional text like prefix, suffix or formatting like ```sql, ```
+        # 2. first try to use existing tables and attributes to answer the query as much as possible only if they are relevant
+        # 3. if existing tables are relevant(infer by name and existing attributes) but they are missing extra necessary attributes to answer the query, include these attributes in these tables
+        # 4. if existing tables are not relevant(infer by name and existing attributes), then create new tables with attributes that are necessary to answer the query
+        # 3. can join relevant tables when necessary since video_id and frame_id are unique
+        # 4. if possible duplicate, deduplicate
+        # 5. try using like instead of = for filtering
+        # 6. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
+
+        # Database table schemas:
+        # {schema_info}
+
+        # User question:
+        # {question}
+
+        # SQL query:
+        # """
+        return f"""
+        You are an AI thay converts user's natural language question into a SQL query. 
+        Given (1) user's question in natural language and (2) the existing table name and table schemas (i.e., attributes) from a sqlite database, 
+        formulate a SQL query to answer the user's question.
+        
+        Other instructions:
+        1. for the SQL query, only output a valid query with correct syntax that's executable without any additional text like prefix, suffix or formatting like ```sql, ```
+        2. if the table name and attributes are semantically relevant to answering the question then try to use existing tables and attributes to answer user's question. Don't force using current tables and attributes if they don't fit.
+        3. if table or tables are semantically relevant to answering the question but certain necessary attributes are missing, then include these attributes in the SQL query. Do not try to add a new attribute, assume the attributes already exist.
+        4. if no tables are relevant to answering the question, then include new tables and their attributes that are necessary. Do not output a table creation statement, assume the new table already exists.
         4. if possible duplicate, deduplicate
         5. try using like instead of = for filtering
         6. if multiple columns may contain the searching attributes and you are not sure, try use OR instead of AND for filtering
@@ -301,8 +358,8 @@ class Config:
 
     Output template:
     (1) Sufficient: <Yes | No> [ if the existing database have sufficient tables and associated attributes to answer the query]
-    (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes, else output None.
-    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query, else return {{}}.
+    (2) Attributes to add to existing tables: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if already existing tables such as table 1 and 2 are relevant to the query but miss key attributes. If existing tables can be used to answer the query, output {{}}.
+    (3) New tables and new attributes to create: {{table 1: [attribute 1, attribute 2, …], table 2: [attribute 1, attribute 2, …]}} if there are no existing tables in the database that can answer the query, which requires us to generate new ones with key attributes to answer the query. If existing tables can be used to answer the query, output {{}}.
 
     Other requirements:
     * If “Sufficient” is Yes, then both “Existing tables and attributes to add” and “New tables and new attributes to generate” should be None
@@ -393,18 +450,89 @@ class Config:
     max_schema_sufficiency_retries = 3
 
     #-------------------------------------------------------------------------
+    # Reboot New Table
+    #-------------------------------------------------------------------------
+    temp_col_name = 'focused_description'
+    temp_col_type = "TEXT"
+    table_reboot_enabled = True
+    # rebooting_caption_prompt_format = \
+    #     "Task: given (1) the current scene frame recorded from a camera angle and (2) a dictionary of key value pairs " \
+    #     "where the key is the category of objects we previously miss to capture in each frame and the value is the fixed set of key attributes of the object we want to capture, " \
+    #     "help me identify all the objects in the frame that belong to the missing categories and provide description for each object in the format below. " \
+    #     "Template: "\
+    #     "object id: start from 1, auto increment by identified object " \
+    #     "(1) category: object's category" \
+    #     "(2) attributes: object's attributes " \
+    #     "(3) action: action of the object " \
+    #     "(4) location: object's relative location to other key objects " \
+    #     "Note: " \
+    #     "- category is given from dictionary keys. If dictionary keys are person_data and furniture_data, then we would want to provide descriptions for all objects that are either person or furniture. " \
+    #     "- attributes is given from dictionary values. If dictionary key is person_data then this is the corresponding dictionary value of this key " \
+    #     "- you capture action from the frame and only include this if the category is a moving object (e.g., person, vehicle, animal) " \
+    #     "- you capture location from the frame" \
+    #     "Example: " \
+    #     "new_tables_attributes_dict: {{person_data: {{height, gender, hair color, clothing}}, furniture_data: {{type, color, materials, pattern}}}} " \
+    #     "object id: 1 " \
+    #     "(1) category: person (you obtain it from the dictionary)" \
+    #     "(2) attributes: short, female, black, white dress (you capture it based on wanted attributes for person)" \
+    #     "(3) action: walking (you capture it) " \
+    #     "(4) location: to the left of the chair (you capture it)" \
+    #     "object id: 2 " \
+    #     "(1) category: person (you obtain it from the dictionary)" \
+    #     "(2) attributes: tall, male, yellow, black shirt (you capture it based on wanted attributes for person)" \
+    #     "(3) action: sitting (you capture it) " \
+    #     "(4) location: to the right of the chair (you capture it)" \
+    #     "object id: 4 " \
+    #     "(1) category: furniture (you obtain it from the dictionary)" \
+    #     "(2) attributes: chair, black, wood, plain (you capture it based on wanted attributes for person)" \
+    #     "(3) location: in between two persons " \
+    #     "object id: 5 " \
+    #     "(1) category: furniture " \
+    #     "(2) attributes: table, black, wood, carved " \
+    #     "(3) location: next to two persons " \
+    #     "Task (for the current frame): " \
+    #     "new_tables_attributes_dict: {new_attributes_dict}" \
+    #     "object id:"
+    rebooting_caption_prompt_format = \
+        "Task: given the current frame recorded from a camera and a dictionary of key value pairs " \
+        "where the dictionary key is the topic/object we want to get information about and dictionary values are the set of attributes about the topic/object we want to capture, " \
+        "identify all instances of this topic/object in the current frame and provide description about the attributes in the format below. Only output the frame description without additional information." \
+        "Example: " \
+        "new_tables_attributes_dict: {{person_data: {{height, gender, hair color, clothing}}, weather_data: {{weather, temperature}}}} " \
+        "Topic/Object: person " \
+        "topic/object id: 1 " \
+        "Description: tall female with black hair and white dress " \
+        "Topic/Object: person " \
+        "topic/object id: 2 " \
+        "Description: tall male with yellow hair and black shirt " \
+        "Topic/Object: weather " \
+        "topic/object id: 3 " \
+        "Description: dark and cloudy with cool temperature " \
+        "Topic/Object: weather " \
+        "topic/object id: 4 " \
+        "Description: sunny with clouds with warm temperature " \
+        "Task (for the current frame): " \
+        "new_tables_attributes_dict: {new_attributes_dict} " \
+        "Topic/Object:" \
+
+    #-------------------------------------------------------------------------
+    # Reboot Text2Column
+    #-------------------------------------------------------------------------
+    text2column_enabled = False
+
+    #-------------------------------------------------------------------------
     # Input Video Settings
     #-------------------------------------------------------------------------
-    video_path = 'datasets/charades/'
-    video_filename = '013SD.mp4'
+    video_path = 'datasets/bdd/'
+    video_filename = '00afa5b2-c14a542f.mov'
 
     #-------------------------------------------------------------------------
     # Database settings
     #-------------------------------------------------------------------------
     sql_db_path = './database_integration/db_files/'
-    sql_db_name = video_filename + ".db"
+    sql_db_name = f"{video_filename}.db"
     db_path = os.path.join(sql_db_path, sql_db_name)
-    vec_db_path = './database_integration'
+    vec_db_path = './database_integration/db_files/'
     vec_db_name = video_filename + ".index"
     
     # Table definitions
@@ -414,11 +542,12 @@ class Config:
         'video_id': "TEXT NOT NULL", 
         'frame_id': "REAL NOT NULL", 
         'description': "TEXT NOT NULL", 
-        'vector_id': "INTEGER"
+        'vector_id': "INTEGER",
+        temp_col_name: temp_col_type
     }
     
     processed_table_name = "processed_video"
-    processed_table_pk = ['video_id', 'frame_id', 'object']
+    processed_table_pk = ['video_id', 'frame_id', 'object_id']
     processed_table_schema = {
         'video_id': "TEXT NOT NULL", 
         'frame_id': "REAL NOT NULL", 

@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 class SQLLiteDBInterface:
     def __init__(self, db_name: str, table_name_schema_dict: Optional[Dict] = None):
         # Connect to SQLite database (or create it if it doesn't exist)
+        if not os.path.exists(Config.sql_db_path):
+            os.makedirs(Config.sql_db_path)
         self.connection = sqlite3.connect(os.path.join(Config.sql_db_path, Config.sql_db_name if db_name is None else db_name))
         self.cursor = self.connection.cursor()
 
@@ -25,21 +27,37 @@ class SQLLiteDBInterface:
             self.table_name_schema_dict = self.extract_schema_dict()
 
         self.insertion_query = "INSERT OR IGNORE INTO {table_name} {table_schema} VALUES ({table_schema_value})"
+        self.add_col_query = "ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type} DEFAULT NULL;"
 
     def create_table(self):
         for (table_name, vals) in self.table_name_schema_dict.items():
             [schema, primary_keys] = vals 
-            self.cursor.execute(f'''
-                CREATE TABLE IF NOT EXISTS {table_name} (
-                    {','.join(key + ' ' + val for (key, val) in schema.items())},
-                    PRIMARY KEY ({','.join(primary_keys)})
-                ) 
-            ''')
-            self.connection.commit()
+            try:
+                create_table_query = f'''
+                    CREATE TABLE IF NOT EXISTS {table_name} (
+                        {', '.join(key + ' ' + val for (key, val) in schema.items())},
+                        PRIMARY KEY ({','.join(primary_keys)})
+                    ) 
+                '''
+                self.cursor.execute(create_table_query)
+                self.connection.commit()
+            except Exception as e:
+                raise RuntimeError(f"Error in create_table: {e}")
+        
 
     def add_new_table(self, table_name:str, table_schema:str, table_prim_key:str):
         self.table_name_schema_dict[table_name] = [table_schema, table_prim_key]
-        self.create_table()
+        try:
+                create_table_query = f'''
+                    CREATE TABLE IF NOT EXISTS {table_name} (
+                        {', '.join(key + ' ' + val for (key, val) in table_schema.items())},
+                        PRIMARY KEY ({','.join(table_prim_key)})
+                    ) 
+                '''
+                self.cursor.execute(create_table_query)
+                self.connection.commit()
+        except Exception as e:
+            raise RuntimeError(f"Error in create_table: {e}")
 
     def extract_schema_dict(self):
         # Get all user-defined table names (exclude internal SQLite tables)
@@ -98,6 +116,43 @@ class SQLLiteDBInterface:
             return self.cursor.fetchall()  # return all rows relevant to query
         except Exception as e:
             print(f"Error executing multiple queries: {e}")
+            return None
+    #NOTE: this is not used anymore but may be needed for future use
+    def create_column(self, table_name: str, col_name: str, col_type: str):
+        try:
+            #first alter table to create new column
+            add_col_query = self.add_col_query.format(table_name=table_name, col_name=col_name, col_type=col_type)
+            self.cursor.execute(add_col_query)
+            self.connection.commit()
+        except Exception as e:
+            if "duplicate column name" in e:
+                pass
+            else:
+                raise RuntimeError(f"Error in insert_columns: {e}")
+
+    def insert_column_data(self, table_name:str, col_name:str, col_type:str, data:list):
+        
+        try:
+            # 2. Create temporary update table
+            self.cursor.execute("DROP TABLE IF EXISTS temp;")
+            self.cursor.execute(f"CREATE TEMP TABLE temp (video_id TEXT, frame_id REAL, new_val {col_type});")
+
+            # 3. Insert values into temp
+            self.cursor.executemany("INSERT INTO temp (video_id, frame_id, new_val) VALUES (?, ?, ?);", data)
+
+            # 4. Update using a join
+            self.cursor.execute(f"""
+                UPDATE {table_name}
+                SET {col_name} = (
+                    SELECT new_val FROM temp WHERE temp.video_id = {table_name}.video_id AND temp.frame_id = {table_name}.frame_id
+                )
+                WHERE video_id IN (SELECT video_id FROM temp) AND frame_id IN (SELECT frame_id FROM temp);
+            """)
+            self.cursor.execute("DROP TABLE IF EXISTS temp;")
+            # 5. Finalize
+            self.connection.commit()
+        except Exception as e:
+            print(f"Error inserting columns {col_name} into table {table_name}")
             return None
 
     def insert_many_rows_list(self, table_name:str, rows_data: list):
@@ -191,3 +246,27 @@ class SQLLiteDBInterface:
 
         except Exception as e:
             return f"Error retrieving schemas: {str(e)}"
+    
+    def get_unique_video_and_frame_ids(self, db_path: str='video_frames.db'):
+        """
+        Retrieve all unique video_ids and frame_ids from the raw_videos table in the video_frames.db.
+
+        Parameters:
+            db_path (str): Path to the SQLite database file.
+
+        Returns:
+            List[Tuple]: A list of tuples, each containing a unique video_id and frame_id.
+        """
+
+        try:
+            # Execute a query to select unique video_id and frame_id
+            self.cursor.execute("SELECT DISTINCT video_id FROM raw_videos")
+            # Fetch all unique pairs of video_id and frame_id
+            unique_video_ids = [x[0] for x in self.cursor.fetchall()]
+            self.cursor.execute("SELECT DISTINCT frame_id FROM raw_videos")
+            unique_frame_ids = [x[0] for x in self.cursor.fetchall()]
+            
+            return unique_video_ids, unique_frame_ids
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return [], []
