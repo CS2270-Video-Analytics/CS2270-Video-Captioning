@@ -28,7 +28,7 @@ class VideoProcessor:
         # Ensure output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
     
-    async def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int, new_attributes_dict: dict={}, specific_frames: list = [], reboot: bool = False):
+    async def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int):
         """Process a single video file.
         
         Args:
@@ -39,7 +39,7 @@ class VideoProcessor:
             Number of processed frames
         """
         # Extract frames
-        frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video, specific_frames=specific_frames)
+        frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video)
         # Save frames to disk (optional)
         if Config.save_frames:
             self.extractor.save_frames(video_id, frames, self.output_dir)
@@ -54,23 +54,21 @@ class VideoProcessor:
                 timestamp, pil_img = frames[i]
                 to_tensor = transforms.ToTensor()
                 image_tensor = to_tensor(pil_img)
+
                 task = captioning_pipeline.run_pipeline(
                     data_stream=image_tensor,
                     video_id=video_id,
-                    frame_id=timestamp,
-                    new_attributes_dict=new_attributes_dict,
-                    reboot=reboot
+                    frame_id=timestamp
                 )
                 tasks.append(task)
                 curr_vec_idx += 1
 
             # Wait for all tasks in the current batch to complete
             results = await asyncio.gather(*tasks)
-            
+
             for result in results:
-                video_id, frame_id, description, object_list, image_embedding, focused_description = result
-                
-                sql_batch.append((video_id, frame_id, description, curr_vec_idx, focused_description) if not reboot else (video_id, frame_id, focused_description))
+                video_id, frame_id, description, object_list, image_embedding = result
+                sql_batch.append((video_id, frame_id, description, curr_vec_idx))
                 vector_batch.append(image_embedding)
 
             # Yield the batch results

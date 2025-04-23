@@ -1,7 +1,7 @@
 import sys
 import os
 from config.config import Config
-from typing import List, Dict, Optional
+from typing import List, Dict
 import re
 import json
 
@@ -25,7 +25,7 @@ class Text2TablePipeline():
         #store all prompts for text2table
         self.attribute_extraction_prompt = Config.text2table_attribute_extraction_prompt
         self.schema_extraction_prompt_format = Config.text2table_schema_generation_prompt
-        
+
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
@@ -223,7 +223,7 @@ class Text2TablePipeline():
         valid_json = self.extract_complete_json(text)
         return valid_json
     
-    async def run_pipeline_video(self, video_data: List[tuple], database_schema: str, reboot: bool = False):
+    async def run_pipeline_video(self, video_data: List[tuple], database_schema: str):
         # Parse schema to extract table and column structure
         parsed_db_schema = self.parse_db_schema(database_schema)
         
@@ -234,11 +234,11 @@ class Text2TablePipeline():
             tasks = []
             # Create tasks for each frame in the batch
             for i in range(batch_start, batch_end):
-                video_id, frame_id, caption, __, focused_caption = video_data[i]
-                
+                video_id, frame_id, caption, __ = video_data[i]
+
                 task = self.run_pipeline(
                     parsed_db_schema=parsed_db_schema,
-                    caption=caption if not reboot else focused_caption,
+                    caption=caption,
                     video_id=video_id,
                     frame_id=frame_id
                 )
@@ -249,8 +249,7 @@ class Text2TablePipeline():
             # Yield the batch results
             yield results
                 
-    async def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:str, frame_id:float):
-        
+    async def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
         json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
         # prompt = self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
         prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema = json_schema_template.replace("{frame_id}", f"{frame_id}").replace("{video_id}", f"{video_id}"))
@@ -261,16 +260,11 @@ class Text2TablePipeline():
         except Exception as e:
             print(f"Error in text2table inference: {e}")
             json_response = {}
-
         
         db_data_rows = {}
         for table, columns in parsed_db_schema.items():
             try:
                 records = json_response.get(table, [])
-                #for consistency ensure video and frame id are correct in response
-                for i in range(len(records)):
-                    records[i]['video_id'] = video_id
-                    records[i]['frame_id'] = frame_id
                 if not isinstance(records, list):
                     continue
                 if table not in db_data_rows:
@@ -281,6 +275,7 @@ class Text2TablePipeline():
             except Exception as e:
                 print(f"ERROR: skipped processing video {video_id} and frame {frame_id} - {e}")
                 continue
+
         return [db_data_rows]
     
     def close_connection(self):
