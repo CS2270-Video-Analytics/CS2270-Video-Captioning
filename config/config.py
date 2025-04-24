@@ -519,6 +519,7 @@ class Config:
     # Reboot Text2Column
     #-------------------------------------------------------------------------
     text2column_enabled = False
+    new_col_type = "TEXT"
 
     #-------------------------------------------------------------------------
     # Input Video Settings

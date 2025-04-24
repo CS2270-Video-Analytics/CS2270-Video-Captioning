@@ -109,6 +109,48 @@ class CaptioningPipeline():
         return [video_id, frame_id, description, self.object_set, None, 'NULL' if not reboot else description]
         
 
+    async def run_pipeline_attribute(self, data_stream: torch.Tensor, video_id:int, frame_id:int, new_attributes_dict: dict={}):
+        #(1) create prompt to describe specific attributes in the current frame
+        description_prompt = self.rebooting_prompt.format(new_attributes_dict = new_attributes_dict)
+
+        #(2) pass the model the captioning prompt for captioning
+        #TODO: figure out data streaming
+        
+        try:
+            description = await self.caption_model.run_inference(
+                data_stream = data_stream,
+                **dict(
+                    prompt = description_prompt,
+                    system_content = self.context_prompt,
+                    detail=self.caption_detail
+                )
+            )
+        except Exception as e:
+            print(f"Error from captioning model inference: {e}")
+            description = {}
+        #(3) process the new description: append into previous queue + pop out from queue if needed
+        self.previous_descriptions.append(description)
+        if len(self.previous_descriptions) > self.sliding_window_size:
+            self.previous_descriptions.popleft()
+        
+        #(4) generate a set of new objects in the current frame and add to the self.object_set
+        if Config.obj_focus and not reboot:
+            obj_prompt = self.object_prompt.format(curr_img_caption = self.previous_descriptions[-1], object_set = ','.join(self.object_set))
+            try:
+                new_objs = await self.caption_model.run_inference(data_stream = data_stream, **dict(prompt = obj_prompt, detail='low'))
+            except RuntimeError as e:
+                print(f"Error during running captioning inference: {e}")
+            new_objs = new_objs.split('[')[1].split(']')[0].split(',')
+            new_objs = [obj.strip().lower() for obj in new_objs if len(obj.strip().lower()) > 0]
+            self.object_set.update(new_objs)
+
+        #(5) generate clip embedding
+        # image_embedding, info = self.clip_model.run_inference(data_stream)
+        # image_embedding = image_embedding.detach().cpu()
+        return [video_id, frame_id, description, self.object_set, None, 'NULL' if not reboot else description]
+        
+
+
 if __name__ == '__main__':
     captioner = CaptioningPipeline()
 

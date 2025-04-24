@@ -247,7 +247,7 @@ class SQLLiteDBInterface:
         except Exception as e:
             return f"Error retrieving schemas: {str(e)}"
     
-    def get_unique_video_and_frame_ids(self, db_path: str='video_frames.db'):
+    def get_unique_video_and_frame_ids(self, table_name:str, db_path: str='video_frames.db'):
         """
         Retrieve all unique video_ids and frame_ids from the raw_videos table in the video_frames.db.
 
@@ -260,10 +260,10 @@ class SQLLiteDBInterface:
 
         try:
             # Execute a query to select unique video_id and frame_id
-            self.cursor.execute("SELECT DISTINCT video_id FROM raw_videos")
+            self.cursor.execute(f"SELECT DISTINCT video_id FROM {table_name}")
             # Fetch all unique pairs of video_id and frame_id
             unique_video_ids = [x[0] for x in self.cursor.fetchall()]
-            self.cursor.execute("SELECT DISTINCT frame_id FROM raw_videos")
+            self.cursor.execute(f"SELECT DISTINCT frame_id FROM {table_name}")
             unique_frame_ids = [x[0] for x in self.cursor.fetchall()]
             
             return unique_video_ids, unique_frame_ids

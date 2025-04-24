@@ -27,49 +27,18 @@ class Text2ColumnPipeline():
         [text2colmn_model, text2colmn_model_name] = Config.caption_model_name.split(';')
         assert text2colmn_model in model_options, f'ERROR: model {text2colmn_model} does not exist or is not supported yet'
         
-        self.text2table_model = model_options[text2table_model](
+        self.text2table_model = model_options[text2colmn_model](
                                     model_params = Config.text2column_params, 
                                     model_name=text2colmn_model_name, 
                                     model_precision=Config.model_precision, 
                                     system_eval=Config.system_eval)
 
-        #extract the list of attributes to capture across frame descriptions
-        self.table_attributes = []
-
-        #store a list of unique objects to extract data for
-        self.all_objects = all_objects
-        self.scene_descriptor = ""
-    
-    def clear_pipeline(self):
-        #clear the cache that remains for previous runs of text2table
-        self.table_attributes = []
-        self.all_objects = []
-
-    def update_objects(self, all_objects:List[str]):
-        self.all_objects = all_objects
 
     def update_table_context(self):
         # Retrieve and return the list of table names
         self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [row[0] for row in self.cursor.fetchall()]
         return tables
-    
-    async def get_scene_description(self, all_captions: str):
-        prompt = f"""
-        You are given a list of object-level captions describing elements detected in a video frame. 
-        Based on these descriptions, summarize the overall scene depicted in the video using a short phrase of 1–3 words. 
-        The summary should capture the general setting or type of scene shown (e.g., "general street scene", "kitchen interior", "sports match", "forest trail", "battlefield", "concert stage").
-
-        Captions:
-        {all_captions}
-
-        Scene Summary:
-        """
-
-        scene_descriptor = await self.text2table_model.run_inference(data_stream= prompt, )
-        print("Scene descriptor: ", scene_descriptor)
-        self.scene_descriptor = scene_descriptor.strip()
-        return scene_descriptor.strip()
 
     async def extract_table_attributes(self, all_captions:str):
         scene_descriptor = await self.get_scene_description(all_captions)
@@ -81,6 +50,8 @@ class Text2ColumnPipeline():
 
         return extracted_attributes.strip()
     
+    async def generate_sql_columns(self, table_rows: str, new_attributes: dict):
+        pass
     async def extract_table_schemas(self, all_captions:str):
         extracted_attributes = await self.extract_table_attributes(all_captions)
         print("Extracted attributes:")

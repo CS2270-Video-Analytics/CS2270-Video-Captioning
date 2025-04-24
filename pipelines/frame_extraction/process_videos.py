@@ -28,6 +28,54 @@ class VideoProcessor:
         # Ensure output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
     
+    async def process_targeted_frames(self, video_path:str, video_id:str, captioning_pipeline, new_attributes_dict: dict={}, specific_frames: list = []):
+        """Process a single video file.
+        
+        Args:
+            video_path: Path to the video file
+            video_id: ID for the video
+            
+        Returns:
+            Number of processed frames
+        """
+        # Extract frames
+        frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video, specific_frames=specific_frames)
+        # Save frames to disk (optional)
+        if Config.save_frames:
+            self.extractor.save_frames(video_id, frames, self.output_dir)
+
+        sql_batch = []
+        batch_size = Config.batch_size
+        for batch_start in range(0, len(frames), batch_size):
+            tasks = []
+            batch_end = min(batch_start + batch_size, len(frames))
+            for i in range(batch_start, batch_end):
+                timestamp, pil_img = frames[i]
+                to_tensor = transforms.ToTensor()
+                image_tensor = to_tensor(pil_img)
+                task = captioning_pipeline.run_pipeline_attribute(
+                    data_stream=image_tensor,
+                    video_id=video_id,
+                    frame_id=timestamp,
+                    new_attributes_dict=new_attributes_dict,
+                )
+                tasks.append(task)
+                curr_vec_idx += 1
+
+            # Wait for all tasks in the current batch to complete
+            results = await asyncio.gather(*tasks)
+            
+            for result in results:
+                video_id, frame_id, focused_description = result
+                sql_batch.append((video_id, frame_id, focused_description))
+
+            # Yield the batch results
+            yield sql_batch
+            sql_batch = []
+            
+            print(f"Processed and saved batch of frames up to frame {batch_end}/{len(frames)}")
+
+
     async def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int, new_attributes_dict: dict={}, specific_frames: list = [], reboot: bool = False):
         """Process a single video file.
         
