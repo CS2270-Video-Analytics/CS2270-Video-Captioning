@@ -521,6 +521,12 @@ class Config:
     text2column_enabled = False
     new_col_type = "TEXT"
 
+    #Text2Column SQL queries
+    object_detail_extraction_query =\
+    """
+        SELECT * FROM {table_name} WHERE video_id='{video_id}' AND frame_id='{frame_id}';
+    """
+
     #-------------------------------------------------------------------------
     # Input Video Settings
     #-------------------------------------------------------------------------

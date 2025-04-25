@@ -4,6 +4,7 @@ from config import Config
 from typing import List, Dict, Set, Optional
 import pdb
 import logging
+from collections import defaultdict 
 # Set up logging
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,18 @@ class SQLLiteDBInterface:
             else:
                 raise RuntimeError(f"Error in insert_columns: {e}")
 
+    def insert_rows_for_new_cols(self, table_name:str, col_names: list, data: list):
+
+        # Generate dynamic SET clause
+        set_clause = ", ".join([f"{col}=?" for col in col_names])
+
+        for (video_id, frame_id, object_id, new_col_vals) in data:
+            self.cursor.execute(f"""
+                UPDATE {table_name}
+                SET {set_clause}
+                WHERE video_id = {video_id} AND frame_id = {frame_id} AND object_id = {object_id}
+            """, data)
+
     def insert_column_data(self, table_name:str, col_name:str, col_type:str, data:list):
         
         try:
@@ -247,7 +260,7 @@ class SQLLiteDBInterface:
         except Exception as e:
             return f"Error retrieving schemas: {str(e)}"
     
-    def get_unique_video_and_frame_ids(self, table_name:str, db_path: str='video_frames.db'):
+    def get_unique_video_and_frame_ids(self, table_name:str, db_path: str='video_frames.db', combined: bool = False):
         """
         Retrieve all unique video_ids and frame_ids from the raw_videos table in the video_frames.db.
 
@@ -259,14 +272,31 @@ class SQLLiteDBInterface:
         """
 
         try:
-            # Execute a query to select unique video_id and frame_id
-            self.cursor.execute(f"SELECT DISTINCT video_id FROM {table_name}")
-            # Fetch all unique pairs of video_id and frame_id
-            unique_video_ids = [x[0] for x in self.cursor.fetchall()]
-            self.cursor.execute(f"SELECT DISTINCT frame_id FROM {table_name}")
-            unique_frame_ids = [x[0] for x in self.cursor.fetchall()]
+            if not combined:
+                # Execute a query to select unique video_id and frame_id
+                self.cursor.execute(f"SELECT DISTINCT video_id FROM {table_name}")
+                # Fetch all unique pairs of video_id and frame_id
+                unique_video_ids = [x[0] for x in self.cursor.fetchall()]
+                self.cursor.execute(f"SELECT DISTINCT frame_id FROM {table_name}")
+                unique_frame_ids = [x[0] for x in self.cursor.fetchall()]
+                
+                return (unique_video_ids, unique_frame_ids)
+            else:
+                # Execute a query to select unique video_id and frame_id
+                self.cursor.execute(f"SELECT DISTINCT video_id, frame_id FROM {table_name}")
+                rows = self.cursor.fetchall()
+
+                video_to_frames = defaultdict(list)
+
+                for video_id, frame_id in rows:
+                    video_to_frames[video_id].append(frame_id)
+
+                # Optional: convert to a regular dict if you don't want defaultdict
+                video_to_frames = dict(video_to_frames)
+                return video_to_frames
             
-            return unique_video_ids, unique_frame_ids
         except Exception as e:
             print(f"An error occurred: {e}")
-            return [], []
+            return ()
+    
+    

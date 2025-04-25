@@ -82,16 +82,15 @@ class VideoQueryPipeline():
         self.captioning_pipeline.clear_pipeline()
         self.text2sql_pipeline.clear_pipeline()
         self.text2table_pipeline.clear_pipeline()
-    
-    async def run_text2column(self, table_name: str, new_attributes: list):
-        #extract the frame and the table rows that have to be extracted
-        table_rows = self.sql_dbs.extract_all_rows(table_name=table_name)
-        new_table_attributes = new_attributes[table_name]
 
-        #function within text2col: regenerate raw caption for these frames (given row context and attribute data) + format into new columns
-        async for attribute, sql_batch in self.text2column_pipeline.generate_sql_columns(table_rows=table_rows, new_attributes = new_table_attributes):
-            #function in sql_dbs: fill in data for a new column
-            self.sql_dbs.insert_column_data(table_name=table_name, col_name=attribute, col_type=Config.new_col_type, data=sql_batch)
+    async def run_text2column(self, video_id: int, table_name: str, frame_batch: list, new_attributes_for_table: list):
+        table_cols = self.sql_dbs.extract_all_cols(table_name=table_name)
+        
+        for (frame_id, frame) in frame_batch:
+            table_rows = self.sql_dbs.execute_query(query=Config.object_detail_extraction_query.format(table_name = table_name, video_id=video_id, frame_id=frame_id))
+            sql_batch = await self.text2column_pipeline.generate_new_column_data(frame=frame, table_rows=table_rows, table_columns=table_cols, new_attributes=new_attributes_for_table)
+            #function within text2col: regenerate raw caption for these frames (given row context and attribute data) + format into new columns
+            self.sql_dbs.insert_rows_for_new_cols(table_name=table_name, col_names=list(new_attributes_for_table), data=sql_batch)
 
 
     async def process_query(self, language_query: str, llm_judge: bool):
@@ -112,10 +111,15 @@ class VideoQueryPipeline():
             if not is_sufficient and existing_tables_attributes_dict:
                 #create new columns for existing tables
                 for table_name, new_attributes in existing_tables_attributes_dict.items():
+                    unique_video_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids(table_name=table_name, combined=True)
+
                     for attribute in new_attributes:
                         self.sql_dbs.create_column(table_name=table_name, col_name=attribute, col_type=Config.new_col_type)
-                    #run text2column pipeline
-                    await self.run_text2column(table_name=table_name, new_attributes=new_attributes)
+
+                    for video_id in unique_video_frame_ids:
+                        for frame_batch in self.video_processor.return_targeted_frames(video_path=os.path.join(Config.video_path, video_id), video_id=video_id, specific_frames=unique_video_frame_ids[video_id]):
+                            #run text2column pipeline
+                            await self.run_text2column(video_id = video_id, table_name=table_name, frame_batch = frame_batch, new_attributes_for_table=new_attributes)
 
             elif not is_sufficient and existing_tables_attributes_dict is None:
                 raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
@@ -124,7 +128,7 @@ class VideoQueryPipeline():
         if Config.table_reboot_enabled:
             if not is_sufficient and new_tables_attributes_dict:
 
-                unique_video_ids, unique_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids(table_name=Config.caption_table_name)
+                (unique_video_ids, unique_frame_ids) = self.sql_dbs.get_unique_video_and_frame_ids(table_name=Config.caption_table_name)
                 
                 for video_id in unique_video_ids:
                     async for sql_batch, __ in self.video_processor.process_single_video(video_path=os.path.join(Config.video_path, video_id), video_id=video_id, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_attributes_dict=new_tables_attributes_dict, specific_frames=unique_frame_ids, reboot=True):

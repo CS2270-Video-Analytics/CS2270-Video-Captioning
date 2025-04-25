@@ -27,52 +27,36 @@ class Text2ColumnPipeline():
         [text2colmn_model, text2colmn_model_name] = Config.caption_model_name.split(';')
         assert text2colmn_model in model_options, f'ERROR: model {text2colmn_model} does not exist or is not supported yet'
         
-        self.text2table_model = model_options[text2colmn_model](
+        self.text2column_vision_model = model_options[text2colmn_model](
                                     model_params = Config.text2column_params, 
                                     model_name=text2colmn_model_name, 
                                     model_precision=Config.model_precision, 
                                     system_eval=Config.system_eval)
-
-
-    def update_table_context(self):
-        # Retrieve and return the list of table names
-        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = [row[0] for row in self.cursor.fetchall()]
-        return tables
-
-    async def extract_table_attributes(self, all_captions:str):
-        scene_descriptor = await self.get_scene_description(all_captions)
-        frame_extraction_prompt = self.attribute_extraction_prompt.format(
-            incontext_examples = Config.text2table_incontext_prompt,
-            all_joined_captions = all_captions
-        )
-        extracted_attributes = await self.text2table_model.run_inference(data_stream= frame_extraction_prompt)
-
-        return extracted_attributes.strip()
+        self.text2column_text_model = model_options[text2colmn_model](
+                                    model_params = Config.text2column_params, 
+                                    model_name=text2colmn_model_name, 
+                                    model_precision=Config.model_precision, 
+                                    system_eval=Config.system_eval)
     
-    async def generate_sql_columns(self, table_rows: str, new_attributes: dict):
-        pass
-    async def extract_table_schemas(self, all_captions:str):
-        extracted_attributes = await self.extract_table_attributes(all_captions)
-        print("Extracted attributes:")
-        print(extracted_attributes), extracted_attributes
+    def process_new_attributes_tuple(self, extracted_structured_attributes: str):
+        return extracted_structured_attributes
 
-        # Update table context
-        self.table_context = self.update_table_context()
-        print("Existing tables: ")
-        print(", ".join(self.table_context))
-        # Use the table context in the prompt
-        schema_extraction_prompt = self.schema_extraction_prompt_format.format(
-            existing_tables=", ".join(self.table_context),
-            attributes=extracted_attributes
-        )
-        generated_schemas = await self.text2table_model.run_inference(data_stream = schema_extraction_prompt)
-        generated_schemas = self.clean_schema(generated_schemas)
+    async def generate_new_column_data(self, frame, table_rows: list, table_columns: list, new_attributes: set):
+        batch_rows= []
+        for row in table_rows:
+            all_new_attributes = ','.join(new_attributes)
+            current_attributes = {k:v for (k,v) in zip(table_columns, row)}
 
-        print("generated_schemas: ")
-        print(generated_schemas)
-        return generated_schemas
-    
+            attribute_extraction_prompt = self.attribute_extraction_prompt.format(current_attributes = str(current_attributes), all_new_attributes=all_new_attributes)
+            extracted_raw_attributes = await self.text2column_vision_model.run_inference(frame, dict(prompt = attribute_extraction_prompt))
+            extracted_structured_attributes = await self.text2column_text_model.run_inference(data_stream = extracted_raw_attributes)
+            parsed_tuple_new_attributes = await self.process_new_attributes_tuple(extracted_structured_attributes = extracted_structured_attributes)
+            batch_rows.append(parsed_tuple_new_attributes)
+
+            if len(batch_rows) > Config.batch_size:
+                yield batch_rows
+                batch_rows = []
+            
     def build_json_template(self, schema_dict, frame_id_placeholder="{frame_id}", video_id_placeholder="{video_id}"):
         lines = []
         for table, cols in schema_dict.items():
@@ -92,169 +76,3 @@ class Text2ColumnPipeline():
         lines[-1] = lines[-1].rstrip(",")  # remove trailing comma
         return "\n".join(lines)
     
-
-    def clean_schema(self, schema: str) -> str: 
-        lines = schema.strip().splitlines() 
-        cleaned_lines = [line for line in lines if not re.match(r"^\s*```.*$", line)] 
-        return "\n".join(cleaned_lines)
-
-
-    def parse_db_schema(self, schema_str):
-        table_defs = {}
-        current_table = None
-
-        for line in schema_str.strip().splitlines():
-            line = line.strip()
-            if line.startswith("Table:"):
-                current_table = line.split("Table:")[1].strip()
-                table_defs[current_table] = []
-            elif line.startswith("-") and current_table:
-                match = re.match(r"-\s*(\w+)\s*\(", line)
-                if match:
-                    column_name = match.group(1)
-                    table_defs[current_table].append(column_name)
-
-        return table_defs
-    
-    def extract_complete_json(self, s: str) -> dict:
-        """
-        Extracts all complete top-level JSON key-value entries from a raw string.
-        It skips any entries that are malformed or incomplete.
-        """
-
-        # Trim everything after the last closing brace to cut off obvious trailing junk
-        s = s[:s.rfind('}') + 1] if '}' in s else s
-
-        # Ensure we only look at the object body (if wrapped in outer {})
-        try:
-            s = s.strip()
-            if s.startswith('{') and s.endswith('}'):
-                s = s[1:-1]
-        except:
-            return {}
-
-        result = {}
-
-        # Regex pattern to match top-level key-value pairs with nested JSON arrays or objects
-        pattern = r'"(\w+)":\s*(\[[^\[\]]*\{.*?\}[^\[\]]*\])'  # Matches: "key": [ {...} ]
-        matches = re.finditer(pattern, s, re.DOTALL)
-
-        for match in matches:
-            key = match.group(1)
-            value_str = match.group(2).strip()
-            try:
-                value = json.loads(value_str)
-                result[key] = value
-            except json.JSONDecodeError:
-                continue  # Skip incomplete or malformed entries
-
-        return result
-        
-    def extract_valid_json(self, s: str):
-        """
-        Extracts the largest valid JSON object from a noisy string that may contain extra text or be partially malformed.
-        Returns a parsed JSON dict or raises an error if none found.
-        """
-        # Trim everything after the last closing brace
-        s = s[:s.rfind('}') + 1] if '}' in s else s
-
-        # Find the largest valid JSON object from within the string
-        stack = []
-        json_start = None
-        for i, char in enumerate(s):
-            if char == '{':
-                if not stack:
-                    json_start = i
-                stack.append('{')
-            elif char == '}':
-                if stack:
-                    stack.pop()
-                    if not stack:
-                        try:
-                            candidate = s[json_start:i+1]
-                            candidate = candidate.strip()
-                            return json.loads(candidate)
-                        except json.JSONDecodeError:
-                            continue
-        raise ValueError("No valid JSON object found in the input.")
-    
-    def extract_json_from_response(self, text:str):
-        # Strip markdown-style code block if present
-        if "```" in text:
-            text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).strip()
-        valid_json = self.extract_complete_json(text)
-        return valid_json
-    
-    async def run_pipeline_video(self, video_data: List[tuple], database_schema: str):
-        # Parse schema to extract table and column structure
-        parsed_db_schema = self.parse_db_schema(database_schema)
-        
-        # Iterate over video data in batches
-        batch_size = Config.batch_size
-        for batch_start in range(0, len(video_data), batch_size):
-            batch_end = min(batch_start + batch_size, len(video_data))
-            tasks = []
-            # Create tasks for each frame in the batch
-            for i in range(batch_start, batch_end):
-                video_id, frame_id, caption, __ = video_data[i]
-
-                task = self.run_pipeline(
-                    parsed_db_schema=parsed_db_schema,
-                    caption=caption,
-                    video_id=video_id,
-                    frame_id=frame_id
-                )
-                tasks.append(task)
-
-            # Wait for all tasks to complete
-            results = await asyncio.gather(*tasks)
-            # Yield the batch results
-            yield results
-                
-    async def run_pipeline(self, parsed_db_schema:Dict, caption: str, video_id:int, frame_id:int):
-        json_schema_template = self.build_json_template(schema_dict=parsed_db_schema)
-        # prompt = self.text2table_frame_prompt.format(caption=caption, object_set=self.all_objects, schema=json_schema_template.replace("{frame_id}",f"{frame_id}"))
-        prompt = self.text2table_frame_prompt.format(scene_descriptor=self.scene_descriptor, description=caption, json_schema = json_schema_template.replace("{frame_id}", f"{frame_id}").replace("{video_id}", f"{video_id}"))
-        # raw_response, _ = self.text2table_model.run_inference(data_stream=prompt, **dict(system_content= self.text2table_frame_context))
-        try:
-            raw_response = await self.text2table_model.run_inference(data_stream=prompt)
-            json_response = self.extract_json_from_response(raw_response)
-        except Exception as e:
-            print(f"Error in text2table inference: {e}")
-            json_response = {}
-        
-        db_data_rows = {}
-        for table, columns in parsed_db_schema.items():
-            try:
-                records = json_response.get(table, [])
-                if not isinstance(records, list):
-                    continue
-                if table not in db_data_rows:
-                    db_data_rows[table] = []
-                for record in records:
-                    table_vals = tuple([json.dumps(record.get(col)) if type(record.get(col))==list or type(record.get(col))==dict else record.get(col) for col in columns]) #NOTE: need to be inserting list of tuples into DB
-                    db_data_rows[table].append(table_vals)
-            except Exception as e:
-                print(f"ERROR: skipped processing video {video_id} and frame {frame_id} - {e}")
-                continue
-
-        return [db_data_rows]
-    
-    def close_connection(self):
-        # Close the database connection
-        self.conn.close()
-    
-    def parse_table_output_t2t(self, structured_caption:str, video_id:int, frame_id:int):
-        #NOTE: currently this is unused, but if we need text2table we can use this
-        # parsed_rows = structured_caption.strip().split("<r>")
-        # parsed_rows = [[video_id, frame_id] + row.strip().split("<c>") for row in parsed_rows if parsed_rows]
-        # parsed_rows = parsed_rows[1:-1]
-        
-        parsed_rows = [list(map(str.strip, row.split("<c>")))[1:-1] for row in structured_caption.split("<r>") if row.strip()]
-        
-        parsed_rows_test = [list(map(str.strip, row.split("<c>"))) for row in structured_caption.split("<r>") if row.strip()]
-        
-        #parse to ensure added rows have right number of columns
-        parsed_rows = [[video_id, frame_id] + row for row in parsed_rows if len(row)==len(self.table_attributes)]
-        
-        return parsed_rows
