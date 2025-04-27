@@ -140,8 +140,10 @@ class SQLLiteDBInterface:
             self.cursor.execute(f"""
                 UPDATE {table_name}
                 SET {set_clause}
-                WHERE video_id = {video_id} AND frame_id = {frame_id} AND object_id = {object_id}
-            """, data)
+                WHERE video_id = '{video_id}' AND frame_id = '{frame_id}' AND object_id = {object_id}
+            """, new_col_vals)
+        
+        self.connection.commit()
 
     def insert_column_data(self, table_name:str, col_name:str, col_type:str, data:list):
         
@@ -209,7 +211,7 @@ class SQLLiteDBInterface:
     def close_conn(self):
         self.cursor.close()
     
-    def get_table_schema(self, table_name: str) -> str:
+    def get_table_schema(self, table_name: str, process: bool=True) -> str:
         """
         Extracts the schema information for a specific table in the SQLite database.
 
@@ -228,12 +230,19 @@ class SQLLiteDBInterface:
             # Get column details
             self.cursor.execute(f"PRAGMA table_info({table_name});")
             columns = self.cursor.fetchall()
-            schema_info = [f"Table: {table_name}"]
-            for col in columns:
-                col_id, col_name, col_type, _, _, _ = col
-                schema_info.append(f"  - {col_name} ({col_type})")
+            if not process:
+                schema_info = []
+                for col in columns:
+                    col_id, col_name, col_type, _, _, _ = col
+                    schema_info.append(col_name)
+                return schema_info
+            else:
+                schema_info = [f"Table: {table_name}"]
+                for col in columns:
+                    col_id, col_name, col_type, _, _, _ = col
+                    schema_info.append(f"  - {col_name} ({col_type})")
 
-            return "\n".join(schema_info)
+                return "\n".join(schema_info)
         except Exception as e:
             return f"Error retrieving schema for table '{table_name}': {str(e)}"
 
@@ -246,7 +255,7 @@ class SQLLiteDBInterface:
         """
         try:
             # Get all user-defined table names except 'raw_videos'
-            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name != 'raw_videos';")
+            self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name !='raw_videos';")
             tables = [row[0] for row in self.cursor.fetchall()]
 
             if not tables:

@@ -518,14 +518,57 @@ class Config:
     #-------------------------------------------------------------------------
     # Reboot Text2Column
     #-------------------------------------------------------------------------
-    text2column_enabled = False
+    text2column_params = {
+        'temperature': 0.5,
+        'top_k': None,
+        'top_p': None,
+        'num_ctx': None,
+        'repeat_penalty': None,
+        'presence_penalty': None,
+        'frequency_penalty': 0.2,
+        'max_tokens': 100,
+        'stop_tokens': None,
+        'keep_alive': None,
+        'batch_size': None,
+        'num_threads': None,
+        'model_precision': None,
+        'system_eval': False,
+    }
+
+    text2col_model_name = 'OpenAI;gpt-4o-mini'
+
+    text2column_enabled = True
     new_col_type = "TEXT"
+
+    text2col_raw_extraction_prompt = \
+        "Task: given the current frame recorded from a camera and a description of a specific topic/object in the frame " \
+        "where the dictionary keys are attributes we have information about and dictionary values are descriptions for these attributes, " \
+        "identify the same instance of this topic/object in the current frame and describe the additional attributes for this topic/object in the format below. Strictly following the format below, only output additional attributes description as a dictionary without any extra information or prefix text.\n" \
+        "Current Attributes: {{object/topic: vehicle_data, {{object_id: 1, location: 'center of the frame, in front of other vehicles', type: 'SUV', license_plate: 'None'}}}}\n"\
+        "Additional Attributes: size, speed, headlights_on\n"\
+        "Dictionary Output: {{size: large, speed: relatively slow, headlights_on: False}}\n"\
+        "Current Attributes: {{object/topic: {table_name}, {current_attributes}}}\n"\
+        "Additional Attributes: {all_new_attributes}\n"\
+        "Dictionary Output:"
+    # "Description: the SUV in the center of the frame is large in size and has headlights off. It is driving relatively slowly"\
+
+    
+    text2col_structured_extraction_prompt =\
+        "Task: given a detailed description about an image and a set of target attributes, extract the target attributes as a dictionary format."\
+        "Description: the SUV in the center of the frame is large in size and has headlights off. It is driving relatively slowly"\
+        "Target Attributes: size, speed, headlights_on"\
+        "Dictionary Outupt: {{size: large, speed: relatively slow, headlights_on: False}}"\
+        "Description: {raw_attributes}"\
+        "Target Attributes: {all_new_attributes}"\
+        "Dictionary Output:"
 
     #Text2Column SQL queries
     object_detail_extraction_query =\
     """
         SELECT * FROM {table_name} WHERE video_id='{video_id}' AND frame_id='{frame_id}';
     """
+
+
 
     #-------------------------------------------------------------------------
     # Input Video Settings
