@@ -108,6 +108,8 @@ class CaptioningPipeline():
         # image_embedding = image_embedding.detach().cpu()
         return [video_id, frame_id, description, self.object_set, None, 'NULL' if not reboot else description]
         
+        
+
 
 if __name__ == '__main__':
     captioner = CaptioningPipeline()

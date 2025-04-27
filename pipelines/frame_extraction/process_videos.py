@@ -28,6 +28,23 @@ class VideoProcessor:
         # Ensure output directory exists
         os.makedirs(self.output_dir, exist_ok=True)
     
+    async def return_targeted_frames(self, video_path:str, video_id: str, specific_frames: list = []):
+        # Extract frames
+        frames = self.extractor.extract_uniform_frames(video_path, self.frames_per_video, specific_frames=specific_frames)
+        
+        frame_batch = []
+        
+        for frame_tuple in frames:
+            to_tensor = transforms.ToTensor()
+            frame_batch.append((frame_tuple[0], to_tensor(frame_tuple[1])))
+
+            if len(frame_batch) > Config.batch_size:
+                yield frame_batch
+                frame_batch = []
+        
+        yield frame_batch
+
+
     async def process_single_video(self, video_path:str, video_id:str, captioning_pipeline, curr_vec_idx:int, new_attributes_dict: dict={}, specific_frames: list = [], reboot: bool = False):
         """Process a single video file.
         

@@ -2,6 +2,7 @@ from pipelines.frame_extraction import VideoProcessor
 from pipelines.captioning_embedding.captioning_pipeline import CaptioningPipeline
 from pipelines.text2sql.text2sql_pipeline import Text2SQLPipeline
 from pipelines.text2table.text2table_pipeline import Text2TablePipeline
+from pipelines.text2column.text2column_pipeline import Text2ColumnPipeline
 from database_integration import SQLLiteDBInterface, VectorDBInterface
 from config.config import Config
 from typing import Optional
@@ -30,6 +31,9 @@ class VideoQueryPipeline():
 
         #raw caption 2 formatted table pipeline
         self.text2table_pipeline = Text2TablePipeline(all_objects = [], db_path=Config.db_path)
+
+        #extract raw captions for specific attributes and add columns to existing tables
+        self.text2column_pipeline = Text2ColumnPipeline()
 
     async def generate_captions(self, video_path:str, video_filename:str):
         assert os.path.exists(os.path.join(video_path, video_filename)), f"ERROR: video filename {os.path.join(video_path, video_filename)} does not exist"
@@ -78,9 +82,25 @@ class VideoQueryPipeline():
         self.captioning_pipeline.clear_pipeline()
         self.text2sql_pipeline.clear_pipeline()
         self.text2table_pipeline.clear_pipeline()
-    
+
+    async def run_text2column(self, video_id: int, table_name: str, frame_batch: list, new_attributes_for_table: list):
+        
+        for attribute in new_attributes_for_table:
+            self.sql_dbs.create_column(table_name=table_name, col_name=attribute, col_type=Config.new_col_type)
+
+        table_cols = self.sql_dbs.get_table_schema(table_name=table_name, process=False)[:-1*len(new_attributes_for_table)]
+        
+        for (frame_id, frame) in frame_batch:
+            table_rows = self.sql_dbs.execute_query(query=Config.object_detail_extraction_query.format(table_name = table_name, video_id=video_id, frame_id=frame_id))
+            table_rows = [row[:-1*len(new_attributes_for_table)] for row in table_rows]
+            async for sql_batch in self.text2column_pipeline.generate_new_column_data(table_name = table_name, frame=frame, table_rows=table_rows, table_columns=table_cols, new_attributes=list(new_attributes_for_table)):
+                #function within text2col: regenerate raw caption for these frames (given row context and attribute data) + format into new columns
+                self.sql_dbs.insert_rows_for_new_cols(table_name=table_name, col_names=list(new_attributes_for_table), data=sql_batch)
+
+
     async def process_query(self, language_query: str, llm_judge: bool):
         #extract the schema for the processed object table
+        pdb.set_trace()
         table_schemas = self.sql_dbs.get_all_schemas_except_raw_videos()
         
         is_sufficient, sql_query, existing_tables_attributes_dict, new_tables_attributes_dict = await self.text2sql_pipeline.run_pipeline(
@@ -92,18 +112,28 @@ class VideoQueryPipeline():
         print(f"sql_query: {sql_query}")
         print(f"existing_tables_attributes_dict: {existing_tables_attributes_dict}")
         print(f"new_tables_attributes_dict: {new_tables_attributes_dict}")
+        pdb.set_trace()
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
         if Config.text2column_enabled:
             if not is_sufficient and existing_tables_attributes_dict:
-                raise NotImplementedError("Error: not yet implemented text2column")
+                #create new columns for existing tables
+                for table_name, new_attributes in existing_tables_attributes_dict.items():
+                    
+                    unique_video_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids(table_name=table_name, combined=True)
+
+                    for video_id in unique_video_frame_ids:
+                        async for frame_batch in self.video_processor.return_targeted_frames(video_path=os.path.join(Config.video_path, video_id), video_id=video_id, specific_frames=unique_video_frame_ids[video_id]):
+                            #run text2column pipeline
+                            await self.run_text2column(video_id = video_id, table_name=table_name, frame_batch = frame_batch, new_attributes_for_table=new_attributes)
+
             elif not is_sufficient and existing_tables_attributes_dict is None:
                 raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
-        
+        pdb.set_trace()
         #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
         if Config.table_reboot_enabled:
             if not is_sufficient and new_tables_attributes_dict:
 
-                unique_video_ids, unique_frame_ids = self.sql_dbs.get_unique_video_and_frame_ids()
+                (unique_video_ids, unique_frame_ids) = self.sql_dbs.get_unique_video_and_frame_ids(table_name=Config.caption_table_name)
                 
                 for video_id in unique_video_ids:
                     async for sql_batch, __ in self.video_processor.process_single_video(video_path=os.path.join(Config.video_path, video_id), video_id=video_id, captioning_pipeline=self.captioning_pipeline, curr_vec_idx=-1, new_attributes_dict=new_tables_attributes_dict, specific_frames=unique_frame_ids, reboot=True):
@@ -114,7 +144,7 @@ class VideoQueryPipeline():
                     self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=table_schema, table_prim_key=Config.processed_table_pk)
                     await self.run_text2table(new_structured_table_name=new_table_name, reboot=True)
 
-            elif not is_sufficient and not new_tables_attributes_dict:
+            elif not is_sufficient and new_tables_attributes_dict is None:
                 raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         #check query after rebooting once
         if not is_sufficient:
@@ -170,7 +200,8 @@ if __name__ == '__main__':
     # print(f"Time taken: {end_time - start_time}")
 
     #PART 3: MISSING TABLE QUERY FOR VIDEO
-    question = "When does the weather first have overcast after the first 5 frames?"
+    # question = "When does the weather first have overcast after the first 5 frames?"
+    question = "What is the first frame in which a damaged SUV stops at a red light?"
     start_time = time.time()
     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     end_time = time.time()

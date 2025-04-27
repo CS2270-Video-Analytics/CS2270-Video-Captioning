@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Video Query</title>
+    <style>
+        body {
+            background-color: #ffffff;
+            color: #333333;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: linear-gradient(to right, #6a0dad, #00bcd4);
+            padding: 1rem;
+            text-align: center;
+            font-size: 2rem;
+            color: white;
+        }
+        .container {
+            padding: 2rem;
+            max-width: 900px;
+            margin: auto;
+        }
+        .upload-section, .query-section, .table-section {
+            background-color: #f9f9f9;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        input[type="file"] {
+            margin-top: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #6a0dad;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #6a0dad;
+        }
+        .search-bar {
+            display: flex;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        .search-bar input[type="text"] {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #00bcd4;
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: #333333;
+            font-size: 1rem;
+        }
+        .search-bar select, .search-bar button, .upload-section button {
+            margin-left: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: none;
+            background: #6a0dad;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        .refresh-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .refresh-section button, .refresh-section select {
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: none;
+            background: #00bcd4;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        #tableDisplay p {
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<header>Video Upload & Query Interface</header>
+
+<div class="container">
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <h2>Upload Video</h2>
+        <input type="file" id="videoUpload" accept="video/*">
+        <button id="uploadButton" onclick="uploadVideo()">Upload</button>
+    </div>
+
+    <!-- Query Section -->
+    <div class="query-section">
+        <h2>Query Video Data</h2>
+        <div class="search-bar">
+            <input type="text" id="queryInput" placeholder="Ask a question about the video...">
+            <select id="queryMode">
+                <option value="nl">Natural Language</option>
+                <option value="sql">SQL</option>
+            </select>
+            <button onclick="submitQuery()">Submit</button>
+        </div>
+    </div>
+
+    <!-- Table Visualization Section -->
+    <div class="table-section">
+        <h2>View Extracted SQL Tables</h2>
+        <div class="refresh-section">
+            <button onclick="refreshTables()">Refresh Tables</button>
+            <select id="tableDropdown">
+                <option value="">Select a table</option>
+            </select>
+        </div>
+        <div id="tableDisplay" style="margin-top: 1rem;"></div>
+    </div>
+</div>
+
+<script>
+    function uploadVideo() {
+        const fileInput = document.getElementById('videoUpload');
+        const file = fileInput.files[0];
+        const uploadBtn = document.getElementById('uploadButton');
+        if (!file) {
+            alert('Please select a video to upload.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('http://localhost:5000/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message || data.error);
+            uploadBtn.style.backgroundColor = '#00e5ff'; // Ding effect
+            setTimeout(() => {
+                uploadBtn.style.backgroundColor = '#6a0dad';
+            }, 300); // Revert after 300ms
+        })
+        .catch(error => {
+            console.error('Error uploading file:', error);
+            alert('An error occurred while uploading.');
+        });
+    }
+
+    function submitQuery() {
+        const queryText = document.getElementById('queryInput').value;
+        const mode = document.getElementById('queryMode').value;
+        if (mode === 'nl') {
+            console.log("Natural Language Query:", queryText);
+        } else {
+            console.log("SQL Query:", queryText);
+        }
+        alert(`Query submitted in ${mode.toUpperCase()} mode: ${queryText}`);
+    }
+
+    function refreshTables() {
+        const dropdown = document.getElementById('tableDropdown');
+        dropdown.innerHTML = '<option value="">Select a table</option>'; // Reset
+
+        // Mock data for demo
+        const tables = ['VideoMetadata', 'Transcripts', 'ObjectDetections'];
+
+        tables.forEach(table => {
+            const option = document.createElement('option');
+            option.value = table;
+            option.textContent = table;
+            dropdown.appendChild(option);
+        });
+    }
+
+    document.getElementById('tableDropdown').addEventListener('change', function() {
+        const selected = this.value;
+        const display = document.getElementById('tableDisplay');
+
+        if (selected) {
+            display.innerHTML = `<p>Showing data for <strong>${selected}</strong> table (mock data).</p>`;
+        } else {
+            display.innerHTML = '';
+        }
+    });
+</script>
+
+</body>
+</html>
