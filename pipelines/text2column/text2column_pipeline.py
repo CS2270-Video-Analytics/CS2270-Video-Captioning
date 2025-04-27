@@ -75,12 +75,12 @@ class Text2ColumnPipeline():
             all_new_attributes = ','.join(new_attributes)
             current_attributes = {k:v for (k,v) in zip(table_columns, row)}
             curr_obj_attributes = {k: v for k, v in current_attributes.items() if k not in ['video_id', 'frame_id']}
-            pdb.set_trace()
             attribute_extraction_prompt = self.attribute_extraction_prompt.format(table_name = table_name, current_attributes = str(curr_obj_attributes), all_new_attributes=all_new_attributes)
             extracted_raw_attributes = await self.text2column_vision_model.run_inference(frame, **dict(detail=self.caption_detail, prompt = attribute_extraction_prompt))
 
             # structured_attribute_extraction_prompt = self.structured_attribute_extraction_prompt.format(raw_attributes = extracted_raw_attributes, all_new_attributes=all_new_attributes)
             # extracted_structured_attributes = await self.text2column_text_model.run_inference(data_stream = structured_attribute_extraction_prompt)
+            
             parsed_tuple_new_attributes = await self.process_new_attributes_tuple(extracted_structured_attributes = extracted_raw_attributes, new_attributes=new_attributes)
             batch_rows.append((current_attributes['video_id'], current_attributes['frame_id'], current_attributes['object_id'], parsed_tuple_new_attributes))
 

@@ -85,7 +85,6 @@ class VideoQueryPipeline():
 
     async def run_text2column(self, video_id: int, table_name: str, frame_batch: list, new_attributes_for_table: list):
         
-        pdb.set_trace()
         for attribute in new_attributes_for_table:
             self.sql_dbs.create_column(table_name=table_name, col_name=attribute, col_type=Config.new_col_type)
 
@@ -116,7 +115,6 @@ class VideoQueryPipeline():
         pdb.set_trace()
         #only reboot with Text2Column if is_sufficient==False and existing_tables_attributes_dict has content
         if Config.text2column_enabled:
-            pdb.set_trace()
             if not is_sufficient and existing_tables_attributes_dict:
                 #create new columns for existing tables
                 for table_name, new_attributes in existing_tables_attributes_dict.items():
@@ -130,7 +128,7 @@ class VideoQueryPipeline():
 
             elif not is_sufficient and existing_tables_attributes_dict is None:
                 raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
-        
+        pdb.set_trace()
         #only reboot with NewTable if is_sufficient==False and new_tables_attributes_dict has content
         if Config.table_reboot_enabled:
             if not is_sufficient and new_tables_attributes_dict:
@@ -146,7 +144,7 @@ class VideoQueryPipeline():
                     self.sql_dbs.add_new_table(table_name=new_table_name, table_schema=table_schema, table_prim_key=Config.processed_table_pk)
                     await self.run_text2table(new_structured_table_name=new_table_name, reboot=True)
 
-            elif not is_sufficient and not new_tables_attributes_dict:
+            elif not is_sufficient and new_tables_attributes_dict is None:
                 raise RuntimeError("Error: cannot parse the query or cannot extract attributes")
         #check query after rebooting once
         if not is_sufficient:
@@ -203,7 +201,7 @@ if __name__ == '__main__':
 
     #PART 3: MISSING TABLE QUERY FOR VIDEO
     # question = "When does the weather first have overcast after the first 5 frames?"
-    question = "In what frames are there pedestrians wearing red shirts who are running?"
+    question = "What is the first frame in which a damaged SUV stops at a red light?"
     start_time = time.time()
     result = asyncio.run(query_pipeline.process_query(language_query = question, llm_judge=Config.llm_judge))
     end_time = time.time()
