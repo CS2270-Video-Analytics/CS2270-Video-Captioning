@@ -1,0 +1,78 @@
+dataset,video_id,nl_query,gt_SQL,ground_truth
+BDD,00afa5b2-c14a542f.mov,Is there a a pedestrian wearing a red bagpack after frame 10?,SELECT EXISTS (SELECT 1 FROM pedestrian_data WHERE frame_id > 10 AND LOWER(clothing_description) LIKE '%red backpack%'),1
+BDD,00afa5b2-c14a542f.mov,How many taxis are in the video?,"SELECT COUNT(DISTINCT vehicle_data.object_id) 
+ FROM vehicle_data 
+ WHERE LOWER(vehicle_data.type) LIKE '%taxi%' AND 
+  EXISTS (SELECT 1 FROM vehicle_data u WHERE u.video_id = vehicle_data.video_id AND u.frame_id = vehicle_data.frame_id)",2
+BDD,00afa5b2-c14a542f.mov,Are there two cars of different colors?,"SELECT EXISTS (
+  SELECT 1 
+  FROM vehicle_data v1 
+  INNER JOIN vehicle_data v2 
+  ON v1.video_id = v2.video_id AND v1.frame_id = v2.frame_id 
+  WHERE v1.color <> v2.color
+ )",1
+BDD,00a2f5b6-d4217a96.mov,Is there a black mercedes?,SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(color) LIKE '%black%' AND LOWER(model) LIKE '%mercedes%'),1
+BDD,00a2f5b6-d4217a96.mov,Is there an SUV?,SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE LOWER(model) LIKE '%suv%'),1
+BDD,00a2f5b6-d4217a96.mov,Is there pedestrian wearing a blue shirt after frame 30?,SELECT EXISTS (SELECT 1 FROM pedestrian_data WHERE LOWER(clothing) LIKE '%blue shirt%' AND frame_id > 30),1
+BDD,00a2f5b6-d4217a96.mov,Does a vehicle turn right?,SELECT EXISTS (SELECT 1 FROM vehicle_data WHERE location LIKE '%right%'),1
+BDD,00abf44e-04004ca0.mov,Is there a frame without pedestrians?,"SELECT EXISTS (SELECT 1 
+ FROM person_data 
+ WHERE video_id IS NOT NULL 
+ AND frame_id IS NOT NULL 
+ AND object_id IS NOT NULL 
+ AND NOT EXISTS (SELECT 1 FROM pedestrian_data WHERE person_data.video_id = pedestrian_data.video_id AND person_data.frame_id = pedestrian_data.frame_id));",1
+BDD,00abf44e-04004ca0.mov,List all the distinct types of construction equipment in the video,SELECT DISTINCT equipment_type FROM construction_equipment_data WHERE video_id LIKE '%',dumpster
+Charades,0BWYH.mp4,Are there multiple bowls in the video?,SELECT EXISTS (SELECT 1 FROM dishware_data WHERE LOWER(type) LIKE '%bowl%'),1
+Charades,0BWYH.mp4,Is there more than one person in the video?,SELECT EXISTS (SELECT 1 FROM person_data WHERE video_id IS NOT NULL GROUP BY video_id HAVING COUNT(DISTINCT object_id) > 1),0
+Charades,0BH84.mp4,Is the kitchen visible before frame 2?,SELECT EXISTS (SELECT 1 FROM kitchen_appliance_data WHERE frame_id < 2),0
+Charades,0BH84.mp4,Are the milk and phone visible in the same frame?,"SELECT EXISTS (
+  SELECT 1 
+  FROM phone_data AS p
+  INNER JOIN beverage_data AS b ON p.video_id = b.video_id AND p.frame_id = b.frame_id
+  WHERE LOWER(b.type) LIKE '%milk%'
+ );",1
+Charades,0BH84.mp4,Are there multiple doors in the video?,SELECT EXISTS (SELECT 1 FROM door_data WHERE video_id LIKE '%') AND (SELECT COUNT(*) FROM door_data WHERE video_id LIKE '%') > 1,1
+Charades,0BH84.mp4,Is the kitchen to the right of the person?,"SELECT EXISTS (
+  SELECT 1 
+  FROM person_data p
+  JOIN kitchen_appliance_data k ON p.video_id = k.video_id AND p.frame_id = k.frame_id
+  WHERE LOWER(p.location) LIKE '%right%' AND LOWER(k.location) LIKE '%kitchen%'
+ )",1
+Charades,0A8ZT.mp4,Is there a bottle with a dark liquid?,SELECT EXISTS (SELECT 1 FROM bottle_data WHERE LOWER(color) LIKE '%dark%'),1
+Charades,0A8ZT.mp4,Is there a black cabinet with a photo frame?,"SELECT EXISTS (
+  SELECT 1 
+  FROM furniture_data f
+  INNER JOIN photo_frame_data p ON f.video_id = p.video_id AND f.frame_id = p.frame_id
+  WHERE LOWER(f.color) LIKE '%black%' AND LOWER(f.type) LIKE '%cabinet%'
+ );",1
+Charades,0A8ZT.mp4,Are there multiple vases in the video?,"SELECT EXISTS (
+  SELECT 1 
+  FROM decorative_item_data 
+  WHERE LOWER(design) LIKE '%vase%' 
+  GROUP BY video_id 
+  HAVING COUNT(*) > 1
+ )",1
+UCF101,v_SoccerPenalty_g20_c03.mp4,Are there more than one goalkeepers?,"SELECT EXISTS (SELECT 1 FROM goalkeeper_data GROUP BY video_id, frame_id HAVING COUNT(object_id) > 1)",0
+UCF101,v_Basketball_g16_c02.mp4,Is there a hoop?,SELECT EXISTS (SELECT 1 FROM basketball_hoop_data),1
+UCF101,v_Basketball_g16_c02.mp4,Is there a person with a white jersey and the number 32 on the jersey?,SELECT EXISTS (SELECT 1 FROM person_data WHERE LOWER(clothing) LIKE '%white%' AND LOWER(clothing) LIKE '%32%'),1
+UCF101,v_Basketball_g16_c02.mp4,What color is the trash can?,SELECT DISTINCT color FROM trash_can_data,green
+UCF101,v_Basketball_g16_c02.mp4,Does the person walk towards the hoop before frame 6?,"SELECT EXISTS (
+  SELECT 1 
+  FROM person_data p
+  INNER JOIN basketball_hoop_data b ON p.video_id = b.video_id AND p.frame_id = b.frame_id
+  WHERE LOWER(p.action) LIKE '%walk%' 
+  AND p.frame_id < 6
+ );",1
+UCF101,v_Basketball_g16_c02.mp4,Is the trash can to the right of the person?,"SELECT EXISTS (
+  SELECT 1
+  FROM person_data p
+  JOIN trash_can_data t ON p.video_id = t.video_id AND p.frame_id = t.frame_id
+  WHERE LOWER(t.location) LIKE '%right%'
+  AND p.video_id IS NOT NULL
+ )",1
+UCF101,v_Basketball_g16_c02.mp4,Is the person ever dribbling the basketball?,"SELECT EXISTS (SELECT 1 
+ FROM person_data pd 
+ INNER JOIN basketball_data bd ON pd.video_id = bd.video_id AND pd.frame_id = bd.frame_id 
+ WHERE LOWER(pd.action) LIKE '%dribble%' OR LOWER(pd.action) LIKE '%dribbling%')",1
+UCF101,v_Lunges_g19_c02.mp4,Are there black dumbells?,SELECT EXISTS (SELECT 1 FROM gym_equipment_data WHERE LOWER(type) LIKE '%dumbbell%' AND LOWER(color) LIKE '%black%'),1
+UCF101,v_Lunges_g19_c02.mp4,Are there multiple workout machines in the video?,SELECT EXISTS (SELECT 1 FROM gym_equipment_data WHERE LOWER(type) LIKE '%machine%'),1
