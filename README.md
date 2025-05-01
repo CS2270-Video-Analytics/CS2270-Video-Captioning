@@ -1,7 +1,41 @@
 # CS2270-Video-Captioning
 
-## Project Overview
-This project is a modular video captioning and querying system. It processes videos to generate captions, converts captions to structured SQL tables, and enables natural language or SQL-based queries over the extracted data. The system integrates state-of-the-art vision-language models, text-to-SQL pipelines, and a modern web frontend for video upload and querying.
+## System Overview
+
+This system enables users to query the content of videos using natural language by automatically extracting structured information from video frames and storing it in a relational database. The system is adaptive: if a user's query cannot be answered with the current database schema, it will automatically update the schema and extract the missing attributes in the form of new tables or/and new columns.
+
+### 1. Before Query: Video Processing & Database Construction
+
+- **Frame Sampling:**  
+  Input videos are sampled into individual frames at a configurable rate.
+- **Frame Captioning:**  
+  Each frame is processed by a vision-language model, which generates detailed captions describing all visible objects, their categories, attributes (e.g., brand, color), actions, and locations.
+- **Table Generation:**  
+  The system parses these captions and organizes the extracted information into SQL tables. Each object and its attributes are stored in a structured, queryable format. The database schema is generated dynamically based on the detected object types and their properties.
+
+---
+
+### 2. User Query: Natural Language to SQL
+
+- **Query Submission:**  
+  Users submit natural language queries (e.g., "Find all frames where a white BMW is turning right") through the web frontend.
+- **Text-to-SQL Translation:**  
+  The system uses a language model to translate the user's query into an SQL statement, leveraging the current database schema.
+- **Result Retrieval:**  
+  The SQL query is executed, and the relevant frames or information are returned to the user.
+
+---
+
+### 3. If the Query Can't Be Answered: Schema Adaptation & Re-kicking
+
+- **Schema Sufficiency Check:**  
+  If the system determines that the current database schema is missing key attributes or tables needed to answer the query, it invokes an LLM-based "Judge" to assess what's missing.
+- **Schema Extension:**  
+  - If new object categories or attributes are required, the system will:
+    - **Generate new tables** if entirely new table(s) are needed.
+    - **Add new columns** to existing tables if only additional attribute(s) are required.
+- **Re-kicking the Pipeline:**  
+  The system then "re-kicks" the pipeline: it extracts the missing information from the video, updates the database, and automatically re-attempts the user's query.
 
 ## Directory Structure
 - `pipeline.py`: **Backend entry point**. Orchestrates the full video-to-table and query pipeline.
@@ -9,7 +43,7 @@ This project is a modular video captioning and querying system. It processes vid
 - `datasets/`: References to all datasets (raw data) used for training, evaluation, and testing.
 - `data_processing/`: Scripts and configs for preprocessing and sampling videos.
 - `outputs/`: Contains the generated PostgreSQL tables and processed outputs.
-- `frontend/`: Flask app and HTML/JS interface for uploading videos and querying data.
+- `frontend/`: Flask app and HTML/JS interface for uploading videos and querying data. WIP.
 - `baselines/`: Baseline models (e.g., VIVA, ZELDA) for comparison.
 - `database_integration/`: Interfaces for SQLite and vector database integration.
 - `pipelines/`: Modular pipeline components for frame extraction, captioning, text-to-SQL, text-to-table, and text-to-column.
@@ -44,7 +78,7 @@ Before running the pipeline, **edit `config/config.py`** to set the appropriate 
 - **Pipeline toggles and parameters** (e.g., batch size, precision, enabling/disabling modules)
 
 ## Usage
-### 1. Run the Backend Pipeline
+### Run the Backend Pipeline
 Edit `pipeline.py` as needed for your use case (see the `__main__` section for examples). Example to process a query for a missing table:
 ```python
 # In pipeline.py
@@ -59,12 +93,6 @@ print("SYSTEM RESPONSE: ", result)
 print(f"Time taken: {end_time - start_time}")
 ```
 
-### 2. Run the Frontend
-```bash
-cd frontend
-python app.py
-```
-Then open `frontend/index.html` in your browser. Use the interface to upload videos and submit queries.
 
 ## Profiling
 Profile backend latency using Pyinstrument:
