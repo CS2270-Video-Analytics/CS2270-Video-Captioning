@@ -44,7 +44,6 @@ This system enables users to query the content of videos using natural language 
 - `data_processing/`: Scripts and configs for preprocessing and sampling videos.
 - `outputs/`: Contains the generated PostgreSQL tables and processed outputs.
 - `frontend/`: Flask app and HTML/JS interface for uploading videos and querying data. WIP.
-- `baselines/`: Baseline models (e.g., VIVA, ZELDA) for comparison.
 - `database_integration/`: Interfaces for SQLite and vector database integration.
 - `pipelines/`: Modular pipeline components for frame extraction, captioning, text-to-SQL, text-to-table, and text-to-column.
 - `requirements.txt`: Python dependencies for the project.
